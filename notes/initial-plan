@@ -1,0 +1,81 @@
+In a 360 game, you have a spaceship made of blocks.
+(hexagons might be the simples shape that can pull this off well _alone_)
+(note that combining shapes would be very fun: e.g. squares + triangles + hexagons
+ but this is complicated for first release)
+(lengths must match exactly to combine. components cannot overlap)
+
+Blocks can have material, a module, AND something attached on the outsides.
+Blocks can have weapons, power, and engines.
+
+Weapons: Directional, must point outwards. Fire a projectile. Require power to fire.
+    Pellet [low cooldown, low damage, dumb]
+    Missile [high cooldown, medium damage, homing]
+    Mine [medium cooldown, high damage, dumb proximity]
+Armour: No functionality. Simply very hard to destroy ('damage reduction' and high HP)
+Connector: No functionality. Very light.
+Engines: Increase mobility. Constant power draw. Directional, must point outwards, power doubled when going in the right direction.
+Repair: Provides gradual self-repair. Power draw when damaged.
+Generator: Recharge power.
+Shield: Provides "virtual blocks" 2 blocks ahead that block OTHER people's shots with probability equal to health. Power draw to recharge shields.
+Cockpit: The "heart". Blocks severed from this are detached.
+        
+
+Levels 1-9 for each module with numeric differences (higher is better and rarer)
+
+Too many blocks increase your mass and slow you down.
+
+Blocks that are detached from a ship (yours or enemy) but not destroyed float around
+and can be collected.
+
+STAGE:
+    - Flying hexagon with fixed pellet gun mobility.
+    - Direction keys and shoot.
+    - Starfield background to show movement.
+
+STAGE:
+    - A single-block enemy without real AI.
+
+STAGE:
+    - Your ship is four hexagons glued together!
+
+STAGE:
+    - Engine blocks. Mass and mobility calculation.
+    - Generator blocks. Things draw power.
+    - Pellet guns are blocks.
+    - Connector blocks.
+    - Armour blocks.
+    - Cockbit block.
+
+STAGE:
+    - The in-game ship editor! Tab to enter it.
+
+STAGE:
+    - Mines.
+    - Missiles.
+    - Autorepair module.
+
+STAGE:
+    - Some fun design templates for enemies
+    - Generate enemy (blocks & levels of blocks) by desired threat level
+
+STAGE:
+    - AI that's not completely stupid.
+
+STAGE:
+    - Parts detach from enemies when they are destroyed. 
+
+STAGE:
+    - Shields.
+
+STAGE:
+    - Better background visuals
+    - Better block visuals (must show damage state)
+    - Better 
+
+STAGE:
+    - Simple sounds and music
+
+STAGE:
+    - Main menu
+    - Difficulty progression (gets harder and harder until you die)
+    - High score list
