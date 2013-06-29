@@ -69,8 +69,8 @@ def test_thing_vector_getter():
     vel = thing.velocity
     assert thing.position == (0,0)
     assert thing.velocity == (0,0)
-    pos = (1,0)
-    vel = (2,1)
+    pos += (1,0)
+    vel += (2,1)
     assert thing.position == (0,0)
     assert thing.velocity == (0,0)
 
