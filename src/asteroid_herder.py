@@ -6,6 +6,8 @@ import random
 import math
 import ctypes
 
+from util import degrees_to_radians, radians_to_degrees
+
 from cocos.euclid import Vector2
 
 from pyglet.window import key
@@ -123,12 +125,6 @@ class ProjectileLayer ( cocos.layer.Layer ):
     def tick(self, dt):
         for child in self.get_children():
             child.tick(dt)
-
-def degrees_to_radians( degrees ):
-    return math.pi * degrees / 180.0
-
-def radians_to_degrees( radians ):
-    return 180.0 * radians / math.pi
 
 def create_convex_polygon_object( target, filename, xy, orientation, pixel_vertices, mass ):
     target.sprite = cocos.sprite.Sprite( filename )
