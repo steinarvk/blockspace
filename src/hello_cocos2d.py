@@ -12,6 +12,8 @@ from cocos.actions import *
 
 from pyglet.gl import *
 
+KillAction = lambda y : CallFunc( lambda x : x.kill(), y )
+
 class LaserShot ( cocos.sprite.Sprite ):
     def __init__(self, sprite_filename, position, velocity, rotation):
         super( LaserShot, self ).__init__(sprite_filename)
@@ -55,7 +57,9 @@ class AtomicShip ( cocos.sprite.Sprite ):
     def orientation(self):
         return self.get_local_transform() * Vector2(0,1)
     def make_shot(self):
-        return LaserShot( "laserGreen.png", self.gunpoint(), self._velocity + self.orientation() * 1000, self.rotation )
+        shot = LaserShot( "laserGreen.png", self.gunpoint(), self._velocity + self.orientation() * 1000, self.rotation )
+        shot.do( Delay( 2.0 ) + KillAction(shot) )
+        return shot
 
 class BackgroundLayer ( cocos.layer.Layer ):
     def __init__(self, game):
@@ -92,13 +96,21 @@ class TutorialLayer ( cocos.layer.Layer ):
         label = cocos.text.Label( message, font_name = "Times New Roman", font_size = 60, anchor_x = "center", anchor_y = "center", color = (100,150,150,255))
         label.position = 512,700
         self.add( label )
-        label.do( Delay(2.0) + FadeOut(2.0) + CallFunc( lambda x : x.kill, label ) + CallFunc( lambda : cont() if cont else None ) )
+        label.do( Delay(2.0) + FadeOut(2.0) + KillAction(label) + CallFunc( lambda : cont() if cont else None ) )
 
-class GameLayer ( cocos.layer.Layer ):
+class ProjectileLayer ( cocos.layer.Layer ):
+    def __init__(self):
+        super( ProjectileLayer, self ).__init__()
+    def tick(self, dt):
+        for child in self.get_children():
+            child.tick(dt)
+
+
+class ShipLayer ( cocos.layer.Layer ):
     is_event_handler = True
 
     def __init__(self):
-        super( GameLayer, self ).__init__()
+        super( ShipLayer, self ).__init__()
         self.ship = AtomicShip( "player.png" )
         self.ship.position = 320,240
         self.keyboard_state = key.KeyStateHandler()
@@ -115,7 +127,7 @@ class GameLayer ( cocos.layer.Layer ):
             self.add_thing( debris )
     def on_key_press(self, symbol, modifiers):
         if symbol == key.SPACE:
-            self.add_thing( self.ship.make_shot() )
+            self.projectile.add( self.ship.make_shot() )
         else:
             self.keyboard_state.on_key_press( symbol, modifiers )
     def on_key_release(self, symbol, modifiers):
@@ -135,19 +147,22 @@ class GameLayer ( cocos.layer.Layer ):
             self.things.remove( thing )
             thing.kill()
         x, y = self.ship.position
-        tx, ty = 320 - x, 240 - y
+        tx, ty = 512 - x, 384 - y
         ox, oy = self.position
-        np = 0.1**dt
+        np = 0.07**dt
         self.position = (np * ox + (1-np) * tx, np * oy + (1-np) * ty)
+        self.projectile.position = self.position
+        self.projectile.tick( dt )
 
 if __name__ == '__main__':
     cocos.director.director.init( width = 1024, height = 768 )
     cocos.director.director.show_FPS = True
-    game = GameLayer()
+    game = ShipLayer()
+    game.projectile = ProjectileLayer()
     bg = BackgroundLayer( game )
     hud = HUDLayer( game )
     tut = TutorialLayer()
-    scene = cocos.scene.Scene( bg, game, hud, tut )
+    scene = cocos.scene.Scene( bg, game, hud, game.projectile, tut )
     scene.schedule( game.tick )
     scene.schedule( hud.tick )
     scene.schedule( bg.tick )
