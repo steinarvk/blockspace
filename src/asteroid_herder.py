@@ -4,6 +4,7 @@ import pyglet
 import time
 import random
 import math
+import ctypes
 
 from cocos.euclid import Vector2
 
@@ -34,13 +35,35 @@ class BackgroundLayer ( cocos.layer.Layer ):
     def __init__(self, game):
         super( BackgroundLayer, self ).__init__()
         self.game = game
-        self.bg = cocos.sprite.Sprite( "bg.png" )
-        self.bg.image.get_texture() # binds texture!
+        self.image = pyglet.image.load( "brushwalker437.png" )
+        self.texture = self.image.get_texture()
+        glBindTexture( self.texture.target, self.texture.id )
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-        self.add( self.bg )
+        self.t = 0.0
+    def draw(self):
+        x, y = self.game.position
+        s = 1024
+        bs = -1 / float(s)
+        x, y = (x*bs,y*bs)
+        glEnable( self.texture.target )
+        glColor4f( 0.3, 0.3, 0.3, 1.0 ) 
+        glBindTexture( GL_TEXTURE_2D, self.texture.id )
+        glPushMatrix()
+        self.transform()
+        glBegin( GL_QUADS )
+        glTexCoord2f( x, y )
+        glVertex2i( 0, 0 )
+        glTexCoord2f( x + 1, y )
+        glVertex2i( 1024, 0 )
+        glTexCoord2f( x + 1, y + 1 )
+        glVertex2i( 1024, 1024 )
+        glTexCoord2f( x, y + 1 )
+        glVertex2i( 0, 1024 )
+        glEnd()
+        glPopMatrix()
     def tick(self, dt):
-        self.bg.image.get_texture().tex_coords = (dt, dt, 0.0, dt + 2048, dt, 0, dt + 2048, dt + 2048, 0, dt, dt + 2048, 0 )
+        self.t += dt * 0.1
 
 class HUDLayer ( cocos.layer.Layer ):
     is_event_handler = True
@@ -48,6 +71,18 @@ class HUDLayer ( cocos.layer.Layer ):
     def __init__(self, game):
         super( HUDLayer, self ).__init__()
         self.game = game
+        self.tracking_label = cocos.text.Label( "", font_name = "Bitstream Vera Sans Mono", font_size = 16, anchor_x = "right", anchor_y = "bottom", color = (150,150,200,128) )
+        self.tracking_label.position = (1015,730)
+        self.add( self.tracking_label )
+        self.tracking_position_label = cocos.text.Label( "", font_name = "Bitstream Vera Sans Mono", font_size = 16, anchor_x = "right", anchor_y = "bottom", color = (150,150,200,128) )
+        self.tracking_position_label.position = (1015,700)
+        self.add( self.tracking_position_label )
+        self.tracking_velocity_label = cocos.text.Label( "", font_name = "Bitstream Vera Sans Mono", font_size = 16, anchor_x = "right", anchor_y = "bottom", color = (150,150,200,128) )
+        self.tracking_velocity_label.position = (1015,670)
+        self.add( self.tracking_velocity_label )
+        self.tracking_speed_label = cocos.text.Label( "", font_name = "Bitstream Vera Sans Mono", font_size = 16, anchor_x = "right", anchor_y = "bottom", color = (150,150,200,128) )
+        self.tracking_speed_label.position = (1015,640)
+        self.add( self.tracking_speed_label )
         self.position_label = cocos.text.Label( "Position: ", font_name = "Bitstream Vera Sans Mono", font_size = 16, anchor_x = "right", anchor_y = "bottom", color = (150,150,200,128) )
         self.position_label.position = (1015,10)
         self.add( self.position_label )
@@ -61,6 +96,17 @@ class HUDLayer ( cocos.layer.Layer ):
         self.position_label.element.text = "Position: {0:.2f} {1:.2f}".format( *self.game.ship.body.position )
         self.velocity_label.element.text = "Velocity: {0:.2f} {1:.2f}".format( *self.game.ship.body.velocity )
         self.speed_label.element.text = "Speed: {0:.2f}".format( self.game.ship.body.velocity.get_length() )
+        if self.game.tracking:
+            self.tracking_label.element.text = self.game.tracking.name
+            self.tracking_position_label.element.text = "Position: {0:.2f} {1:.2f}".format( *self.game.tracking.body.position )
+            self.tracking_velocity_label.element.text = "Velocity: {0:.2f} {1:.2f}".format( *self.game.tracking.body.velocity )
+            self.tracking_speed_label.element.text = "Speed: {0:.2f}".format( self.game.tracking.body.velocity.get_length() )
+        else:
+            self.tracking_label.element.text = ""
+            self.tracking_position_label.element.text = ""
+            self.tracking_velocity_label.element.text = ""
+            self.tracking_speed_label.element.text = ""
+            
 
 class TutorialLayer ( cocos.layer.Layer ):
     def __init__(self):
@@ -89,7 +135,6 @@ def create_convex_polygon_object( target, filename, xy, orientation, pixel_verti
     w, h = target.sprite.image.width, target.sprite.image.height
     px, py = xy
     vertices = [ (dx - 0.5*w, 0.5 * h - dy) for (dx,dy) in pixel_vertices ]
-    print pixel_vertices, vertices
     moment = pymunk.moment_for_poly( mass, vertices )
     target.body = pymunk.Body( mass, moment )
     target.shape = pymunk.Poly( target.body, vertices )
@@ -117,6 +162,7 @@ def polar_radians( theta_radians, r ):
 
 class Thing (object):
     def __init__(self):
+        self.name = "Thing"
         self.alive = True
     def tick(self, dt):
         self.sprite.rotation = radians_to_degrees( self.body.angle )
@@ -125,13 +171,14 @@ class Thing (object):
 class AtomicShip ( Thing ):
     def __init__(self):
         super( AtomicShip, self ).__init__()
+        self.name = "Spaceship"
         self._acceleration = 1000.0
         self._turnspeed = 300.0
         self._velocity = Vector2(0,0)
         self._spin = 0
         self._thrust = 0
         self._braking = 0
-        self._max_speed = 500.0
+        self._max_speed = 800.0
         # sort of required not to break the physics sim
         # idea if we want to preserve the space feel:
         # set the max speed very high (but at some point where we can still reliably do collisions)
@@ -176,6 +223,7 @@ class ShipLayer ( cocos.layer.Layer ):
         super( ShipLayer, self ).__init__()
         self.space = space
         self.ship = AtomicShip()
+        self.tracking = None
         create_convex_polygon_object( self.ship, "player.png", (0,0), 0.0, ((98,48),(59,0),(41,0),(2,48),(44,72),(55,72)), 1.0 )
         self.ship.body.moment = pymunk.inf
 #        create_disk_object( self.ship, "player.png", (0,0), 0.0, 50.0, 1.0 )
@@ -188,6 +236,7 @@ class ShipLayer ( cocos.layer.Layer ):
         self.space.add( self.ship.body, self.ship.shape )
         for i in range(20):
             debris = Thing()
+            debris.name = "Asteroid"
             pos = (random.random() - 0.5) * 2000, (random.random() - 0.5) * 2000
             d = random.random() * 2 * math.pi
             s = random.random() * 20.0
@@ -214,7 +263,9 @@ class ShipLayer ( cocos.layer.Layer ):
 #            print thing, thing.sprite.position
         things = [shape.thing for shape in self.space.point_query( xy ) ]
         if things:
-            print things
+            self.tracking = things[0]
+        else:
+            self.tracking = None
     def tick(self, dt):
         self.ship.control( self.keyboard_state )
         self.space.step( dt ) # todo fix timestep
@@ -230,7 +281,7 @@ class ShipLayer ( cocos.layer.Layer ):
         x, y = self.ship.sprite.position
         tx, ty = 512 - x, 384 - y
         ox, oy = self.position
-        np = 0.17**dt
+        np = 0.07**dt
         self.position = (np * ox + (1-np) * tx, np * oy + (1-np) * ty)
         self.projectile.position = self.position
         self.projectile.tick( dt )
