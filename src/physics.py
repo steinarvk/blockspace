@@ -5,10 +5,11 @@ from pymunk import Vec2d
 infinite_moment = pymunk.inf
 
 class CollisionShape (object):
-    def __init__(self, group = None, sensor = None, collision_type = None):
+    def __init__(self, group = None, sensor = None, collision_type = None, elasticity = None):
         self.group = group
         self.sensor = sensor
         self.collision_type = collision_type
+        self.elasticity = elasticity
     def decorate_shape(self, shape):
         if self.group != None:
             shape.group = self.group
@@ -16,6 +17,8 @@ class CollisionShape (object):
             shape.sensor = self.sensor
         if self.collision_type != None:
             shape.collision_type = self.collision_type
+        if self.elasticity != None:
+            shape.elasticity = self.elasticity
         return shape
     def generate_shapes(self, body):
         for shape in self.generate_basic_shapes( body ):
@@ -50,24 +53,70 @@ class CompositeShape (CollisionShape):
             for rv in shape.generate_shapes( body ):
                 yield rv
 
-class DiskShape (object):
-    def __init__(self, radius, center = (0,0)):
+class DiskShape (CollisionShape):
+    def __init__(self, radius, center = (0,0), **kwargs):
+        super( DiskShape, self ).__init__( **kwargs )
         self.center = Vec2d( center )
         self.radius = radius
     def generate_basic_shapes(self, body):
-        yield pymunk.Circle( body, radius, offset = self.center )
+        yield pymunk.Circle( body, self.radius, offset = self.center )
 
 class PhysicsSimulator (object):
     def __init__(self, timestep = 0.001):
         self.space = pymunk.Space()
-        self.t = 0.0
-        self.timestep = timestep
+        self._t = 0.0
+        self._timestep = timestep
+        self._next_group = 1
+        self.speed_limit = 5000.0
     def tick(self, dt):
-        self.t += dt
-        while self.t > self.timestep:
-            self.space.step( self.timestep )
-            self.t -= self.timestep
+        self._t += dt
+        while self._t >= self._timestep:
+            self.space.step( self._timestep )
+            self._t -= self._timestep
+    def new_group_id(self):
+        rv = self._next_group
+        self._next_group += 1
+        return rv
+
+class StaticObstacle (object):
+    def __init__(self, sim, shape, name = "obstacle"):
+        self.name = name
+        self.body = pymunk.Body()
+        self.shapes = list( shape.generate_shapes( self.body ) )
+        for shape in self.shapes:
+            shape.thing = self
+        sim.space.add( *self.shapes )
 
 class Thing (object):
-    def __init__(self, mass, moment = None):
-        pass
+    def __init__(self, sim, shape, mass, moment, group = False, name = "anonymous" ):
+        self.name = name
+        self.body = pymunk.Body( mass, moment )
+        self.body.velocity_limit = sim.speed_limit
+        self.shapes = list( shape.generate_shapes( self.body ) )
+        if group and len(self.shapes) > 1:
+            groupno = sim.new_group_id()
+            for shape in self.shapes:
+                shape.group = groupno
+        for shape in self.shapes:
+            shape.thing = self
+        sim.space.add( self.body, *self.shapes )
+
+    @property
+    def position(self):
+        return Vec2d(self.body.position)
+
+    @property
+    def velocity(self):
+        return Vec2d(self.body.velocity)
+
+    @velocity.setter
+    def velocity(self, value):
+        self.body.velocity = value
+
+    @property
+    def speed(self):
+        return self.body.velocity.get_length()
+
+    @property
+    def angle_radians(self):
+        return self.body.angle

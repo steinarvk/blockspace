@@ -1,7 +1,15 @@
+import random
+
+from test_util import almost_equal, almost_leq, almost_geq
+
 from physics import *
 
 def test_shape_creation():
     body = pymunk.Body()
+    [sh,] = DiskShape( 1.0, elasticity = 0.5 ).generate_shapes( body )
+    assert sh.elasticity == 0.5
+    [sh,] = DiskShape( 1.0, elasticity = 0.6 ).generate_shapes( body )
+    assert sh.elasticity == 0.6
     [sh,] = TriangleShape( (0,0), (1,0), (0,1), sensor = True ).generate_shapes( body )
     assert sh.sensor
     [sh,] = TriangleShape( (0,0), (1,0), (0,1), sensor = False ).generate_shapes( body )
@@ -25,3 +33,77 @@ def test_shape_creation():
     assert sh1.group == 12
     assert sh2.group == 12
 
+def test_group_id_generation():
+    sim = PhysicsSimulator()
+    group_ids = [ sim.new_group_id() for i in xrange(100000) ]
+    assert len(group_ids) == len(set(group_ids))
+    assert all( [ x > 0 for x in group_ids ] )
+
+def test_timestep_fixed():
+    timestep = 0.01
+    sim = PhysicsSimulator(timestep = timestep)
+    timesteps = []
+    def fake_timestep(dt):
+        timesteps.append( dt )
+    sim.space.step = fake_timestep
+    t = 0.0
+    for i in range(1000):
+        dt = random.random()
+        t += dt
+        sim.tick( dt )
+    assert len(set(timesteps)) == 1
+    assert len(timesteps) == int(t / timestep)
+
+def test_create_thing():
+    sim = PhysicsSimulator()
+    thing = Thing( sim, DiskShape(1.0), mass = 1.0, moment = 1.0 ) 
+    assert thing.name == "anonymous"
+    assert thing.position == (0,0)
+    assert thing.velocity == (0,0)
+    assert thing.body in sim.space.bodies
+
+def test_thing_vector_getter():
+    sim = PhysicsSimulator()
+    thing = Thing( sim, DiskShape(1.0), mass = 1.0, moment = 1.0 ) 
+    pos = thing.position
+    vel = thing.velocity
+    assert thing.position == (0,0)
+    assert thing.velocity == (0,0)
+    pos = (1,0)
+    vel = (2,1)
+    assert thing.position == (0,0)
+    assert thing.velocity == (0,0)
+
+def test_constant_velocity():
+    sim = PhysicsSimulator()
+    thing = Thing( sim, DiskShape(1.0), mass = 1.0, moment = 1.0 ) 
+    original_position = thing.position
+    v = 100.0
+    t = 60.0
+    thing.velocity = (v,0)
+    sim.tick( t )
+    final_position = thing.position
+    assert original_position.get_distance( final_position ) > (0.5 * v * t)
+    assert almost_leq( original_position.get_distance( final_position ), (v * t) )
+
+def test_collision_with_wall():
+    sim = PhysicsSimulator()
+    thing = Thing( sim, DiskShape(1.0), mass = 1.0, moment = 1.0 ) 
+    wall_x = 100
+    obstacle = StaticObstacle( sim, SegmentShape((wall_x,-100),(wall_x,100)) )
+    v = 100.0
+    t = 60.0
+    thing.velocity = (v,0)
+    sim.tick( t )
+    assert thing.position.x < wall_x
+
+def test_bounce_with_wall():
+    sim = PhysicsSimulator()
+    thing = Thing( sim, DiskShape(1.0, elasticity = 0.9), mass = 1.0, moment = 1.0 ) 
+    wall_x = 100
+    obstacle = StaticObstacle( sim, SegmentShape((wall_x,-100),(wall_x,100), elasticity = 0.9) )
+    v = 100.0
+    t = 60.0
+    thing.velocity = (v,0)
+    sim.tick( t )
+    assert thing.position.x < -100.0
