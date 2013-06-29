@@ -48,11 +48,19 @@ class HUDLayer ( cocos.layer.Layer ):
     def __init__(self, game):
         super( HUDLayer, self ).__init__()
         self.game = game
-        self.position_label = cocos.text.Label( "Position: (0,0)", font_name = "Bitstream Vera Sans Mono", font_size = 16, anchor_x = "right", anchor_y = "bottom", color = (150,150,200,128) )
+        self.position_label = cocos.text.Label( "Position: ", font_name = "Bitstream Vera Sans Mono", font_size = 16, anchor_x = "right", anchor_y = "bottom", color = (150,150,200,128) )
         self.position_label.position = (1015,10)
         self.add( self.position_label )
+        self.velocity_label = cocos.text.Label( "Velocity: ", font_name = "Bitstream Vera Sans Mono", font_size = 16, anchor_x = "right", anchor_y = "bottom", color = (150,150,200,128) )
+        self.velocity_label.position = (1015,40)
+        self.add( self.velocity_label )
+        self.speed_label = cocos.text.Label( "Speed: ", font_name = "Bitstream Vera Sans Mono", font_size = 16, anchor_x = "right", anchor_y = "bottom", color = (150,150,200,128) )
+        self.speed_label.position = (1015,70)
+        self.add( self.speed_label )
     def tick(self, dt):
-        self.position_label.element.text = "Position: {0:.2f} {1:.2f}".format( *self.game.ship.sprite.position )
+        self.position_label.element.text = "Position: {0:.2f} {1:.2f}".format( *self.game.ship.body.position )
+        self.velocity_label.element.text = "Velocity: {0:.2f} {1:.2f}".format( *self.game.ship.body.velocity )
+        self.speed_label.element.text = "Speed: {0:.2f}".format( self.game.ship.body.velocity.get_length() )
 
 class TutorialLayer ( cocos.layer.Layer ):
     def __init__(self):
@@ -80,7 +88,8 @@ def create_convex_polygon_object( target, filename, xy, orientation, pixel_verti
     target.sprite = cocos.sprite.Sprite( filename )
     w, h = target.sprite.image.width, target.sprite.image.height
     px, py = xy
-    vertices = [ (dx - 0.5*w, h - (dy - 0.5*h)) for (dx,dy) in pixel_vertices ]
+    vertices = [ (dx - 0.5*w, 0.5 * h - dy) for (dx,dy) in pixel_vertices ]
+    print pixel_vertices, vertices
     moment = pymunk.moment_for_poly( mass, vertices )
     target.body = pymunk.Body( mass, moment )
     target.shape = pymunk.Poly( target.body, vertices )
@@ -88,6 +97,7 @@ def create_convex_polygon_object( target, filename, xy, orientation, pixel_verti
     target.sprite.rotation = orientation
     target.body.angle = degrees_to_radians( orientation )
     target.body.position = xy
+    target.shape.thing = target
 
 def create_disk_object( target, filename, xy, orientation, radius, mass ):
     target.sprite = cocos.sprite.Sprite( filename )
@@ -100,6 +110,7 @@ def create_disk_object( target, filename, xy, orientation, radius, mass ):
     target.sprite.rotation = orientation
     target.body.angle = degrees_to_radians( orientation )
     target.body.position = xy
+    target.shape.thing = target
 
 def polar_radians( theta_radians, r ):
     return r * math.cos( theta_radians ), r * math.sin( theta_radians )
@@ -119,18 +130,36 @@ class AtomicShip ( Thing ):
         self._velocity = Vector2(0,0)
         self._spin = 0
         self._thrust = 0
+        self._braking = 0
+        self._max_speed = 500.0
+        # sort of required not to break the physics sim
+        # idea if we want to preserve the space feel:
+        # set the max speed very high (but at some point where we can still reliably do collisions)
+        # when at 50% of the max speed, you start taking damage, and you'll never be able to reach 100%.
         self.alive = True
     def control(self, state):
         self._spin = (1 if state[key.RIGHT] else 0) - (1 if state[key.LEFT] else 0)
-        self._thrust = (1 if state[key.UP] else 0) - (0.5 if state[key.DOWN] else 0)
+        self._thrust = (1 if state[key.UP] else 0)
+        self._braking = state[key.DOWN]
     def tick(self, dt):
         Thing.tick(self, dt)
         direction = self.sprite.rotation - 90.0
         intensity = 1000.0 * self._thrust
         fx, fy = polar_radians( degrees_to_radians(direction), intensity )
-        force = (fx,-fy)
-        self.body.force = force
+        thrust_force = (fx,-fy)
+        self.body.force = thrust_force
         self.body.angle += self._spin * dt * 5
+        l = self.body.velocity.get_length()
+        changed = False
+        if self._braking:
+            l -= 700.0 * dt
+            if l < 0.0:
+                l = 0.0
+            changed = True
+        if l > self._max_speed:
+            l = self._max_speed
+        self.body.velocity = self.body.velocity.normalized() * l
+        
     def gunpoint(self):
         return self.sprite.position + self.orientation() * 35.0
     def orientation(self):
@@ -147,8 +176,9 @@ class ShipLayer ( cocos.layer.Layer ):
         super( ShipLayer, self ).__init__()
         self.space = space
         self.ship = AtomicShip()
-#        create_convex_polygon_object( self.ship, "player.png", (320,240), 0.0, ((98,48),(59,0),(41,0),(2,48),(44,72),(55,72)), 1.0 )
-        create_disk_object( self.ship, "player.png", (320,240), 0.0, 50.0, 1.0 )
+        create_convex_polygon_object( self.ship, "player.png", (0,0), 0.0, ((98,48),(59,0),(41,0),(2,48),(44,72),(55,72)), 1.0 )
+        self.ship.body.moment = pymunk.inf
+#        create_disk_object( self.ship, "player.png", (0,0), 0.0, 50.0, 1.0 )
         self.keyboard_state = key.KeyStateHandler()
         self.acceleration = 10
         self.velocity = Vector2(0,0)
@@ -156,15 +186,16 @@ class ShipLayer ( cocos.layer.Layer ):
         self.add( self.ship.sprite )
         self.things.append( self.ship )
         self.space.add( self.ship.body, self.ship.shape )
-        for i in range(50):
+        for i in range(20):
             debris = Thing()
             pos = (random.random() - 0.5) * 2000, (random.random() - 0.5) * 2000
             d = random.random() * 2 * math.pi
             s = random.random() * 20.0
             vel = s * math.cos( d ), s * math.sin( d )
             rot = random.random() * 360
-#            create_convex_polygon_object( debris, "meteorBig.png", pos, rot, ((134,87),(129,39),(83,0),(24,14),(0,48),(14,84),(83,111)), 1.0 )
-            create_disk_object( debris, "meteorBig.png", pos, rot, 50.0, 1.0 )
+            create_convex_polygon_object( debris, "meteorBig.png", pos, rot, ((134,87),(129,39),(83,0),(24,14),(0,48),(14,84),(83,111)), 5.0 )
+#            create_convex_polygon_object( debris, "meteorBig.png", pos, rot, ((50,50),(50,-50),(-50,-50),(-50,50)), 1.0 )
+#            create_disk_object( debris, "meteorBig.png", pos, rot, 50, 1.0 )
             debris.body.velocity = vel
             self.add( debris.sprite )
             self.things.append( debris )
@@ -176,6 +207,14 @@ class ShipLayer ( cocos.layer.Layer ):
             self.keyboard_state.on_key_press( symbol, modifiers )
     def on_key_release(self, symbol, modifiers):
         self.keyboard_state.on_key_release( symbol, modifiers )
+    def on_mouse_motion(self, x, y, dx, dy):
+        xy = cocos.director.director.get_virtual_coordinates( x, y )
+        xy = (x - self.position[0], y - self.position[1])
+#        for thing in self.things:
+#            print thing, thing.sprite.position
+        things = [shape.thing for shape in self.space.point_query( xy ) ]
+        if things:
+            print things
     def tick(self, dt):
         self.ship.control( self.keyboard_state )
         self.space.step( dt ) # todo fix timestep
@@ -191,7 +230,7 @@ class ShipLayer ( cocos.layer.Layer ):
         x, y = self.ship.sprite.position
         tx, ty = 512 - x, 384 - y
         ox, oy = self.position
-        np = 0.07**dt
+        np = 0.17**dt
         self.position = (np * ox + (1-np) * tx, np * oy + (1-np) * ty)
         self.projectile.position = self.position
         self.projectile.tick( dt )
