@@ -1,6 +1,9 @@
 import random
+import math
 
 from test_util import almost_equal, almost_leq, almost_geq
+
+from test_util import radians_to_degrees, degrees_to_radians
 
 from physics import *
 
@@ -107,3 +110,17 @@ def test_bounce_with_wall():
     thing.velocity = (v,0)
     sim.tick( t )
     assert thing.position.x < -100.0
+
+def test_thing_angles():
+    sim = PhysicsSimulator()
+    thing = Thing( sim, DiskShape(1.0), mass = 1.0, moment = 1.0 ) 
+    thing.angular_velocity_radians = 1.0
+    angles = []
+    for i in range(6000):
+        sim.tick(0.01)
+        radians = thing.angle_radians
+        degrees = thing.angle_degrees
+        angles.append( radians )
+        assert almost_equal( math.cos( radians ), math.cos( degrees_to_radians( degrees ) ) )
+        assert almost_equal( math.sin( radians ), math.sin( degrees_to_radians( degrees ) ) )
+    assert len( set(angles) ) > 1

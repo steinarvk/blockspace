@@ -1,6 +1,7 @@
 import pymunk
 
 from pymunk import Vec2d
+from util import radians_to_degrees, degrees_to_radians
 
 infinite_moment = pymunk.inf
 
@@ -118,5 +119,17 @@ class Thing (object):
         return self.body.velocity.get_length()
 
     @property
+    def angular_velocity_radians(self):
+        return self.body.angular_velocity
+
+    @angular_velocity_radians.setter
+    def angular_velocity_radians(self, value):
+        self.body.angular_velocity = value
+
+    @property
     def angle_radians(self):
         return self.body.angle
+
+    @property
+    def angle_degrees(self):
+        return radians_to_degrees( self.body.angle )
