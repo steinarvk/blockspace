@@ -206,15 +206,23 @@ class AtomicShip ( Thing ):
         if l > self._max_speed:
             l = self._max_speed
         self.body.velocity = self.body.velocity.normalized() * l
-        
     def gunpoint(self):
         return self.sprite.position + self.orientation() * 35.0
+    def gunpoint_left(self):
+        orient = self.orientation()
+        return self.sprite.position + orient * 10.0 + Vector2(-orient.y, orient.x) * 45.0
+    def gunpoint_right(self):
+        orient = self.orientation()
+        return self.sprite.position + orient * 10.0 - Vector2(-orient.y, orient.x) * 45.0
     def orientation(self):
         return self.sprite.get_local_transform() * Vector2(0,1)
-    def make_shot(self):
-        shot = LaserShot( "laserGreen.png", self.gunpoint(), self.body.velocity + self.orientation() * 1000, self.sprite.rotation )
-        shot.do( Delay( 2.0 ) + KillAction(shot) )
-        return shot
+    def make_shots(self):
+        rv = []
+        for gunpoint in [self.gunpoint_left, self.gunpoint_right, self.gunpoint]:
+            shot = LaserShot( "laserGreen.png", gunpoint(), self.body.velocity + self.orientation() * 1000, self.sprite.rotation )
+            shot.do( Delay( 2.0 ) + KillAction(shot) )
+            rv.append( shot )
+        return rv
 
 class ShipLayer ( cocos.layer.Layer ):
     is_event_handler = True
@@ -251,7 +259,8 @@ class ShipLayer ( cocos.layer.Layer ):
             self.space.add( debris.body, debris.shape )
     def on_key_press(self, symbol, modifiers):
         if symbol == key.SPACE:
-            self.projectile.add( self.ship.make_shot() )
+            for shot in self.ship.make_shots():
+                self.projectile.add( shot )
         else:
             self.keyboard_state.on_key_press( symbol, modifiers )
     def on_key_release(self, symbol, modifiers):
