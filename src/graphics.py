@@ -56,7 +56,7 @@ class Layer (object):
         self.sprites.remove( sprite )
     def update(self):
         for sprite in self.sprites:
-            self.sprites.update()
+            sprite.update()
         
 
 class Sprite (object):
@@ -69,12 +69,13 @@ class Sprite (object):
         thing.kill_hooks.append( kill_sprite )
         thing.update_hooks.append( update_sprite )
         self.layer.cocos_layer.add( self.cocos_sprite )
+        self.layer.add_sprite( self )
     def kill(self):
-        self.layer.remove_sprite( self.cocos_sprite )
+        self.layer.remove_sprite( self )
         self.layer.cocos_layer.remove( self.cocos_sprite )
     def update(self):
-        self.cocos_sprite.position = thing.position
-        self.cocos_sprite.rotation = thing.angle_degrees
+        self.cocos_sprite.position = self.thing.position
+        self.cocos_sprite.rotation = self.thing.angle_degrees
 
 # thing = Thing( sim, ConvexPolygonShape((1,0),(0,1),(-1,0)) )
 # VisualThing( "spaceship.png", thing, layer )
