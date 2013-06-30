@@ -21,3 +21,9 @@ for the game and the tests should guarantee that collision detection
 reliably works at these sizes.
 (We can then alter them if needed for gameplay, as long as we can
 back this up technically.)
+
+Another "trick": projectiles that are meant to be so fast as to
+essentially hit instantly can be coded to do exactly that.
+Use the physics engine to do a ray cast (directed segment query).
+Calculate what, if anything, is hit. Then do the shot as a
+purely graphical effect.

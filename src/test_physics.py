@@ -232,3 +232,34 @@ def test_raise_on_too_small_thing():
     with pytest.raises( AssertionError ):
         sim = PhysicsSimulator()
         thing = Thing( sim, DiskShape(0.4 * sim.object_size_lower_limit), mass = 1.0, moment = 1.0 ) 
+
+def test_kill_thing():
+    sim = PhysicsSimulator()
+    thing = Thing( sim, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
+    thing2 = Thing( sim, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
+    assert thing.body in sim.space.bodies
+    assert thing2.body in sim.space.bodies
+    assert thing.shapes
+    for shape in thing.shapes:
+        assert shape in sim.space.shapes
+    assert thing2.shapes
+    for shape in thing2.shapes:
+        assert shape in sim.space.shapes
+    thing.kill()
+    assert thing.body not in sim.space.bodies
+    assert thing2.body in sim.space.bodies
+    for shape in thing.shapes:
+        assert shape not in sim.space.shapes
+    assert thing2.shapes
+    for shape in thing2.shapes:
+        assert shape in sim.space.shapes
+
+def test_kill_thing_hook():
+    sim = PhysicsSimulator()
+    thing = Thing( sim, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
+    def hook( x ):
+        x.name = "killed"
+    thing.kill_hooks.append( hook )
+    thing.kill()
+    assert thing.name == "killed"
+        

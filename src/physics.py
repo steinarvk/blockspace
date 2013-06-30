@@ -163,6 +163,7 @@ class StaticObstacle (object):
 
 class Thing (object):
     def __init__(self, sim, shape, mass, moment, group = False, name = "anonymous" ):
+        self.sim = sim
         self.name = name
         self.body = pymunk.Body( mass, moment )
         self.body.velocity_limit = sim.speed_limit
@@ -176,7 +177,13 @@ class Thing (object):
             bb = shape.cache_bb()
             assert min( abs(bb.right-bb.left), abs(bb.top-bb.bottom) ) >= sim.object_size_lower_limit
             shape.thing = self
+        self.kill_hooks = []
         sim.space.add( self.body, *self.shapes )
+
+    def kill(self):
+        self.sim.space.remove( self.body, *self.shapes )
+        for hook in self.kill_hooks:
+            hook( self )
 
     @property
     def position(self):
@@ -213,3 +220,7 @@ class Thing (object):
     @property
     def angle_degrees(self):
         return radians_to_degrees( self.body.angle )
+
+    @property
+    def direction(self):
+        return Vec2d.unit().rotated( self.body.angle )
