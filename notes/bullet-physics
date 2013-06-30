@@ -1,0 +1,23 @@
+Turns out it's not that easy to do bullets (tiny and fast moving).
+Can we fake it?
+
+We can expect that bullets should move at around 5000px/s.
+
+Tricks we can use:
+    Make the collision detection bullet larger than the real bullet.
+    Use an arbiter to filter collisions.
+
+    We can make bullets all part of the same group so they don't
+    collide with each other. (This is necessary if we're making
+    them significantly larger than the real bullet, otherwise
+    a swarm of bullets will heavily collide with itself and
+    require calls to Python to figure out that this isn't "real")
+
+These are reasons to not panic about what will happen at 5k px/s at
+1 pixel if all we need currently is 2k px/s at 10 pixels.
+
+Nevertheless, we should choose a max speed and minimum object size
+for the game and the tests should guarantee that collision detection
+reliably works at these sizes.
+(We can then alter them if needed for gameplay, as long as we can
+back this up technically.)

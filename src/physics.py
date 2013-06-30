@@ -1,4 +1,5 @@
 import pymunk
+import sys
 
 from pymunk import Vec2d
 from util import radians_to_degrees, degrees_to_radians
@@ -68,7 +69,8 @@ class PhysicsSimulator (object):
         self._t = 0.0
         self._timestep = timestep
         self._next_group = 1
-        self.speed_limit = 5000.0
+        self.speed_limit = 2000.0
+        self.object_size_lower_limit = 5.0
     def tick(self, dt):
         self._t += dt
         while self._t >= self._timestep:
@@ -99,12 +101,18 @@ class Thing (object):
             for shape in self.shapes:
                 shape.group = groupno
         for shape in self.shapes:
+            bb = shape.cache_bb()
+            assert min( abs(bb.right-bb.left), abs(bb.top-bb.bottom) ) >= sim.object_size_lower_limit
             shape.thing = self
         sim.space.add( self.body, *self.shapes )
 
     @property
     def position(self):
         return Vec2d(self.body.position)
+
+    @position.setter
+    def position(self, value):
+        self.body.position = value
 
     @property
     def velocity(self):

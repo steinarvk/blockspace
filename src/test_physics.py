@@ -1,5 +1,6 @@
 import random
 import math
+import pytest
 
 from test_util import almost_equal, almost_leq, almost_geq
 
@@ -59,7 +60,7 @@ def test_timestep_fixed():
 
 def test_create_thing():
     sim = PhysicsSimulator()
-    thing = Thing( sim, DiskShape(1.0), mass = 1.0, moment = 1.0 ) 
+    thing = Thing( sim, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
     assert thing.name == "anonymous"
     assert thing.position == (0,0)
     assert thing.velocity == (0,0)
@@ -67,7 +68,7 @@ def test_create_thing():
 
 def test_thing_vector_getter():
     sim = PhysicsSimulator()
-    thing = Thing( sim, DiskShape(1.0), mass = 1.0, moment = 1.0 ) 
+    thing = Thing( sim, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
     pos = thing.position
     vel = thing.velocity
     assert thing.position == (0,0)
@@ -79,7 +80,7 @@ def test_thing_vector_getter():
 
 def test_constant_velocity():
     sim = PhysicsSimulator()
-    thing = Thing( sim, DiskShape(1.0), mass = 1.0, moment = 1.0 ) 
+    thing = Thing( sim, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
     original_position = thing.position
     v = 100.0
     t = 60.0
@@ -91,7 +92,7 @@ def test_constant_velocity():
 
 def test_collision_with_wall():
     sim = PhysicsSimulator()
-    thing = Thing( sim, DiskShape(1.0), mass = 1.0, moment = 1.0 ) 
+    thing = Thing( sim, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
     wall_x = 100
     obstacle = StaticObstacle( sim, SegmentShape((wall_x,-100),(wall_x,100)) )
     v = 100.0
@@ -102,7 +103,7 @@ def test_collision_with_wall():
 
 def test_bounce_with_wall():
     sim = PhysicsSimulator()
-    thing = Thing( sim, DiskShape(1.0, elasticity = 0.9), mass = 1.0, moment = 1.0 ) 
+    thing = Thing( sim, DiskShape(10.0, elasticity = 0.9), mass = 1.0, moment = 1.0 ) 
     wall_x = 100
     obstacle = StaticObstacle( sim, SegmentShape((wall_x,-100),(wall_x,100), elasticity = 0.9) )
     v = 100.0
@@ -113,7 +114,7 @@ def test_bounce_with_wall():
 
 def test_thing_angles():
     sim = PhysicsSimulator()
-    thing = Thing( sim, DiskShape(1.0), mass = 1.0, moment = 1.0 ) 
+    thing = Thing( sim, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
     thing.angular_velocity_radians = 1.0
     angles = []
     for i in range(6000):
@@ -124,3 +125,24 @@ def test_thing_angles():
         assert almost_equal( math.cos( radians ), math.cos( degrees_to_radians( degrees ) ) )
         assert almost_equal( math.sin( radians ), math.sin( degrees_to_radians( degrees ) ) )
     assert len( set(angles) ) > 1
+
+def test_max_speed_collision_with_wall():
+    for i in range(100):
+        sim = PhysicsSimulator()
+        thing = Thing( sim, DiskShape(0.5*sim.object_size_lower_limit), mass = 1.0, moment = 1.0 ) 
+        wall_x = 100
+        obstacle = StaticObstacle( sim, SegmentShape((wall_x,-100),(wall_x,100)) )
+        thing.position = (random.random(), 0)
+        v = sim.speed_limit
+        t = 30.0
+        thing.velocity = (v,0)
+        sim.tick( t )
+        assert thing.position.x < wall_x
+
+def test_raise_on_too_small_thing():
+    with pytest.raises( AssertionError ):
+        sim = PhysicsSimulator()
+        thing = Thing( sim, DiskShape(0.4 * sim.object_size_lower_limit), mass = 1.0, moment = 1.0 ) 
+        
+if __name__ == '__main__':
+    test_raise_on_too_small_thing()
