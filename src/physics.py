@@ -130,13 +130,18 @@ class DiskShape (CollisionShape):
         return self.center
 
 class PhysicsSimulator (object):
-    def __init__(self, timestep = 0.001):
+    def __init__(self, timestep = 0.001, speed_limit = 2000.0, size_limit = 5.0):
         self.space = pymunk.Space()
         self._t = 0.0
         self._timestep = timestep
         self._next_group = 1
-        self.speed_limit = 2000.0
-        self.object_size_lower_limit = 5.0
+        if speed_limit == None:
+            speed_limit = calculate_maximum_speed( self._timestep, size_limit )
+        if size_limit == None:
+            size_limit = calculate_minimum_diameter( self._timestep, speed_limit )
+        self.speed_limit = speed_limit
+        self.object_size_lower_limit = size_limit
+        assert calculate_maximum_timestep( self.object_size_lower_limit, self.speed_limit ) >= self._timestep
     def tick(self, dt):
         self._t += dt
         while self._t >= self._timestep:

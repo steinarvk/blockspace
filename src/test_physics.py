@@ -134,7 +134,7 @@ def test_group_id_generation():
 
 def test_timestep_fixed():
     timestep = 0.01
-    sim = PhysicsSimulator(timestep = timestep)
+    sim = PhysicsSimulator(timestep = timestep, size_limit = 10.0, speed_limit = None)
     timesteps = []
     def fake_timestep(dt):
         timesteps.append( dt )
