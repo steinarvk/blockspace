@@ -7,6 +7,15 @@ from util import radians_to_degrees, degrees_to_radians
 
 infinite_moment = pymunk.inf
 
+def calculate_maximum_timestep( minimum_diameter, maximum_speed ):
+    return (0.5 * minimum_diameter) / maximum_speed
+
+def calculate_minimum_diameter( timestep, maximum_speed ):
+    return timestep * maximum_speed * 2
+
+def calculate_maximum_speed( timestep, minimum_diameter ):
+    return (0.5 * minimum_diameter) / timestep
+
 def closed_circle( l ):
     it = l.__iter__()
     first_element = it.next()

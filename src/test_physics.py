@@ -8,6 +8,15 @@ from test_util import radians_to_degrees, degrees_to_radians
 
 from physics import *
 
+def test_physics_limit_calculations():
+    for i in range(100):
+        diameter = random.random()
+        speed = random.random()
+        timestep = random.random()
+        assert almost_equal( calculate_maximum_timestep( diameter, speed ) * speed, 0.5 * diameter )
+        assert almost_equal( timestep * calculate_maximum_speed( timestep, diameter ), 0.5 * diameter )
+        assert almost_equal( timestep * speed, 0.5 * calculate_minimum_diameter( timestep, speed ) )
+
 def test_closed_circle():
     assert list(closed_circle([1,2,3])) == [1,2,3,1]
     assert list(closed_circle([1])) == [1,1]
