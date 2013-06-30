@@ -18,6 +18,16 @@ from pyglet.gl import *
 
 import pymunk
 
+# In Tyrian a bullet travels around 2x as fast as the main ship (at the start of the game)
+# Bullets: 4 ship lengths per second, or 60% of screen width
+# Ships: 2 ship lengths per second, or 30% of screen width
+
+# For us that's around 300px/s and 600px/s
+# We were previously running on 1000px/s and 2000px/s
+
+# Seems quite slow!
+# Tyrian bullets do not have the momentum of the ship
+
 KillAction = lambda y : CallFunc( lambda x : x.kill(), y )
 
 class LaserShot ( cocos.sprite.Sprite ):
@@ -168,13 +178,13 @@ class AtomicShip ( Thing ):
     def __init__(self):
         super( AtomicShip, self ).__init__()
         self.name = "Spaceship"
-        self._acceleration = 1000.0
+        self._acceleration = 1000.0 * 0.5
         self._turnspeed = 300.0
         self._velocity = Vector2(0,0)
         self._spin = 0
         self._thrust = 0
         self._braking = 0
-        self._max_speed = 800.0
+        self._max_speed = 800.0 * 0.5
         # sort of required not to break the physics sim
         # idea if we want to preserve the space feel:
         # set the max speed very high (but at some point where we can still reliably do collisions)
@@ -215,7 +225,7 @@ class AtomicShip ( Thing ):
     def make_shots(self):
         rv = []
         for gunpoint in [self.gunpoint_left, self.gunpoint_right, self.gunpoint]:
-            shot = LaserShot( "laserGreen.png", gunpoint(), self.body.velocity + self.orientation() * 1000, self.sprite.rotation )
+            shot = LaserShot( "laserGreen.png", gunpoint(), self.body.velocity + self.orientation() * 800, self.sprite.rotation )
             shot.do( Delay( 2.0 ) + KillAction(shot) )
             rv.append( shot )
         return rv
