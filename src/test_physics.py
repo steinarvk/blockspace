@@ -262,4 +262,3 @@ def test_kill_thing_hook():
     thing.kill_hooks.append( hook )
     thing.kill()
     assert thing.name == "killed"
-        

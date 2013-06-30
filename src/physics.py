@@ -178,7 +178,12 @@ class Thing (object):
             assert min( abs(bb.right-bb.left), abs(bb.top-bb.bottom) ) >= sim.object_size_lower_limit
             shape.thing = self
         self.kill_hooks = []
+        self.update_hooks = []
         sim.space.add( self.body, *self.shapes )
+
+    def update(self):
+        for hook in self.update_hooks:
+            hook( self )
 
     def kill(self):
         self.sim.space.remove( self.body, *self.shapes )
