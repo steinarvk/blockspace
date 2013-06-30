@@ -1,10 +1,31 @@
 import pymunk
 import sys
+import math
 
 from pymunk import Vec2d
 from util import radians_to_degrees, degrees_to_radians
 
 infinite_moment = pymunk.inf
+
+def closed_circle( l ):
+    it = l.__iter__()
+    first_element = it.next()
+    yield first_element
+    for element in it:
+        yield element
+    yield first_element
+
+def successive_pairs( l ):
+    it = l.__iter__()
+    a = it.next()
+    b = it.next()
+    while True:
+        yield (a,b)
+        a = b
+        b = it.next()
+
+def closed_circle_pairs( l ):
+    return successive_pairs( closed_circle( l ) )
 
 class CollisionShape (object):
     def __init__(self, group = None, sensor = None, collision_type = None, elasticity = None):
@@ -25,13 +46,31 @@ class CollisionShape (object):
     def generate_shapes(self, body):
         for shape in self.generate_basic_shapes( body ):
             yield self.decorate_shape( shape )
+    def centroid_and_area(self):
+        return self.centroid(), self.area()
 
 class ConvexPolygonShape (CollisionShape):
     def __init__(self, *vertices, **kwargs):
         super( ConvexPolygonShape, self ).__init__( **kwargs )
-        self.vertices = vertices
+        self.vertices = map( Vec2d, vertices )
     def generate_basic_shapes(self, body):
         yield pymunk.Poly( body, self.vertices )
+    def area(self):
+        rv = 0.0
+        for (xi,yi), (xip,yip) in closed_circle_pairs( self.vertices ):
+            rv += xi * yip - yi * xip
+        return 0.5 * rv
+    def centroid_and_area(self):
+        a = 0.0
+        rvx, rvy = 0.0, 0.0
+        for (xi,yi), (xip,yip) in closed_circle_pairs( self.vertices ):
+            a += xi * yip - yi * xip
+            rvx += (xi + xip) * (xi * yip - xip * yi)
+            rvy += (yi + yip) * (xi * yip - xip * yi)
+        signed_area = 0.5 * a
+        return (Vec2d(rvx,rvy) / (6.0 * signed_area)), abs(signed_area)
+    def centroid(self):
+        return self.centroid_and_area()[0]
 
 class TriangleShape (ConvexPolygonShape):
     def __init__(self, a, b, c, **kwargs):
@@ -45,6 +84,10 @@ class SegmentShape (CollisionShape):
         self.radius = radius
     def generate_basic_shapes(self, body):
         yield pymunk.Segment( body, self.a, self.b, radius = self.radius )
+    def area(self):
+        return 0.0
+    def centroid(self):
+        return (a+b) * 0.5
 
 class CompositeShape (CollisionShape):
     def __init__(self, *shapes, **kwargs ):
@@ -54,6 +97,16 @@ class CompositeShape (CollisionShape):
         for shape in self.shapes:
             for rv in shape.generate_shapes( body ):
                 yield rv
+    def area(self):
+        return sum(map( lambda x : x.area(), self.shapes ))
+    def centroid(self):
+        rv = Vec2d(0,0)
+        total_area = 0.0
+        for centroid, area in map( lambda x : x.centroid_and_area(), self.shapes):
+            rv += centroid * area
+            total_area += area
+        rv /= total_area
+        return rv
 
 class DiskShape (CollisionShape):
     def __init__(self, radius, center = (0,0), **kwargs):
@@ -62,6 +115,10 @@ class DiskShape (CollisionShape):
         self.radius = radius
     def generate_basic_shapes(self, body):
         yield pymunk.Circle( body, self.radius, offset = self.center )
+    def area(self):
+        return math.pi * self.radius * self.radius
+    def centroid(self):
+        return self.center
 
 class PhysicsSimulator (object):
     def __init__(self, timestep = 0.001):

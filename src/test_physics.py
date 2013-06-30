@@ -8,6 +8,22 @@ from test_util import radians_to_degrees, degrees_to_radians
 
 from physics import *
 
+def test_closed_circle():
+    assert list(closed_circle([1,2,3])) == [1,2,3,1]
+    assert list(closed_circle([1])) == [1,1]
+    assert list(closed_circle(xrange(10))) == range(10) + [0]
+    assert list(closed_circle([])) == []
+
+def test_successive_pairs():
+    assert list(successive_pairs([1,2,3,4,5])) == [(1,2),(2,3),(3,4),(4,5)]
+    assert list(successive_pairs([1])) == []
+    assert list(successive_pairs([])) == []
+
+def test_closed_circle_pairs():
+    assert list(closed_circle_pairs([1,2,3,4,5])) == [(1,2),(2,3),(3,4),(4,5),(5,1)]
+    assert list(closed_circle_pairs([1])) == [(1,1)]
+    assert list(closed_circle_pairs([])) == []
+
 def test_shape_creation():
     body = pymunk.Body()
     [sh,] = DiskShape( 1.0, elasticity = 0.5 ).generate_shapes( body )
@@ -36,6 +52,70 @@ def test_shape_creation():
     assert not sh2.sensor
     assert sh1.group == 12
     assert sh2.group == 12
+
+def test_polygon_area():
+    for j in range(100):
+        r = random.random() * 10.0
+        x0, y0 = (random.random() - 0.5) * 10.0, (random.random() - 0.5) * 10.0
+        circle_points = [(x0 + r * math.cos(0.001*i), y0 + r * math.sin(0.001*i)) for i in range(6283)]
+        assert almost_equal( math.pi * r * r, ConvexPolygonShape(*circle_points).area() )
+    for j in range(100):
+        w, h = random.random() * 10.0, random.random() * 10.0
+        x0, y0 = (random.random() - 0.5) * 10.0, (random.random() - 0.5) * 10.0
+        box_points = [ (x0,y0), (x0+w,y0), (x0+w,y0+h), (x0,y0+h) ]
+        assert almost_equal( w * h, ConvexPolygonShape(*box_points).area() )
+
+def test_disk_area():
+    for j in range(100):
+        r = random.random() * 10.0
+        x0, y0 = (random.random() - 0.5) * 10.0, (random.random() - 0.5) * 10.0
+        assert almost_equal( math.pi * r * r, DiskShape(r, (x0,y0)).area() ) 
+
+def test_polygon_centroid():
+    for j in range(100):
+        r = random.random() * 10.0
+        x0, y0 = (random.random() - 0.5) * 10.0, (random.random() - 0.5) * 10.0
+        circle_points = [(x0 + r * math.cos(0.001*i), y0 + r * math.sin(0.001*i)) for i in range(6283)]
+        centroid = ConvexPolygonShape(*circle_points).centroid()
+        print >> sys.stderr, r, (x0,y0), centroid
+        assert almost_equal( x0, centroid.x )
+        assert almost_equal( y0, centroid.y )
+    for j in range(100):
+        w, h = random.random() * 10.0, random.random() * 10.0
+        x0, y0 = (random.random() - 0.5) * 10.0, (random.random() - 0.5) * 10.0
+        box_points = [ (x0,y0), (x0+w,y0), (x0+w,y0+h), (x0,y0+h) ]
+        centroid = ConvexPolygonShape(*box_points).centroid()
+        assert almost_equal( x0 + 0.5 * w, centroid.x )
+        assert almost_equal( y0 + 0.5 * h, centroid.y )
+
+def test_disk_centroid():
+    for j in range(100):
+        r = random.random() * 10.0
+        x0, y0 = (random.random() - 0.5) * 10.0, (random.random() - 0.5) * 10.0
+        cx, cy = DiskShape(r, (x0,y0)).centroid()
+        assert almost_equal( x0, cx )
+        assert almost_equal( y0, cy )
+
+def test_composite_area():
+    for j in range(100):
+        w, h = (random.random()+1.0) * 10.0, random.random() * 10.0
+        x0, y0 = (random.random() - 0.5) * 10.0, (random.random() - 0.5) * 10.0
+        box_points = [ (x0,y0), (x0+w,y0), (x0+w,y0+h), (x0,y0+h) ]
+        negative_box_points = [ (-x0,y0), (-x0+w,y0), (-x0+w,y0+h), (-x0,y0+h) ]
+        area = CompositeShape(ConvexPolygonShape(*box_points), ConvexPolygonShape(*negative_box_points)).area()
+        assert almost_equal( 2.0 * (w*h), area )
+
+def test_composite_centroid():
+    for j in range(100):
+        w, h = (random.random()) * 10.0, random.random() * 10.0
+        x0, y0 = (random.random() + 1) * 10.0, (random.random() - 0.5) * 10.0
+        box_points = [ (x0,y0), (x0+w,y0), (x0+w,y0+h), (x0,y0+h) ]
+        negative_box_points = [ (-x0,y0), (-x0-w,y0), (-x0-w,y0+h), (-x0,y0+h) ]
+        centroid = CompositeShape(ConvexPolygonShape(*box_points), ConvexPolygonShape(*negative_box_points)).centroid()
+        centroid_1 = ConvexPolygonShape(*box_points).centroid()
+        centroid_2 = ConvexPolygonShape(*negative_box_points).centroid()
+        assert almost_equal( centroid.x, (centroid_1.x+centroid_2.x) * 0.5 )
+        assert almost_equal( centroid.y, (centroid_1.y+centroid_2.y) * 0.5 )
 
 def test_group_id_generation():
     sim = PhysicsSimulator()
@@ -143,6 +223,3 @@ def test_raise_on_too_small_thing():
     with pytest.raises( AssertionError ):
         sim = PhysicsSimulator()
         thing = Thing( sim, DiskShape(0.4 * sim.object_size_lower_limit), mass = 1.0, moment = 1.0 ) 
-        
-if __name__ == '__main__':
-    test_raise_on_too_small_thing()
