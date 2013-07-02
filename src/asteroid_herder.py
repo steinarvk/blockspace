@@ -78,8 +78,6 @@ class BackgroundLayer ( cocos.layer.Layer ):
         self.t += dt * 0.1
 
 class HUDLayer ( cocos.layer.Layer ):
-    is_event_handler = True
-
     def __init__(self, game):
         super( HUDLayer, self ).__init__()
         self.game = game
