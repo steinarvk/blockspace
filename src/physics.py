@@ -5,7 +5,7 @@ import math
 from pymunk import Vec2d
 from util import radians_to_degrees, degrees_to_radians
 
-infinite_moment = pymunk.inf
+infinity = infinite_moment = pymunk.inf
 
 def calculate_maximum_timestep( minimum_diameter, maximum_speed ):
     return (0.5 * minimum_diameter) / maximum_speed
@@ -219,12 +219,24 @@ class Thing (object):
         self.body.angular_velocity = value
 
     @property
+    def angular_velocity_degrees(self):
+        return radians_to_degrees( self.body.angular_velocity )
+
+    @angular_velocity_degrees.setter
+    def angular_velocity_degrees(self, value):
+        self.body.angular_velocity = degrees_to_radians( value )
+
+    @property
     def angle_radians(self):
         return self.body.angle
 
     @property
     def angle_degrees(self):
         return radians_to_degrees( self.body.angle )
+
+    @angle_degrees.setter
+    def angle_degrees(self, value):
+        self.body.angle = degrees_to_radians( value )
 
     @property
     def direction(self):
