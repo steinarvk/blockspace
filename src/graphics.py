@@ -1,6 +1,7 @@
 import cocos
 
 from operator import attrgetter
+from pyglet.gl import *
 
 def update_sprite( thing ):
     thing.sprite.update()
@@ -98,6 +99,43 @@ class Camera (object):
             ox, oy = self.focus
             p = self.tracking_inertia**dt
             self.focus = (p*ox + (1-p)*tx, p * oy + (1-p) * ty)
+
+
+class BackgroundCocosLayer (cocos.layer.Layer):
+    def __init__(self, camera, distance, image):
+        super( cocos.layer.Layer, self ).__init__()
+        self._camera = camera
+        self._distance = distance
+        self._image = pyglet.image.load( image )
+        self._texture = self._image.get_texture()
+        glBindTexture( self._texture.target, self._texture.id )
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+        self._k = 0.5 ** self._distance
+    def draw(self):
+        w, h = self._camera.window.width, self._camera.window.height
+        s = max( w, h )
+        hw = -(w+1)//2
+        hh = -(h+1)//2
+        x, y = self._camera.focus
+        rx, ry = self._k * x, self._k * y
+        glEnable( self._texture.target )
+#        glColor4f( 0.3, 0.3, 0.3, 0.5 ) 
+        glBindTexture( GL_TEXTURE_2D, self._texture.id )
+        glPushMatrix()
+        self.transform()
+        glBegin( GL_QUADS )
+        glTexCoord2f( rx, ry )
+        glVertex2i( hw, hh )
+        glTexCoord2f( rx + 1, ry )
+        glVertex2i( hw + s, hh )
+        glTexCoord2f( rx + 1, ry + 1 )
+        glVertex2i( hw + s, hh + s )
+        glTexCoord2f( rx, ry + 1 )
+        glVertex2i( hw, hh + s )
+        glEnd()
+        glPopMatrix()
+
         
         
 
