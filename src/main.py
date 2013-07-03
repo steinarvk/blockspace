@@ -15,7 +15,7 @@ class Ship (physics.Thing):
     def __init__(self, sim, layer, position, shape, sprite_name = "player.png", mass = 1.0, moment = 1.0):
         super( Ship, self ).__init__( sim, shape, mass, moment )
         graphics.Sprite( sprite_name, self, layer )
-        self.body.velocity_limit = min( self.body.velocity_limit, 500.0 )
+        self.body.velocity_limit = min( self.body.velocity_limit, 700.0 )
         self._spin = 0
         self._thrusting = False
         self._braking = False
@@ -53,10 +53,10 @@ if __name__ == '__main__':
     camera = graphics.Camera( window )
     scene = graphics.Scene( window )
     graphics.Layer( scene, cocos.layer.ColorLayer( 0, 0, 0, 1 ) )
-    graphics.Layer( scene, graphics.BackgroundCocosLayer( camera, 11.0, "starfield1.png" ) )
-    graphics.Layer( scene, graphics.BackgroundCocosLayer( camera, 11.1, "starfield2.png" ) )
-    graphics.Layer( scene, graphics.BackgroundCocosLayer( camera, 11.2, "starfield3.png" ) )
-    graphics.Layer( scene, graphics.BackgroundCocosLayer( camera, 11.4, "starfield0.png" ) )
+    graphics.Layer( scene, graphics.BackgroundCocosLayer( camera, 11.0, "starfield0.png" ) )
+    graphics.Layer( scene, graphics.BackgroundCocosLayer( camera, 12.0, "starfield2.png" ) )
+    graphics.Layer( scene, graphics.BackgroundCocosLayer( camera, 13.0, "starfield3.png" ) )
+    graphics.Layer( scene, graphics.BackgroundCocosLayer( camera, 14.0, "starfield1.png" ) )
     main_layer = graphics.Layer( scene )
     main_layer.cocos_layer.position = camera.offset()
     player = create_player_thing( window.sim, main_layer, (0,0) )
