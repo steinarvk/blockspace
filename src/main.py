@@ -53,10 +53,8 @@ if __name__ == '__main__':
     camera = graphics.Camera( window )
     scene = graphics.Scene( window )
     graphics.Layer( scene, cocos.layer.ColorLayer( 0, 0, 0, 1 ) )
-    graphics.Layer( scene, graphics.BackgroundCocosLayer( camera, 11.0, "starfield0.png" ) )
-    graphics.Layer( scene, graphics.BackgroundCocosLayer( camera, 12.0, "starfield2.png" ) )
-    graphics.Layer( scene, graphics.BackgroundCocosLayer( camera, 13.0, "starfield3.png" ) )
-    graphics.Layer( scene, graphics.BackgroundCocosLayer( camera, 14.0, "starfield1.png" ) )
+    for i in range(8):
+        graphics.Layer( scene, graphics.BackgroundCocosLayer( camera, 10.0 + 0.5 * i, "starfield{0}.png".format(i) ) )
     main_layer = graphics.Layer( scene )
     main_layer.cocos_layer.position = camera.offset()
     player = create_player_thing( window.sim, main_layer, (0,0) )
