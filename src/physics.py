@@ -292,9 +292,17 @@ class Thing (object):
     def angle_radians(self):
         return self.body.angle
 
+    @angle_radians.setter
+    def angle_radians(self, value):
+        self.body.angle = value
+
     @property
     def angle_degrees(self):
         return radians_to_degrees( self.body.angle )
+
+    @angle_degrees.setter
+    def angle_degrees(self, value):
+        self.body.angle = degrees_to_radians( value )
 
     @angle_degrees.setter
     def angle_degrees(self, value):

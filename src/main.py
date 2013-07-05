@@ -88,9 +88,11 @@ if __name__ == '__main__':
     main_layer.cocos_layer.position = camera.offset()
     player = create_player_thing( window.sim, main_layer, (0,0) )
     player.position = (200,300)
-    for i in range(20):
-        sq = create_square_thing( window.sim, main_layer, (100,0), "red" )
-        sq.position = random.random() * 800, random.random() * 800
+    for i in range(100):
+        cols = "red", "purple", "grey", "blue", "green", "yellow"
+        sq = create_square_thing( window.sim, main_layer, (100,0), random.choice(cols))
+        sq.position = (random.random()-0.5) * 2000, (random.random()-0.5) * 2000
+        sq.angle_radians = random.random() * math.pi * 2
     input_layer = graphics.Layer( scene, gameinput.CocosInputLayer() )
     input_layer.cocos_layer.set_key_press_hook( key.SPACE, player.on_fire_key )
     for k in (key.LEFT, key.RIGHT, key.UP, key.DOWN):
