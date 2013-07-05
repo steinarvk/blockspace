@@ -80,7 +80,7 @@ class Sprite (object):
         self.layer.cocos_layer.remove( self.cocos_sprite )
     def update(self):
         self.cocos_sprite.position = self.thing.position
-        self.cocos_sprite.rotation = self.thing.angle_degrees
+        self.cocos_sprite.rotation = 180.0 - self.thing.angle_degrees
 
 class Camera (object):
     def __init__(self, window, focus = (0,0)):
@@ -151,7 +151,7 @@ def draw_thing_shapes( thing ):
     for abc in thing.abstract_shape.triangulate():
         for dx, dy in abc:
             rdx, rdy = dx - ax, dy - ay
-            ar = - thing.angle_radians
+            ar = thing.angle_radians
             cost, sint = math.cos(ar), math.sin(ar)
             glVertex2f( x + rdx * cost - rdy * sint, y + rdx * sint + rdy * cost )
     glEnd()

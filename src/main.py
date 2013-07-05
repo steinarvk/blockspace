@@ -27,8 +27,8 @@ class Ship (physics.Thing):
         self._spin = 0
         self._thrusting = False
         self._braking = False
-        f = self.sprite.cocos_sprite.draw
-        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
+#        f = self.sprite.cocos_sprite.draw
+#        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
     def on_fire_key(self, symbol, modifiers, state):
         pass
     def on_controls_state(self, symbol, modifiers, state):
@@ -56,8 +56,8 @@ class Debris (physics.Thing):
         super( Debris, self ).__init__( sim, shape, mass, moment )
         graphics.Sprite( sprite_name, self, layer )
         self.position = position
-        f = self.sprite.cocos_sprite.draw
-        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
+#        f = self.sprite.cocos_sprite.draw
+#        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
     def update(self):
         super( Debris, self ).update()
         
@@ -75,8 +75,8 @@ def create_square_thing(sim, layer, position, colour):
     
 
 if __name__ == '__main__':
-    pygame.init()
-    screen = pygame.display.set_mode( (800,600) )
+#    pygame.init()
+#    screen = pygame.display.set_mode( (800,600) )
     window = graphics.Window()
     window.sim = physics.PhysicsSimulator()
     camera = graphics.Camera( window )
@@ -88,23 +88,22 @@ if __name__ == '__main__':
     main_layer.cocos_layer.position = camera.offset()
     player = create_player_thing( window.sim, main_layer, (0,0) )
     player.position = (200,300)
-    sq = create_square_thing( window.sim, main_layer, (100,0), "red" )
-    sq.position = (500,300)
-    sq.angular_velocity_degrees = 90.0
+    for i in range(20):
+        sq = create_square_thing( window.sim, main_layer, (100,0), "red" )
+        sq.position = random.random() * 800, random.random() * 800
     input_layer = graphics.Layer( scene, gameinput.CocosInputLayer() )
     input_layer.cocos_layer.set_key_press_hook( key.SPACE, player.on_fire_key )
     for k in (key.LEFT, key.RIGHT, key.UP, key.DOWN):
         input_layer.cocos_layer.set_key_hook( k, player.on_controls_state )
     camera.following = player
     main_layer.camera = camera
-    scene.schedule( lambda dt : scene.update() )
+    scene.schedule( lambda dt : (camera.update(dt),scene.update()) )
     scene.schedule( lambda dt : window.sim.tick(dt) )
-    scene.schedule( lambda dt : camera.update(dt) )
     scene.schedule( lambda dt : player.update() )
     scene.schedule( lambda dt : sq.update() )
-    def update_pygame():
-        screen.fill( pygame.color.THECOLORS[ "black" ] )
-        draw_space( screen, window.sim.space )
-        pygame.display.flip()
-    scene.schedule( lambda dt : update_pygame() )
+#    def update_pygame():
+#        screen.fill( pygame.color.THECOLORS[ "black" ] )
+#        draw_space( screen, window.sim.space )
+#        pygame.display.flip()
+#    scene.schedule( lambda dt : update_pygame() )
     window.run( scene )
