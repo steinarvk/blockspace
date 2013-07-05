@@ -218,6 +218,7 @@ class Thing (object):
         self.name = name
         self.body = pymunk.Body( mass, moment )
         self.body.velocity_limit = sim.speed_limit
+        self.abstract_shape = shape
         self.shapes = list( shape.generate_shapes( self.body ) )
         self.centroid = shape.centroid()
         if group and len(self.shapes) > 1:

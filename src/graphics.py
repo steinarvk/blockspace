@@ -142,3 +142,14 @@ class BackgroundCocosLayer (cocos.layer.Layer):
 # thing = Thing( sim, ConvexPolygonShape((1,0),(0,1),(-1,0)) )
 # VisualThing( "spaceship.png", thing, layer )
 
+
+def draw_thing_shapes( thing ):
+    glPushMatrix()
+    thing.sprite.cocos_sprite.transform()
+    glBegin( GL_TRIANGLES )
+    for a, b, c in thing.abstract_shape.triangulate():
+        glVertex2f( *a )
+        glVertex2f( *b )
+        glVertex2f( *c )
+    glEnd()
+    glPopMatrix()

@@ -11,6 +11,10 @@ import random
 
 from util import *
 
+from pyglet.gl import *
+
+from functools import partial
+
 class Ship (physics.Thing):
     def __init__(self, sim, layer, position, shape, sprite_name = "player.png", mass = 1.0, moment = 1.0):
         super( Ship, self ).__init__( sim, shape, mass, moment )
@@ -20,6 +24,8 @@ class Ship (physics.Thing):
         self._spin = 0
         self._thrusting = False
         self._braking = False
+        f = self.sprite.cocos_sprite.draw
+        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
     def on_fire_key(self, symbol, modifiers, state):
         pass
     def on_controls_state(self, symbol, modifiers, state):
@@ -47,6 +53,8 @@ class Debris (physics.Thing):
         super( Debris, self ).__init__( sim, shape, mass, moment )
         graphics.Sprite( sprite_name, self, layer )
         self.position = position
+        f = self.sprite.cocos_sprite.draw
+        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
     def update(self):
         super( Debris, self ).update()
         
