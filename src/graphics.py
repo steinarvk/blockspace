@@ -1,4 +1,5 @@
 import cocos
+import math
 
 from operator import attrgetter
 from pyglet.gl import *
@@ -67,7 +68,6 @@ class Layer (object):
 class Sprite (object):
     def __init__(self, filename, thing, layer):
         self.cocos_sprite = cocos.sprite.Sprite( filename )
-        self.cocos_sprite.anchor = (0,0)
         self.layer = layer
         self.thing = thing
         thing.sprite = self
@@ -145,11 +145,14 @@ class BackgroundCocosLayer (cocos.layer.Layer):
 
 def draw_thing_shapes( thing ):
     glPushMatrix()
-    thing.sprite.cocos_sprite.transform()
+    x, y = thing.position
+    ax, ay = thing.centroid
     glBegin( GL_TRIANGLES )
-    for a, b, c in thing.abstract_shape.triangulate():
-        glVertex2f( *a )
-        glVertex2f( *b )
-        glVertex2f( *c )
+    for abc in thing.abstract_shape.triangulate():
+        for dx, dy in abc:
+            rdx, rdy = dx - ax, dy - ay
+            ar = - thing.angle_radians
+            cost, sint = math.cos(ar), math.sin(ar)
+            glVertex2f( x + rdx * cost - rdy * sint, y + rdx * sint + rdy * cost )
     glEnd()
     glPopMatrix()

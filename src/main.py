@@ -15,6 +15,9 @@ from pyglet.gl import *
 
 from functools import partial
 
+import pygame
+from pymunk.pygame_util import draw_space
+
 class Ship (physics.Thing):
     def __init__(self, sim, layer, position, shape, sprite_name = "player.png", mass = 1.0, moment = 1.0):
         super( Ship, self ).__init__( sim, shape, mass, moment )
@@ -68,6 +71,8 @@ def create_square_thing(sim, layer, position, colour):
     
 
 if __name__ == '__main__':
+    pygame.init()
+    screen = pygame.display.set_mode( (800,600) )
     window = graphics.Window()
     window.sim = physics.PhysicsSimulator()
     camera = graphics.Camera( window )
@@ -78,8 +83,9 @@ if __name__ == '__main__':
     main_layer = graphics.Layer( scene )
     main_layer.cocos_layer.position = camera.offset()
     player = create_player_thing( window.sim, main_layer, (0,0) )
+    player.position = (400,300)
     sq = create_square_thing( window.sim, main_layer, (100,0), "red" )
-    sq.velocity = (100,0)
+    sq.position = (500,300)
     input_layer = graphics.Layer( scene, gameinput.CocosInputLayer() )
     input_layer.cocos_layer.set_key_press_hook( key.SPACE, player.on_fire_key )
     for k in (key.LEFT, key.RIGHT, key.UP, key.DOWN):
@@ -91,4 +97,9 @@ if __name__ == '__main__':
     scene.schedule( lambda dt : camera.update(dt) )
     scene.schedule( lambda dt : player.update() )
     scene.schedule( lambda dt : sq.update() )
+    def update_pygame():
+        screen.fill( pygame.color.THECOLORS[ "black" ] )
+        draw_space( screen, window.sim.space )
+        pygame.display.flip()
+    scene.schedule( lambda dt : update_pygame() )
     window.run( scene )
