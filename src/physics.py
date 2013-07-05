@@ -1,6 +1,7 @@
 import pymunk
 import sys
 import math
+import random
 
 from pymunk import Vec2d
 from util import radians_to_degrees, degrees_to_radians
@@ -24,14 +25,21 @@ def closed_circle( l ):
         yield element
     yield first_element
 
-def successive_pairs( l ):
+def successive_ntuples( n, l ):
+    rv = []
     it = l.__iter__()
-    a = it.next()
-    b = it.next()
+    for i in range(n):
+        rv.append( it.next() )
     while True:
-        yield (a,b)
-        a = b
-        b = it.next()
+        yield tuple(rv)
+        rv.pop(0)
+        rv.append( it.next() )
+
+def successive_pairs( l ):
+    return successive_ntuples(2, l)
+
+def successive_triples( l ):
+    return successive_ntuples(3, l)
 
 def closed_circle_pairs( l ):
     return successive_pairs( closed_circle( l ) )
@@ -80,6 +88,34 @@ class ConvexPolygonShape (CollisionShape):
         return (Vec2d(rvx,rvy) / (6.0 * signed_area)), abs(signed_area)
     def centroid(self):
         return self.centroid_and_area()[0]
+    def triangulate(self):
+        a = self.vertices[0]
+        for b, c in successive_pairs( self.vertices[1:] ):
+            yield (a,b,c)
+
+def generate_random_scalar():
+    return (random.random() - 0.5) * 100
+
+def generate_random_point():
+    return generate_random_scalar(), generate_random_scalar()
+
+def generate_random_convex_polygon_shape():
+    n = random.randint(4, 10)
+    r = random.random() * 10
+    x, y = generate_random_point()
+    angles = [ math.pi * 2 * i / float(n) for i in range(n) ]
+    return ConvexPolygonShape(*[(x+r*math.cos(a), y + r*math.sin(a)) for a in angles])
+
+def generate_random_disk_shape():
+    r = random.random() * 10.0
+    return DiskShape( r, generate_random_point() )
+
+def generate_random_triangle_shape():
+    angles = [ random.random(), random.random(), random.random() ]
+    r = random.random() * 10
+    angles.sort()
+    angles = [ a * math.pi * 2 for a in angles ]
+    return TriangleShape(*[(x+r*math.cos(a), y + r*math.sin(a)) for a in angles])
 
 class TriangleShape (ConvexPolygonShape):
     def __init__(self, a, b, c, **kwargs):
@@ -97,6 +133,8 @@ class SegmentShape (CollisionShape):
         return 0.0
     def centroid(self):
         return (a+b) * 0.5
+    def triangulate(self):
+        return []
 
 class CompositeShape (CollisionShape):
     def __init__(self, *shapes, **kwargs ):
@@ -116,6 +154,11 @@ class CompositeShape (CollisionShape):
             total_area += area
         rv /= total_area
         return rv
+    def triangulate(self):
+        for shape in self.shapes:
+            for abc in shape.triangulate():
+                yield abc
+        
 
 class DiskShape (CollisionShape):
     def __init__(self, radius, center = (0,0), **kwargs):
@@ -128,6 +171,14 @@ class DiskShape (CollisionShape):
         return math.pi * self.radius * self.radius
     def centroid(self):
         return self.center
+    def triangulate(self):
+        n = 100
+        for i in range(n):
+            a0 = math.pi * 2.0 * i / float(n)
+            a1 = math.pi * 2.0 * (i+1) / float(n)
+            b = self.radius * math.cos(a0), self.radius * math.sin(a0)
+            c = self.radius * math.cos(a1), self.radius * math.sin(a1)
+            yield (self.center,b,c)
 
 class PhysicsSimulator (object):
     def __init__(self, timestep = 0.001, speed_limit = 2000.0, size_limit = 5.0):

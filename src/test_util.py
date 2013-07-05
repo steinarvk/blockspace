@@ -3,16 +3,16 @@ import math
 
 from util import *
 
-def almost_equal( x, y ):
-    k = 0.0001
+def almost_equal( x, y, k = 0.0001 ):
     return abs( x - y ) <= k * min( abs(x), abs(y) )
 
-def almost_leq( x, y ):
-    k = 0.0001
+def almost_equal( x, y, k = 0.0001 ):
+    return abs( x - y ) <= k * min( abs(x), abs(y) )
+
+def almost_leq( x, y, k = 0.0001 ):
     return x <= y + k * abs(y)
 
-def almost_geq( x, y ):
-    k = 0.0001
+def almost_geq( x, y, k = 0.0001 ):
     return x >= y - k * abs(y)
     
 

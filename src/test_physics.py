@@ -8,6 +8,8 @@ from test_util import radians_to_degrees, degrees_to_radians
 
 from physics import *
 
+from itertools import starmap
+
 def test_physics_limit_calculations():
     for i in range(100):
         diameter = random.random()
@@ -32,6 +34,22 @@ def test_closed_circle_pairs():
     assert list(closed_circle_pairs([1,2,3,4,5])) == [(1,2),(2,3),(3,4),(4,5),(5,1)]
     assert list(closed_circle_pairs([1])) == [(1,1)]
     assert list(closed_circle_pairs([])) == []
+
+def test_triangulation_area():
+    for i in range(100):
+        s = generate_random_convex_polygon_shape()
+        triangles = starmap( TriangleShape, s.triangulate() )
+        assert almost_equal( sum( [t.area() for t in triangles] ), s.area() )
+    for i in range(100):
+        s = generate_random_disk_shape()
+        triangles = starmap( TriangleShape, s.triangulate() )
+        assert almost_equal( sum( [t.area() for t in triangles] ), s.area(), k = 0.01 )
+    for i in range(100):
+        s = generate_random_disk_shape()
+        u = generate_random_convex_polygon_shape()
+        triangles = starmap( TriangleShape, CompositeShape(s,u).triangulate() )
+        assert almost_equal( sum( [t.area() for t in triangles] ), s.area() + u.area(), k = 0.01 )
+        assert almost_equal( CompositeShape(s,u).area(), s.area() + u.area(), k = 0.01 )
 
 def test_shape_creation():
     body = pymunk.Body()
@@ -61,6 +79,7 @@ def test_shape_creation():
     assert not sh2.sensor
     assert sh1.group == 12
     assert sh2.group == 12
+
 
 def test_polygon_area():
     for j in range(100):
