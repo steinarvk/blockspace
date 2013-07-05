@@ -92,6 +92,8 @@ class ConvexPolygonShape (CollisionShape):
         a = self.vertices[0]
         for b, c in successive_pairs( self.vertices[1:] ):
             yield (a,b,c)
+    def translate(self, xy):
+        self.vertices = [ v + xy for v in self.vertices ]
 
 def generate_random_scalar():
     return (random.random() - 0.5) * 100
@@ -135,6 +137,9 @@ class SegmentShape (CollisionShape):
         return (a+b) * 0.5
     def triangulate(self):
         return []
+    def translate(self, xy):
+        self.a = self.a + xy
+        self.b = self.b + xy
 
 class CompositeShape (CollisionShape):
     def __init__(self, *shapes, **kwargs ):
@@ -158,6 +163,9 @@ class CompositeShape (CollisionShape):
         for shape in self.shapes:
             for abc in shape.triangulate():
                 yield abc
+    def translate(self, xy):
+        for shape in self.shapes:
+            self.translate( xy )
         
 
 class DiskShape (CollisionShape):
@@ -179,6 +187,8 @@ class DiskShape (CollisionShape):
             b = self.radius * math.cos(a0), self.radius * math.sin(a0)
             c = self.radius * math.cos(a1), self.radius * math.sin(a1)
             yield (self.center,b,c)
+    def translate(self, xy):
+        self.center = self.center + xy
 
 class PhysicsSimulator (object):
     def __init__(self, timestep = 0.001, speed_limit = 2000.0, size_limit = 5.0):

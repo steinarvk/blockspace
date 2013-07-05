@@ -37,11 +37,11 @@ class Ship (physics.Thing):
         self._braking = state[key.DOWN]
     def update(self):
         super( Ship, self ).update()
-        self.angular_velocity_degrees = 90.0 * self._spin
+        self.angular_velocity_degrees = -90.0 * self._spin
         forces = []
         if self._thrusting:
             dx, dy = polar_degrees( self.angle_degrees - 90.0, 700.0 )
-            forces.append( Vec2d( dx, -dy ) )
+            forces.append( Vec2d( dx, dy ) )
         if self._braking:
             stopforce = self.body.velocity.normalized() * -500.0
             if self.velocity.get_length() < stopforce.get_length() * 0.01:
@@ -62,11 +62,15 @@ class Debris (physics.Thing):
         super( Debris, self ).update()
         
 def create_player_thing(sim, layer, position):
-    shape = ConvexPolygonShape((98,48),(59,0),(41,0),(2,48),(44,72),(55,72))
+    points = [(98,48),(59,0),(41,0),(2,48),(44,72),(55,72)]
+    shape = ConvexPolygonShape(*points)
+    shape.translate( shape.centroid() * -1)
     return Ship( sim, layer, position, shape, moment = 1.0 )
 
 def create_square_thing(sim, layer, position, colour):
-    shape = ConvexPolygonShape((0,0),(32,0),(32,32),(0,32))
+    points = [(0,0),(32,0),(32,32),(0,32)]
+    shape = ConvexPolygonShape(*points)
+    shape.translate( shape.centroid() * -1)
     return Debris( sim, layer, position, shape, sprite_name = "element_{0}_square.png".format(colour), moment = 1.0 )
     
 
@@ -83,9 +87,10 @@ if __name__ == '__main__':
     main_layer = graphics.Layer( scene )
     main_layer.cocos_layer.position = camera.offset()
     player = create_player_thing( window.sim, main_layer, (0,0) )
-    player.position = (400,300)
+    player.position = (200,300)
     sq = create_square_thing( window.sim, main_layer, (100,0), "red" )
     sq.position = (500,300)
+    sq.angular_velocity_degrees = 90.0
     input_layer = graphics.Layer( scene, gameinput.CocosInputLayer() )
     input_layer.cocos_layer.set_key_press_hook( key.SPACE, player.on_fire_key )
     for k in (key.LEFT, key.RIGHT, key.UP, key.DOWN):
