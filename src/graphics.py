@@ -66,18 +66,20 @@ class Layer (object):
         
 
 class Sprite (object):
-    def __init__(self, filename, thing, layer):
-        self.cocos_sprite = cocos.sprite.Sprite( filename )
+    def __init__(self, image, thing, layer = None):
+        self.cocos_sprite = cocos.sprite.Sprite( image )
         self.layer = layer
         self.thing = thing
         thing.sprite = self
         thing.kill_hooks.append( kill_sprite )
         thing.update_hooks.append( update_sprite )
-        self.layer.cocos_layer.add( self.cocos_sprite )
-        self.layer.add_sprite( self )
+        if self.layer:
+            self.layer.cocos_layer.add( self.cocos_sprite )
+            self.layer.add_sprite( self )
     def kill(self):
-        self.layer.remove_sprite( self )
-        self.layer.cocos_layer.remove( self.cocos_sprite )
+        if self.layer:
+            self.layer.remove_sprite( self )
+            self.layer.cocos_layer.remove( self.cocos_sprite )
     def update(self):
         self.cocos_sprite.position = self.thing.position
         self.cocos_sprite.rotation = 180.0 - self.thing.angle_degrees
@@ -142,17 +144,18 @@ class BackgroundCocosLayer (cocos.layer.Layer):
 # thing = Thing( sim, ConvexPolygonShape((1,0),(0,1),(-1,0)) )
 # VisualThing( "spaceship.png", thing, layer )
 
-
 def draw_thing_shapes( thing ):
     glPushMatrix()
     x, y = thing.position
     ax, ay = thing.centroid
+    glColor4f( 1.0, 1.0, 1.0, 1.0 )
     glBegin( GL_TRIANGLES )
     for abc in thing.abstract_shape.triangulate():
         for dx, dy in abc:
             rdx, rdy = dx - ax, dy - ay
             ar = thing.angle_radians
-            cost, sint = math.cos(ar), math.sin(ar)
+#            cost, sint = math.cos(ar), math.sin(ar)
+            cost, sint = 1, 0
             glVertex2f( x + rdx * cost - rdy * sint, y + rdx * sint + rdy * cost )
     glEnd()
     glPopMatrix()

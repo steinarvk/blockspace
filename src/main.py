@@ -17,6 +17,7 @@ from functools import partial
 
 import pygame
 from pymunk.pygame_util import draw_space
+import pymunk
 
 class Ship (physics.Thing):
     def __init__(self, sim, layer, position, shape, sprite_name = "player.png", mass = 1.0, moment = 1.0):
@@ -52,12 +53,13 @@ class Ship (physics.Thing):
         self.body.force = reduce( lambda x,y: x+y, forces, Vec2d(0,0) )
 
 class Debris (physics.Thing):
-    def __init__(self, sim, layer, position, shape, sprite_name = "element_red_square.png", mass = 1.0, moment = 1.0):
+    def __init__(self, sim, layer, position, shape, sprite, mass = 1.0, moment = 1.0):
         super( Debris, self ).__init__( sim, shape, mass, moment )
-        graphics.Sprite( sprite_name, self, layer )
+        graphics.Sprite( sprite, self, layer )
         self.position = position
 #        f = self.sprite.cocos_sprite.draw
 #        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
+        self.sprite.cocos_sprite.draw = lambda : graphics.draw_thing_shapes(self)
     def update(self):
         super( Debris, self ).update()
         
@@ -67,14 +69,13 @@ def create_player_thing(sim, layer, position):
     shape.translate( shape.centroid() * -1)
     return Ship( sim, layer, position, shape, moment = 1.0 )
 
-def create_square_thing(sim, layer, position, colour):
+def create_square_thing(sim, layer, position, image):
     points = [(0,0),(32,0),(32,32),(0,32)]
     shape = ConvexPolygonShape(*points)
     shape.translate( shape.centroid() * -1)
-    return Debris( sim, layer, position, shape, sprite_name = "element_{0}_square.png".format(colour), moment = 1.0 )
+    return Debris( sim, layer, position, shape, image, moment = 1.0 )
     
-
-if __name__ == '__main__':
+def main():
 #    pygame.init()
 #    screen = pygame.display.set_mode( (800,600) )
     window = graphics.Window()
@@ -87,25 +88,68 @@ if __name__ == '__main__':
     main_layer = graphics.Layer( scene )
     main_layer.cocos_layer.position = camera.offset()
     player = create_player_thing( window.sim, main_layer, (0,0) )
-    player.position = (200,300)
-    for i in range(100):
+    img = pyglet.image.load( "element_red_square.png" )
+    batch = cocos.batch.BatchNode()
+    main_layer.cocos_layer.add( batch )
+    objects = []
+#    positions = [(window.width*0.5+500,window.height*0.5+500)]
+#    for pos in positions:
+    for i in range(1000):
         cols = "red", "purple", "grey", "blue", "green", "yellow"
-        sq = create_square_thing( window.sim, main_layer, (100,0), random.choice(cols))
-        sq.position = (random.random()-0.5) * 2000, (random.random()-0.5) * 2000
+        sq = create_square_thing( window.sim, None, (100,0), img )
+        sq.position = (random.random()-0.5) * 4000, (random.random()-0.5) * 4000
         sq.angle_radians = random.random() * math.pi * 2
+        sq.velocity = (300,300)
+        sq.mylabel = sq.position
+        batch.add( sq.sprite.cocos_sprite )
+        objects.append( sq.sprite )
     input_layer = graphics.Layer( scene, gameinput.CocosInputLayer() )
     input_layer.cocos_layer.set_key_press_hook( key.SPACE, player.on_fire_key )
     for k in (key.LEFT, key.RIGHT, key.UP, key.DOWN):
         input_layer.cocos_layer.set_key_hook( k, player.on_controls_state )
+    def on_mouse_motion( x, y, dx, dy ):
+        xy = cocos.director.director.get_virtual_coordinates( x, y )
+        xy = (x - camera.focus[0], y - camera.focus[1])
+        things = [shape.thing for shape in window.sim.space.point_query( xy ) ]
+    input_layer.cocos_layer.mouse_motion_hooks.append( on_mouse_motion )
     camera.following = player
     main_layer.camera = camera
     scene.schedule( lambda dt : (camera.update(dt),scene.update()) )
     scene.schedule( lambda dt : window.sim.tick(dt) )
     scene.schedule( lambda dt : player.update() )
-    scene.schedule( lambda dt : sq.update() )
+    player.mylabel = -1
+    def update_objects():
+        # This is the hungry line. If we can find a way to
+        # only update sprites when they're actually on screen,
+        # we're probably good.
+        # We also need to update
+        x, y = camera.focus
+        hw, hh = 0.5 * window.width, 0.5 * window.height
+        screen_slack = 100.0
+        beyond_slack = screen_slack + 500.0
+        screen_bb = pymunk.BB(x-hw-screen_slack,y-hh-screen_slack,x+hw+screen_slack,y+hh+screen_slack)
+        big_bb = pymunk.BB(x-hw-beyond_slack,y-hh-beyond_slack,x+hw+beyond_slack,y+hh+beyond_slack)
+        onscreen = set(window.sim.space.bb_query( screen_bb ))
+        for shape in onscreen:
+            shape.thing.sprite.update()
+        prech = set(batch.get_children())
+        for spr in objects:
+            if all((shape not in onscreen for shape in spr.thing.shapes)):
+                if spr.cocos_sprite in prech:
+                    batch.remove( spr.cocos_sprite )
+            else:
+                if spr.cocos_sprite not in prech:
+                    batch.add( spr.cocos_sprite )
+    scene.schedule( lambda dt : update_objects() )
 #    def update_pygame():
 #        screen.fill( pygame.color.THECOLORS[ "black" ] )
 #        draw_space( screen, window.sim.space )
 #        pygame.display.flip()
 #    scene.schedule( lambda dt : update_pygame() )
+    for o in objects:
+        o.cocos_sprite.position = (-100000,-100000)
+    update_objects()
     window.run( scene )
+
+if __name__ == '__main__':
+    main()
