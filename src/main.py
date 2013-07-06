@@ -125,7 +125,7 @@ def main():
     physics_objects = []
     def shoot_bullet(*args, **kwargs):
         sq = create_bullet_thing( window.sim, bulletImg, player )
-        sq.ttl = 0.5
+        sq.ttl = 1.5
         objects.append( sq.sprite )
         batch.add( sq.sprite.cocos_sprite )
         physics_objects.append( sq )
