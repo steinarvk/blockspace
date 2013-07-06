@@ -77,7 +77,8 @@ def create_square_thing(sim, layer, position, image):
     points = [(0,0),(32,0),(32,32),(0,32)]
     shape = ConvexPolygonShape(*points)
     shape.translate( shape.centroid() * -1)
-    return Debris( sim, layer, position, shape, image, moment = 1.0, collision_type = collision_type_main )
+    moment = pymunk.moment_for_poly( 1.0, shape.vertices )
+    return Debris( sim, layer, position, shape, image, moment = moment, collision_type = collision_type_main )
 
 def create_bullet_thing(sim, image, shooter):
     points = [(0,0),(9,0),(9,33),(0,33)]
