@@ -231,10 +231,6 @@ class Thing (object):
         self.abstract_shape = shape
         self.shapes = list( shape.generate_shapes( self.body ) )
         self.centroid = shape.centroid()
-        if group and len(self.shapes) > 1:
-            groupno = sim.new_group_id()
-            for shape in self.shapes:
-                shape.group = groupno
         for shape in self.shapes:
             bb = shape.cache_bb()
             assert min( abs(bb.right-bb.left), abs(bb.top-bb.bottom) ) >= sim.object_size_lower_limit
@@ -242,9 +238,13 @@ class Thing (object):
         if collision_type:
             for shape in self.shapes:
                 shape.collision_type = collision_type
+        if group:
+            for shape in self.shapes:
+                shape.group = group
         self.kill_hooks = []
         self.update_hooks = []
         self.alive = True
+        self.killed = False
         sim.space.add( self.body, *self.shapes )
 
     def update(self):
@@ -252,6 +252,9 @@ class Thing (object):
             hook( self )
 
     def kill(self):
+        if self.killed:
+            return
+        self.killed = True
         self.sim.space.remove( self.body, *self.shapes )
         self.alive = False
         for hook in self.kill_hooks:

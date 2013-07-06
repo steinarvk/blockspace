@@ -65,6 +65,7 @@ class Debris (physics.Thing):
 
 collision_type_main = 1
 collision_type_bullet = 2
+group_bulletgroup = 1
         
 def create_player_thing(sim, layer, position):
     points = [(98,48),(59,0),(41,0),(2,48),(44,72),(55,72)]
@@ -83,7 +84,7 @@ def create_bullet_thing(sim, image, shooter):
     shape = ConvexPolygonShape(*points)
     shape.translate( shape.centroid() * -1)
     layer = None
-    rv = Debris( sim, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet )
+    rv = Debris( sim, layer, (0,0), shape, image, mass = 1.0, moment = 1.0, collision_type = collision_type_bullet, group = group_bulletgroup )
     speed = 500
     rv.position = shooter.position + shooter.direction * (-60)
     rv.velocity = shooter.velocity + shooter.direction * (-speed)
@@ -121,10 +122,6 @@ def main():
     input_layer.cocos_layer.set_key_press_hook( key.SPACE, player.on_fire_key )
     for k in (key.LEFT, key.RIGHT, key.UP, key.DOWN):
         input_layer.cocos_layer.set_key_hook( k, player.on_controls_state )
-    def on_mouse_motion( x, y, dx, dy ):
-        xy = cocos.director.director.get_virtual_coordinates( x, y )
-        xy = (x - camera.focus[0], y - camera.focus[1])
-        things = [shape.thing for shape in window.sim.space.point_query( xy ) ]
     physics_objects = []
     def shoot_bullet(*args, **kwargs):
         sq = create_bullet_thing( window.sim, bulletImg, player )
@@ -132,6 +129,11 @@ def main():
         objects.append( sq.sprite )
         batch.add( sq.sprite.cocos_sprite )
         physics_objects.append( sq )
+    def on_mouse_motion( x, y, dx, dy ):
+        xy = cocos.director.director.get_virtual_coordinates( x, y )
+        xy = (x - camera.focus[0], y - camera.focus[1])
+        shoot_bullet()
+        things = [shape.thing for shape in window.sim.space.point_query( xy ) ]
     input_layer.cocos_layer.mouse_motion_hooks.append( on_mouse_motion )
     input_layer.cocos_layer.set_key_hook( key.SPACE, shoot_bullet )
     camera.following = player
