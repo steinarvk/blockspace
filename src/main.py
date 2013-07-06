@@ -74,10 +74,22 @@ def create_square_thing(sim, layer, position, image):
     shape = ConvexPolygonShape(*points)
     shape.translate( shape.centroid() * -1)
     return Debris( sim, layer, position, shape, image, moment = 1.0 )
+
+def create_bullet_thing(sim, image, shooter):
+    points = [(0,0),(9,0),(9,33),(0,33)]
+    shape = ConvexPolygonShape(*points)
+    shape.translate( shape.centroid() * -1)
+    layer = None
+    rv = Debris( sim, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity )
+    speed = 500
+    rv.position = shooter.position + shooter.direction * (-50)
+    rv.velocity = shooter.velocity + shooter.direction * (-speed)
+    rv.angle_radians = shooter.angle_radians
+    return rv
     
 def main():
-#    pygame.init()
-#    screen = pygame.display.set_mode( (800,600) )
+    pygame.init()
+    screen = pygame.display.set_mode( (800,600) )
     window = graphics.Window()
     window.sim = physics.PhysicsSimulator()
     camera = graphics.Camera( window )
@@ -88,18 +100,18 @@ def main():
     main_layer = graphics.Layer( scene )
     main_layer.cocos_layer.position = camera.offset()
     player = create_player_thing( window.sim, main_layer, (0,0) )
-    img = pyglet.image.load( "element_red_square.png" )
+    squareImg = pyglet.image.load( "element_red_square.png" )
+    bulletImg = pyglet.image.load( "laserGreen.png" )
     batch = cocos.batch.BatchNode()
     main_layer.cocos_layer.add( batch )
     objects = []
-#    positions = [(window.width*0.5+500,window.height*0.5+500)]
-#    for pos in positions:
     for i in range(200):
         cols = "red", "purple", "grey", "blue", "green", "yellow"
-        sq = create_square_thing( window.sim, None, (100,0), img )
+        sq = create_square_thing( window.sim, None, (100,0), squareImg )
         sq.position = (random.random()-0.5) * 4000, (random.random()-0.5) * 4000
         sq.angle_radians = random.random() * math.pi * 2
         sq.mylabel = sq.position
+        sq.velocity = (300,10)
         batch.add( sq.sprite.cocos_sprite )
         objects.append( sq.sprite )
     input_layer = graphics.Layer( scene, gameinput.CocosInputLayer() )
@@ -110,14 +122,30 @@ def main():
         xy = cocos.director.director.get_virtual_coordinates( x, y )
         xy = (x - camera.focus[0], y - camera.focus[1])
         things = [shape.thing for shape in window.sim.space.point_query( xy ) ]
+    physics_objects = []
+    def shoot_bullet(*args, **kwargs):
+        sq = create_bullet_thing( window.sim, bulletImg, player )
+        sq.ttl = 0.5
+        objects.append( sq.sprite )
+        batch.add( sq.sprite.cocos_sprite )
+        physics_objects.append( sq )
     input_layer.cocos_layer.mouse_motion_hooks.append( on_mouse_motion )
+    input_layer.cocos_layer.set_key_hook( key.SPACE, shoot_bullet )
     camera.following = player
     main_layer.camera = camera
     scene.schedule( lambda dt : (camera.update(dt),scene.update()) )
-    scene.schedule( lambda dt : window.sim.tick(dt) )
-    scene.schedule( lambda dt : player.update() )
     player.mylabel = -1
-    def update_objects():
+    def update_physics_objects(dt):
+        tbr = []
+        for o in physics_objects:
+            o.ttl -= dt
+            if o.ttl <= 0.0:
+                tbr.append( o )
+                o.kill()
+        for o in tbr:
+            physics_objects.remove(o)
+    scene.schedule( lambda dt : (player.update(),update_physics_objects(dt),window.sim.tick(dt)) )
+    def update_display_objects():
         # This is the hungry line. If we can find a way to
         # only update sprites when they're actually on screen,
         # we're probably good.
@@ -139,12 +167,12 @@ def main():
             else:
                 if spr.cocos_sprite not in prech:
                     batch.add( spr.cocos_sprite )
-    scene.schedule( lambda dt : update_objects() )
-#    def update_pygame():
-#        screen.fill( pygame.color.THECOLORS[ "black" ] )
-#        draw_space( screen, window.sim.space )
-#        pygame.display.flip()
-#    scene.schedule( lambda dt : update_pygame() )
+    scene.schedule( lambda dt : update_display_objects() )
+    def update_pygame():
+        screen.fill( pygame.color.THECOLORS[ "black" ] )
+        draw_space( screen, window.sim.space )
+        pygame.display.flip()
+    scene.schedule( lambda dt : update_pygame() )
     window.run( scene )
 
 if __name__ == '__main__':
