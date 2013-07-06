@@ -1,0 +1,15 @@
+Debris field.
+    A large amount of asteroids are created.
+    They all have similar, and fairly high, velocity.
+    In the middle is a particularly valuable trinket which the player must retrieve.
+
+Race.
+    Static obstacles in the form of a race course.
+    There are two to five opponents.
+    There is a betting sequence before the race.
+    Bet is the median-choosing-down bet, with anyone betting below that having an option to drop out.
+    First to finish three courses.
+    Winner takes it all.
+
+Duel.
+    There is one opponent, you need to destroy it.
