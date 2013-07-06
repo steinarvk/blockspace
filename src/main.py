@@ -20,8 +20,8 @@ from pymunk.pygame_util import draw_space
 import pymunk
 
 class Ship (physics.Thing):
-    def __init__(self, sim, layer, position, shape, sprite_name = "player.png", mass = 1.0, moment = 1.0):
-        super( Ship, self ).__init__( sim, shape, mass, moment )
+    def __init__(self, sim, layer, position, shape, sprite_name = "player.png", mass = 1.0, moment = 1.0, **kwargs):
+        super( Ship, self ).__init__( sim, shape, mass, moment, **kwargs )
         graphics.Sprite( sprite_name, self, layer )
         self.body.velocity_limit = min( self.body.velocity_limit, 700.0 )
         self.position = position
@@ -53,8 +53,8 @@ class Ship (physics.Thing):
         self.body.force = reduce( lambda x,y: x+y, forces, Vec2d(0,0) )
 
 class Debris (physics.Thing):
-    def __init__(self, sim, layer, position, shape, sprite, mass = 1.0, moment = 1.0):
-        super( Debris, self ).__init__( sim, shape, mass, moment )
+    def __init__(self, sim, layer, position, shape, sprite, mass = 1.0, moment = 1.0, **kwargs):
+        super( Debris, self ).__init__( sim, shape, mass, moment, **kwargs )
         graphics.Sprite( sprite, self, layer )
         self.position = position
 #        f = self.sprite.cocos_sprite.draw
@@ -62,27 +62,30 @@ class Debris (physics.Thing):
         self.sprite.cocos_sprite.draw = lambda : graphics.draw_thing_shapes(self)
     def update(self):
         super( Debris, self ).update()
+
+collision_type_main = 1
+collision_type_bullet = 2
         
 def create_player_thing(sim, layer, position):
     points = [(98,48),(59,0),(41,0),(2,48),(44,72),(55,72)]
     shape = ConvexPolygonShape(*points)
     shape.translate( shape.centroid() * -1)
-    return Ship( sim, layer, position, shape, moment = 1.0 )
+    return Ship( sim, layer, position, shape, moment = 1.0, collision_type = collision_type_main )
 
 def create_square_thing(sim, layer, position, image):
     points = [(0,0),(32,0),(32,32),(0,32)]
     shape = ConvexPolygonShape(*points)
     shape.translate( shape.centroid() * -1)
-    return Debris( sim, layer, position, shape, image, moment = 1.0 )
+    return Debris( sim, layer, position, shape, image, moment = 1.0, collision_type = collision_type_main )
 
 def create_bullet_thing(sim, image, shooter):
     points = [(0,0),(9,0),(9,33),(0,33)]
     shape = ConvexPolygonShape(*points)
     shape.translate( shape.centroid() * -1)
     layer = None
-    rv = Debris( sim, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity )
+    rv = Debris( sim, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet )
     speed = 500
-    rv.position = shooter.position + shooter.direction * (-50)
+    rv.position = shooter.position + shooter.direction * (-60)
     rv.velocity = shooter.velocity + shooter.direction * (-speed)
     rv.angle_radians = shooter.angle_radians
     return rv
@@ -140,8 +143,9 @@ def main():
         for o in physics_objects:
             o.ttl -= dt
             if o.ttl <= 0.0:
-                tbr.append( o )
                 o.kill()
+            if not o.alive:
+                tbr.append( o )
         for o in tbr:
             physics_objects.remove(o)
     scene.schedule( lambda dt : (player.update(),update_physics_objects(dt),window.sim.tick(dt)) )
@@ -168,6 +172,11 @@ def main():
                 if spr.cocos_sprite not in prech:
                     batch.add( spr.cocos_sprite )
     scene.schedule( lambda dt : update_display_objects() )
+    def collide_general_with_bullet( space, arbiter ):
+        anything, bullet = arbiter.shapes
+        window.sim.space.add_post_step_callback( lambda x : x.kill(), bullet.thing )
+        return True
+    window.sim.space.add_collision_handler( collision_type_main, collision_type_bullet, collide_general_with_bullet )
     def update_pygame():
         screen.fill( pygame.color.THECOLORS[ "black" ] )
         draw_space( screen, window.sim.space )

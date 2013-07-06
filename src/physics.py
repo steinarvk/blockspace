@@ -223,7 +223,7 @@ class StaticObstacle (object):
         sim.space.add( *self.shapes )
 
 class Thing (object):
-    def __init__(self, sim, shape, mass, moment, group = False, name = "anonymous" ):
+    def __init__(self, sim, shape, mass, moment, group = False, name = "anonymous", collision_type = None ):
         self.sim = sim
         self.name = name
         self.body = pymunk.Body( mass, moment )
@@ -239,8 +239,12 @@ class Thing (object):
             bb = shape.cache_bb()
             assert min( abs(bb.right-bb.left), abs(bb.top-bb.bottom) ) >= sim.object_size_lower_limit
             shape.thing = self
+        if collision_type:
+            for shape in self.shapes:
+                shape.collision_type = collision_type
         self.kill_hooks = []
         self.update_hooks = []
+        self.alive = True
         sim.space.add( self.body, *self.shapes )
 
     def update(self):
@@ -249,6 +253,7 @@ class Thing (object):
 
     def kill(self):
         self.sim.space.remove( self.body, *self.shapes )
+        self.alive = False
         for hook in self.kill_hooks:
             hook( self )
 
