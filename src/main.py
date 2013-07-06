@@ -133,7 +133,6 @@ def main():
     def on_mouse_motion( x, y, dx, dy ):
         xy = cocos.director.director.get_virtual_coordinates( x, y )
         xy = (x - camera.focus[0], y - camera.focus[1])
-        shoot_bullet()
         things = [shape.thing for shape in window.sim.space.point_query( xy ) ]
     input_layer.cocos_layer.mouse_motion_hooks.append( on_mouse_motion )
     input_layer.cocos_layer.set_key_hook( key.SPACE, shoot_bullet )
