@@ -94,12 +94,11 @@ def main():
     objects = []
 #    positions = [(window.width*0.5+500,window.height*0.5+500)]
 #    for pos in positions:
-    for i in range(1000):
+    for i in range(200):
         cols = "red", "purple", "grey", "blue", "green", "yellow"
         sq = create_square_thing( window.sim, None, (100,0), img )
         sq.position = (random.random()-0.5) * 4000, (random.random()-0.5) * 4000
         sq.angle_radians = random.random() * math.pi * 2
-        sq.velocity = (300,300)
         sq.mylabel = sq.position
         batch.add( sq.sprite.cocos_sprite )
         objects.append( sq.sprite )
@@ -146,9 +145,6 @@ def main():
 #        draw_space( screen, window.sim.space )
 #        pygame.display.flip()
 #    scene.schedule( lambda dt : update_pygame() )
-    for o in objects:
-        o.cocos_sprite.position = (-100000,-100000)
-    update_objects()
     window.run( scene )
 
 if __name__ == '__main__':
