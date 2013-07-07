@@ -1,5 +1,6 @@
 from blocks import *
-from util import almost_equal, degrees_almost_equal
+from util import almost_equal, degrees_almost_equal, vectors_almost_equal
+import physics
 
 def test_quad_block():
     for side in (16.0,17.5,32):
@@ -22,6 +23,15 @@ def test_quad_block():
         for angle, expected_angle in zip(sorted([edge.angle_degrees for edge in q.edges]),expected_angles):
             assert almost_equal( angle, expected_angle )
         assert q.free_edge_indices == [0,1,2,3]
+
+def test_quad_block_to_shape():
+    for side in (16.0,17.5,32):
+        q = QuadBlock( side )
+        vs = q.vertices
+        assert isinstance( shape, physics.ConvexPolygonShape )
+        for a, b in zip( q.vertices, shape.vertices ):
+            assert vectors_almost_equal( a, b )
+        assert almost_equal( shape.area(), side * side )
 
 def test_attach_two_blocks():
     for angle in (0.0,23.0,45.0,72.0,123.0):

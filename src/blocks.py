@@ -2,6 +2,9 @@ from pymunk import Vec2d
 
 from physics import closed_circle_pairs
 
+import physics
+import graphics
+
 import math
 from itertools import starmap
 
@@ -80,7 +83,7 @@ class PolygonBlock (object):
         return self
 
     def create_collision_shape(self):
-        return ConvexPolygonShape( *self.vertices )
+        return physics.ConvexPolygonShape( *self.vertices )
         
     def clone(self):
         return PolygonBlock( self.vertices )
