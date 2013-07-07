@@ -38,7 +38,7 @@ class Ship (physics.Thing):
         self._braking = state[key.DOWN]
     def update(self):
         super( Ship, self ).update()
-        self.angular_velocity_degrees = -90.0 * self._spin
+        self.angular_velocity_degrees = -300.0 * self._spin
         forces = []
         if self._thrusting:
             dx, dy = polar_degrees( self.angle_degrees - 90.0, 700.0 )
