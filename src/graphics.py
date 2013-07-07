@@ -84,6 +84,35 @@ class Sprite (object):
         self.cocos_sprite.position = self.thing.position
         self.cocos_sprite.rotation = 180.0 - self.thing.angle_degrees
 
+class SpriteStructure (object):
+    def __init__(self, thing, layer = None):
+        self.layer = layer
+        self.cocos_sprites = []
+        self.thing = thing
+        self.thing.kill_hooks.append( kill_sprite )
+        self.thing.update_hooks.append( update_sprite )
+        self.thing.sprite = self
+        self.node = cocos.cocosnode.CocosNode()
+        if self.layer:
+            self.layer.add_sprite( self )
+            self.layer.cocos_layer.add( self.node )
+    def add_sprite(self, image, offset = (0,0)):
+        cocos_sprite = cocos.sprite.Sprite( image )
+        w, h = cocos_sprite.width, cocos_sprite.height
+        cocos_sprite.position = offset
+        self.cocos_sprites.append( cocos_sprite )
+        self.node.add( cocos_sprite )
+    def kill(self):
+        if self.layer:
+            self.layer.remove_sprite( self )
+            self.layer.cocos_layer.remove( self.node )
+    def update(self):
+        p = self.thing.position
+        r = 180.0 - self.thing.angle_degrees
+        self.node.position  = p
+        self.node.rotation = r
+        
+
 class Camera (object):
     def __init__(self, window, focus = (0,0)):
         self.window = window

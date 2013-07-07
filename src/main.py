@@ -22,7 +22,11 @@ import pymunk
 class Ship (physics.Thing):
     def __init__(self, sim, layer, position, shape, sprite_name = "player.png", mass = 1.0, moment = 1.0, **kwargs):
         super( Ship, self ).__init__( sim, shape, mass, moment, **kwargs )
-        graphics.Sprite( sprite_name, self, layer )
+        graphics.SpriteStructure( self, layer )
+        self.sprite.add_sprite( "element_blue_square.png", (0,0) )
+        self.sprite.add_sprite( "element_purple_square.png", (0,32) )
+        self.sprite.add_sprite( "element_green_square.png", (32,0) )
+        self.sprite.add_sprite( "element_yellow_square.png", (-32,0) )
         self.body.velocity_limit = min( self.body.velocity_limit, 700.0 )
         self.position = position
         self._spin = 0
@@ -135,7 +139,7 @@ def main():
         xy = (x - camera.focus[0], y - camera.focus[1])
         things = [shape.thing for shape in window.sim.space.point_query( xy ) ]
     input_layer.cocos_layer.mouse_motion_hooks.append( on_mouse_motion )
-    input_layer.cocos_layer.set_key_hook( key.SPACE, shoot_bullet )
+    input_layer.cocos_layer.set_key_press_hook( key.SPACE, shoot_bullet )
     camera.following = player
     main_layer.camera = camera
     scene.schedule( lambda dt : (camera.update(dt),scene.update()) )
