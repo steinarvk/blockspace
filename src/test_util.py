@@ -3,19 +3,6 @@ import math
 
 from util import *
 
-def almost_equal( x, y, k = 0.0001 ):
-    return abs( x - y ) <= k * min( abs(x), abs(y) )
-
-def almost_equal( x, y, k = 0.0001 ):
-    return abs( x - y ) <= k * min( abs(x), abs(y) )
-
-def almost_leq( x, y, k = 0.0001 ):
-    return x <= y + k * abs(y)
-
-def almost_geq( x, y, k = 0.0001 ):
-    return x >= y - k * abs(y)
-    
-
 def test_radians_to_degrees_and_back():
     for i in range(100):
         x = random.random() * 18 - 4

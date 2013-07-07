@@ -5,7 +5,10 @@ from physics import closed_circle_pairs
 import math
 from itertools import starmap
 
-from util import almost_equal
+from util import almost_equal, vectors_almost_equal
+
+class IllegalOverlapException (Exception):
+    pass
 
 def generate_regular_polygon_vertices(n, r = 1.0, start_angle = None):
     step = math.pi * 2.0 / float(n)
@@ -18,6 +21,9 @@ def generate_regular_polygon_vertices(n, r = 1.0, start_angle = None):
 def generate_square_vertices(s):
     h = 0.5 * s
     return [(-h,-h),(h,-h),(h,h),(-h,h)]
+
+def indexed_zip( l ):
+    return zip( range(len(l)), l )
 
 class Edge (object):
     def __init__(self, a, b):
@@ -33,21 +39,30 @@ class Edge (object):
 
     def matches(self, edge):
         return almost_equal( self.length, edge.length )
+
+    def overlaps(self, edge):
+        if vectors_almost_equal(self.a,edge.a) and vectors_almost_equal(self.b,edge.b):
+            return True
+        if vectors_almost_equal(self.a,edge.b) and vectors_almost_equal(self.b,edge.a):
+            return True
+        return False
     
     @property
     def angle_degrees(self):
         return (self.b - self.a).rotated_degrees(-90).get_angle_degrees() % 360.0
         
-        
-
 class PolygonBlock (object):
     def __init__(self, vertices):
         self.vertices = map( Vec2d, vertices )
         self.free_edge_indices = range(len(self.edges))
+        self.connections = {}
 
     @property
     def edges(self):
         return list(starmap( Edge, closed_circle_pairs( self.vertices ) ))
+
+    def edge(self, index):
+        return self.edges[index]
 
     def rotate_radians(self, delta_radians):
         for v in self.vertices:
@@ -66,9 +81,69 @@ class PolygonBlock (object):
 
     def create_collision_shape(self):
         return ConvexPolygonShape( *self.vertices )
+        
+    def clone(self):
+        return PolygonBlock( self.vertices )
+        
+    def __repr__(self):
+        return "<{0}>".format( "-".join( [ repr((x,y)) for x,y in self.vertices] ) )
 
 class QuadBlock (PolygonBlock):
     def __init__(self, side_length):
         super( QuadBlock, self ).__init__( generate_square_vertices( side_length ) )
+
     def __repr__(self):
         return "<{0}>".format( "-".join( [ repr((x,y)) for x,y in self.vertices] ) )
+
+
+class BlockStructure (object):
+    def __init__(self, block):
+        self.blocks = []
+        self.free_edge_indices = []
+        self.add_block( block )
+
+    def add_block(self, block):
+        index = len(self.blocks)
+        self.free_edge_indices.extend(list(map( lambda edge_index : (index,edge_index), range(len(block.edges)))))
+        self.blocks.append( block )
+
+    @property
+    def edges(self):
+        rv = []
+        for block in self.blocks:
+            rv.extend( block.edges )
+        return rv
+
+    def edge(self, index):
+        block_index, edge_index = index
+        return self.blocks[ block_index ].edge( edge_index )
+
+    def overlaps(self, block):
+        # TODO nondegenerate overlap check
+        return False
+
+    def attach(self, index, block, block_edge_index ):
+        block_index, edge_index = index
+        delta_deg = block.edges[ block_edge_index ].angle_degrees - self.edges[ edge_index ].angle_degrees
+        block = block.clone()
+        block.rotate_degrees( -delta_deg )
+        block.translate( block.edges[ block_edge_index ].a - self.edges[ edge_index].b )
+        if self.overlaps( block ):
+            raise IllegalOverlapException()
+        block.free_edge_indices.remove( block_edge_index )
+        foreign_block_index = len( self.blocks )
+        local_edge = self.edges[ edge_index ]
+        foreign_edge = block.edges[ block_edge_index ]
+        self.add_block( block )
+        for local_block_index, local_edge_index in self.free_edge_indices:
+            local_edge = self.edge( (local_block_index,local_edge_index) )
+            if local_block_index == foreign_block_index:
+                continue
+            for foreign_edge_index, foreign_edge in indexed_zip(block.edges):
+                if local_edge.overlaps( foreign_edge ):
+                    self.blocks[ local_block_index ].free_edge_indices.remove( local_edge_index )
+                    block.connections[ foreign_edge_index ] = (local_block_index, local_edge_index)
+                    self.blocks[ local_block_index ].connections[ local_edge_index ] = (foreign_block_index, foreign_edge_index)
+                    self.free_edge_indices.remove( (local_block_index,local_edge_index) )
+                    self.free_edge_indices.remove( (foreign_block_index,foreign_edge_index) )
+        return foreign_block_index
