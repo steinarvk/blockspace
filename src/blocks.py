@@ -98,6 +98,8 @@ class QuadBlock (PolygonBlock):
     def __repr__(self):
         return "<{0}>".format( "-".join( [ repr((x,y)) for x,y in self.vertices] ) )
 
+    def create_sprite(self):
+        # TODO
 
 class BlockStructure (object):
     def __init__(self, block):
@@ -150,3 +152,9 @@ class BlockStructure (object):
                     self.free_edge_indices.remove( (local_block_index,local_edge_index) )
                     self.free_edge_indices.remove( (foreign_block_index,foreign_edge_index) )
         return foreign_block_index
+
+    def create_collision_shape(self):
+        return physics.CompositeShape( *(block.create_collision_shape() for block in self.blocks) )
+
+    def create_sprite_structure(self):
+        # TODO
