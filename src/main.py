@@ -85,7 +85,7 @@ def create_bullet_thing(sim, image, shooter):
     shape = ConvexPolygonShape(*points)
     shape.translate( shape.centroid() * -1)
     layer = None
-    rv = Debris( sim, layer, (0,0), shape, image, mass = 1.0, moment = 1.0, collision_type = collision_type_bullet, group = group_bulletgroup )
+    rv = Debris( sim, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet, group = group_bulletgroup )
     speed = 500
     rv.position = shooter.position + shooter.direction * (-60)
     rv.velocity = shooter.velocity + shooter.direction * (-speed)
@@ -176,7 +176,8 @@ def main():
     scene.schedule( lambda dt : update_display_objects() )
     def collide_general_with_bullet( space, arbiter ):
         anything, bullet = arbiter.shapes
-        window.sim.space.add_post_step_callback( lambda x : x.kill(), bullet.thing )
+        bullet.thing.ttl = min( bullet.thing.ttl, 0.05 )
+#        window.sim.space.add_post_step_callback( lambda x : x.kill(), bullet.thing )
         return True
     window.sim.space.add_collision_handler( collision_type_main, collision_type_bullet, collide_general_with_bullet )
     def update_pygame():
