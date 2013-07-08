@@ -139,14 +139,8 @@ class BlockStructure (object):
         local_edge = self.edge( index )
         delta_deg = - (180.0 + block.edges[ block_edge_index ].angle_degrees - local_edge.angle_degrees)
         block = block.clone()
-        print "local edge is", local_edge
-        print "foreign edge prior to rotation is", block.edges[ block_edge_index ]
-        print "rotating", delta_deg
         block.rotate_degrees( delta_deg )
         local_edge = self.edge( index )
-        print "foreign edge is", block.edges[ block_edge_index ]
-        print "anchors are", "foreign", block.edges[ block_edge_index ].a, "and", "local", local_edge.b
-        print "translating", - (block.edges[ block_edge_index ].a - local_edge.b)
         block.translate( - ( block.edges[ block_edge_index ].a - local_edge.b ) )
         local_edge = self.edge( index )
         if self.overlaps( block ):
@@ -156,16 +150,12 @@ class BlockStructure (object):
         local_edge = self.edges[ edge_index ]
         foreign_edge = block.edges[ block_edge_index ]
         self.add_block( block )
-        print "new block with edges", block.edges
         for local_block_index, local_edge_index in self.free_edge_indices:
             local_edge = self.edge( (local_block_index,local_edge_index) )
             if local_block_index == foreign_block_index:
                 continue
             for foreign_edge_index, foreign_edge in indexed_zip(block.edges):
-#                print "testing local edge", (local_block_index,local_edge_index), local_edge, "for overlapping", foreign_edge_index, foreign_edge
                 if local_edge.overlaps( foreign_edge ):
-                    print local_block_index, local_edge_index
-                    print "local edge", (local_block_index,local_edge_index), local_edge, "overlaps", foreign_edge_index, foreign_edge
                     self.blocks[ local_block_index ].free_edge_indices.remove( local_edge_index )
                     block.connections[ foreign_edge_index ] = (local_block_index, local_edge_index)
                     self.blocks[ local_block_index ].connections[ local_edge_index ] = (foreign_block_index, foreign_edge_index)
