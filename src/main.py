@@ -19,14 +19,28 @@ import pygame
 from pymunk.pygame_util import draw_space
 import pymunk
 
+import blocks
+
 class Ship (physics.Thing):
-    def __init__(self, sim, layer, position, shape, sprite_name = "player.png", mass = 1.0, moment = 1.0, **kwargs):
+    def __init__(self, sim, layer, position, sprite_name = "player.png", mass = 1.0, moment = 1.0, **kwargs):
+        s = blocks.BlockStructure( blocks.QuadBlock(32) )
+        s.attach((0,1), blocks.QuadBlock(32), 0)
+        s.attach((0,3), blocks.QuadBlock(32), 0)
+        s.attach((0,2), blocks.QuadBlock(32), 0)
+        print s.edge( (0,0) ).angle_degrees
+        print s.edge( (3,2) ).angle_degrees
+        print s.blocks[3].free_edge_indices
+        s.attach((3,0), blocks.QuadBlock(32), 0)
+        for block in s.blocks:
+            col = random.choice(("blue","purple","green","yellow"))
+            block.image_name = "element_{0}_square.png".format( col )
+        shape = s.create_collision_shape()
         super( Ship, self ).__init__( sim, shape, mass, moment, **kwargs )
-        graphics.SpriteStructure( self, layer )
-        self.sprite.add_sprite( "element_blue_square.png", (0,0) )
-        self.sprite.add_sprite( "element_purple_square.png", (0,32) )
-        self.sprite.add_sprite( "element_green_square.png", (32,0) )
-        self.sprite.add_sprite( "element_yellow_square.png", (-32,0) )
+        s.create_sprite_structure( self, layer )
+#        self.sprite.add_sprite( "element_blue_square.png", (0,0) )
+#        self.sprite.add_sprite( "element_purple_square.png", (0,32) )
+#        self.sprite.add_sprite( "element_green_square.png", (32,0) )
+#        self.sprite.add_sprite( "element_yellow_square.png", (-32,0) )
         self.body.velocity_limit = min( self.body.velocity_limit, 700.0 )
         self.position = position
         self._spin = 0
@@ -45,7 +59,7 @@ class Ship (physics.Thing):
         self.angular_velocity_degrees = -300.0 * self._spin
         forces = []
         if self._thrusting:
-            dx, dy = polar_degrees( self.angle_degrees - 90.0, 700.0 )
+            dx, dy = polar_degrees( self.angle_degrees, 700.0 )
             forces.append( Vec2d( dx, dy ) )
         if self._braking:
             stopforce = self.body.velocity.normalized() * -500.0
@@ -72,10 +86,7 @@ collision_type_bullet = 2
 group_bulletgroup = 1
         
 def create_player_thing(sim, layer, position):
-    points = [(98,48),(59,0),(41,0),(2,48),(44,72),(55,72)]
-    shape = ConvexPolygonShape(*points)
-    shape.translate( shape.centroid() * -1)
-    return Ship( sim, layer, position, shape, moment = 1.0, collision_type = collision_type_main )
+    return Ship( sim, layer, position, moment = 1.0, collision_type = collision_type_main )
 
 def create_square_thing(sim, layer, position, image):
     points = [(0,0),(32,0),(32,32),(0,32)]

@@ -8,7 +8,7 @@ import graphics
 import math
 from itertools import starmap
 
-from util import almost_equal, vectors_almost_equal
+from util import almost_equal, vectors_almost_equal, round_vector
 
 class IllegalOverlapException (Exception):
     pass
@@ -59,6 +59,8 @@ class PolygonBlock (object):
         self.vertices = map( Vec2d, vertices )
         self.free_edge_indices = range(len(self.edges))
         self.connections = {}
+        self.rotation_degrees = 0.0
+        self.translation = Vec2d(0,0)
 
     @property
     def edges(self):
@@ -68,17 +70,20 @@ class PolygonBlock (object):
         return self.edges[index]
 
     def rotate_radians(self, delta_radians):
+        self.rotation_degrees += radians_to_degrees( delta_radians )
         for v in self.vertices:
             v.rotate( delta_radians )
         return self
 
     def rotate_degrees(self, delta_degrees):
+        self.rotation_degrees += delta_degrees
         for v in self.vertices:
             v.rotate_degrees( delta_degrees )
         return self
 
     def translate(self, xy):
         xy = Vec2d(xy)
+        self.translation += xy
         self.vertices = map( lambda x : x + xy, self.vertices )
         return self
 
@@ -86,20 +91,22 @@ class PolygonBlock (object):
         return physics.ConvexPolygonShape( *self.vertices )
         
     def clone(self):
+        # TODO refactor out this -- very inconvenient with ducking
         return PolygonBlock( self.vertices )
         
     def __repr__(self):
         return "<{0}>".format( "-".join( [ repr((x,y)) for x,y in self.vertices] ) )
 
+    def create_image(self):
+        return self.image_name
+
 class QuadBlock (PolygonBlock):
     def __init__(self, side_length):
         super( QuadBlock, self ).__init__( generate_square_vertices( side_length ) )
+        self.image_name = "element_red_square.png"
 
     def __repr__(self):
         return "<{0}>".format( "-".join( [ repr((x,y)) for x,y in self.vertices] ) )
-
-    def create_sprite(self):
-        # TODO
 
 class BlockStructure (object):
     def __init__(self, block):
@@ -131,7 +138,9 @@ class BlockStructure (object):
         block_index, edge_index = index
         delta_deg = block.edges[ block_edge_index ].angle_degrees - self.edges[ edge_index ].angle_degrees
         block = block.clone()
+        print "rotating", delta_deg
         block.rotate_degrees( -delta_deg )
+        print "translating",block.edges[ block_edge_index ].a - self.edges[ edge_index].b
         block.translate( block.edges[ block_edge_index ].a - self.edges[ edge_index].b )
         if self.overlaps( block ):
             raise IllegalOverlapException()
@@ -146,6 +155,8 @@ class BlockStructure (object):
                 continue
             for foreign_edge_index, foreign_edge in indexed_zip(block.edges):
                 if local_edge.overlaps( foreign_edge ):
+                    print local_block_index, local_edge_index
+                    print "local edge", (local_block_index,local_edge_index), local_edge, "overlaps", foreign_edge_index, foreign_edge
                     self.blocks[ local_block_index ].free_edge_indices.remove( local_edge_index )
                     block.connections[ foreign_edge_index ] = (local_block_index, local_edge_index)
                     self.blocks[ local_block_index ].connections[ local_edge_index ] = (foreign_block_index, foreign_edge_index)
@@ -156,5 +167,7 @@ class BlockStructure (object):
     def create_collision_shape(self):
         return physics.CompositeShape( *(block.create_collision_shape() for block in self.blocks) )
 
-    def create_sprite_structure(self):
-        # TODO
+    def create_sprite_structure(self, thing, layer):
+        s = graphics.SpriteStructure( thing, layer )
+        for block in self.blocks:
+            s.add_sprite( block.create_image(), block.translation)

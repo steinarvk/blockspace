@@ -108,7 +108,7 @@ class SpriteStructure (object):
             self.layer.cocos_layer.remove( self.node )
     def update(self):
         p = self.thing.position
-        r = 180.0 - self.thing.angle_degrees
+        r = - self.thing.angle_degrees
         self.node.position  = p
         self.node.rotation = r
         
