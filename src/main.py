@@ -23,17 +23,10 @@ import pymunk
 import blocks
 
 class Ship (physics.Thing):
-    def __init__(self, sim, layer, position, sprite_name = "player.png", mass = 1.0, moment = 1.0, **kwargs):
-        s = blocks.BlockStructure( blocks.QuadBlock(32) )
-        s.attach((0,1), blocks.QuadBlock(32), 0)
-        s.attach((0,0), blocks.QuadBlock(32), 0)
-        s.attach((0,2), blocks.QuadBlock(32), 0)
-        s.attach((1,2), blocks.QuadBlock(32), 0)
-        for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow","red"))):
-            block.image_name = "element_{0}_square.png".format( col )
-        shape = s.create_collision_shape()
-        super( Ship, self ).__init__( sim, shape, mass, moment, **kwargs )
-        s.create_sprite_structure( self, layer )
+    def __init__(self, sim, block_structure, layer, position, sprite_name = "player.png", mass = 1.0, moment = 1.0, **kwargs):
+        super( Ship, self ).__init__( sim, block_structure.create_collision_shape(), mass, moment, **kwargs )
+        self.block_structure = block_structure
+        self.block_structure.create_sprite_structure( self, layer )
 #        self.sprite.add_sprite( "element_blue_square.png", (0,0) )
 #        self.sprite.add_sprite( "element_purple_square.png", (0,32) )
 #        self.sprite.add_sprite( "element_green_square.png", (32,0) )
@@ -85,7 +78,14 @@ collision_type_bullet = 2
 group_bulletgroup = 1
         
 def create_player_thing(sim, layer, position):
-    return Ship( sim, layer, position, moment = 1.0, collision_type = collision_type_main )
+    s = blocks.BlockStructure( blocks.QuadBlock(32) )
+    s.attach((0,1), blocks.QuadBlock(32), 0)
+    s.attach((0,0), blocks.QuadBlock(32), 0)
+    s.attach((0,2), blocks.QuadBlock(32), 0)
+    s.attach((1,2), blocks.QuadBlock(32), 0)
+    for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow","red"))):
+        block.image_name = "element_{0}_square.png".format( col )
+    return Ship( sim, s, layer, position, moment = 1.0, collision_type = collision_type_main )
 
 def create_square_thing(sim, layer, position, image):
     points = [(0,0),(32,0),(32,32),(0,32)]
