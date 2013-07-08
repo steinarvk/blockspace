@@ -14,6 +14,7 @@ from util import *
 from pyglet.gl import *
 
 from functools import partial
+from itertools import cycle
 
 import pygame
 from pymunk.pygame_util import draw_space
@@ -28,8 +29,7 @@ class Ship (physics.Thing):
         s.attach((0,0), blocks.QuadBlock(32), 0)
         s.attach((0,2), blocks.QuadBlock(32), 0)
         s.attach((1,2), blocks.QuadBlock(32), 0)
-        for block in s.blocks:
-            col = random.choice(("blue","purple","green","yellow"))
+        for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow","red"))):
             block.image_name = "element_{0}_square.png".format( col )
         shape = s.create_collision_shape()
         super( Ship, self ).__init__( sim, shape, mass, moment, **kwargs )
