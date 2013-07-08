@@ -28,6 +28,7 @@ def test_quad_block_to_shape():
     for side in (16.0,17.5,32):
         q = QuadBlock( side )
         vs = q.vertices
+        shape = q.create_collision_shape()
         assert isinstance( shape, physics.ConvexPolygonShape )
         for a, b in zip( q.vertices, shape.vertices ):
             assert vectors_almost_equal( a, b )
