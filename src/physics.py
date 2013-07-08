@@ -318,4 +318,4 @@ class Thing (object):
 
     @property
     def direction(self):
-        return Vec2d.unit().rotated( self.body.angle )
+        return Vec2d(1,0).rotated( self.body.angle )

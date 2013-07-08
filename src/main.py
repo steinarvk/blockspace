@@ -25,12 +25,9 @@ class Ship (physics.Thing):
     def __init__(self, sim, layer, position, sprite_name = "player.png", mass = 1.0, moment = 1.0, **kwargs):
         s = blocks.BlockStructure( blocks.QuadBlock(32) )
         s.attach((0,1), blocks.QuadBlock(32), 0)
-        s.attach((0,3), blocks.QuadBlock(32), 0)
+        s.attach((0,0), blocks.QuadBlock(32), 0)
         s.attach((0,2), blocks.QuadBlock(32), 0)
-        print s.edge( (0,0) ).angle_degrees
-        print s.edge( (3,2) ).angle_degrees
-        print s.blocks[3].free_edge_indices
-        s.attach((3,0), blocks.QuadBlock(32), 0)
+        s.attach((1,2), blocks.QuadBlock(32), 0)
         for block in s.blocks:
             col = random.choice(("blue","purple","green","yellow"))
             block.image_name = "element_{0}_square.png".format( col )
@@ -102,9 +99,9 @@ def create_bullet_thing(sim, image, shooter):
     layer = None
     rv = Debris( sim, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet, group = group_bulletgroup )
     speed = 500
-    rv.position = shooter.position + shooter.direction * (-60)
-    rv.velocity = shooter.velocity + shooter.direction * (-speed)
-    rv.angle_radians = shooter.angle_radians
+    rv.position = shooter.position + shooter.direction * (65+32)
+    rv.velocity = shooter.velocity + shooter.direction * (speed)
+    rv.angle_radians = degrees_to_radians( shooter.angle_degrees + 90.0 )
     return rv
     
 def main():
