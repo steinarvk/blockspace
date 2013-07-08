@@ -36,6 +36,9 @@ class Ship (physics.Thing):
         self._spin = 0
         self._thrusting = False
         self._braking = False
+        self._turbo_multiplier = 2
+        self._thrust_power = 3500
+        self._brake_power = 2500
 #        f = self.sprite.cocos_sprite.draw
 #        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
     def on_fire_key(self, symbol, modifiers, state):
@@ -50,11 +53,11 @@ class Ship (physics.Thing):
         self.angular_velocity_degrees = -300.0 * self._spin
         forces = []
         if self._thrusting:
-            force = (2 if self._turbo else 1) * 700
+            force = (self._turbo_multiplier if self._turbo else 1) * self._thrust_power
             dx, dy = polar_degrees( self.angle_degrees, force )
             forces.append( Vec2d( dx, dy ) )
         if self._braking:
-            stopforce = self.body.velocity.normalized() * -500.0
+            stopforce = self.body.velocity.normalized() * -1 * self._brake_power
             if self.velocity.get_length() < stopforce.get_length() * 0.01:
                 forces = []
                 self.body.velocity = Vec2d(0,0)
@@ -77,17 +80,18 @@ collision_type_main = 1
 collision_type_bullet = 2
 group_bulletgroup = 1
         
-def create_player_thing(sim, layer, position):
+def create_ship_thing(sim, layer, position, big = False):
     s = blocks.BlockStructure( blocks.QuadBlock(32) )
     s.attach((0,1), blocks.QuadBlock(32), 0)
     s.attach((0,0), blocks.QuadBlock(32), 0)
     s.attach((0,2), blocks.QuadBlock(32), 0)
-    s.attach((1,2), blocks.QuadBlock(32), 0)
-    s.attach((1,1), blocks.QuadBlock(32), 0)
-    s.attach((1,3), blocks.QuadBlock(32), 0)
+    if big:
+        s.attach((1,2), blocks.QuadBlock(32), 0)
+        s.attach((1,1), blocks.QuadBlock(32), 0)
+        s.attach((1,3), blocks.QuadBlock(32), 0)
     for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
         block.image_name = "element_{0}_square.png".format( col )
-    return Ship( sim, s, layer, position, moment = 400.0, collision_type = collision_type_main )
+    return Ship( sim, s, layer, position, mass = len(s.blocks), moment = 4000.0, collision_type = collision_type_main )
 
 def create_square_thing(sim, layer, position, image):
     points = [(0,0),(32,0),(32,32),(0,32)]
@@ -103,7 +107,7 @@ def create_bullet_thing(sim, image, shooter):
     layer = None
     rv = Debris( sim, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet, group = group_bulletgroup )
     speed = 500
-    rv.position = shooter.position + shooter.direction * (65+32)
+    rv.position = shooter.position + shooter.direction * (65)
     rv.velocity = shooter.velocity + shooter.direction * (speed)
     rv.angle_radians = degrees_to_radians( shooter.angle_degrees + 90.0 )
     return rv
@@ -120,8 +124,8 @@ def main():
         graphics.Layer( scene, graphics.BackgroundCocosLayer( camera, 10.0 + 0.5 * i, "starfield{0}.png".format(i) ) )
     main_layer = graphics.Layer( scene )
     main_layer.cocos_layer.position = camera.offset()
-    player = create_player_thing( window.sim, main_layer, (0,0) )
-    create_player_thing( window.sim, main_layer, (500,0) )
+    player = create_ship_thing( window.sim, main_layer, (0,0) )
+    create_ship_thing( window.sim, main_layer, (500,0), big = True )
     squareImg = pyglet.image.load( "element_red_square.png" )
     bulletImg = pyglet.image.load( "laserGreen.png" )
     batch = cocos.batch.BatchNode()
