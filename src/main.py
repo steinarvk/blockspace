@@ -51,12 +51,14 @@ class Ship (physics.Thing):
         self._spin = (1 if state[key.RIGHT] else 0) - (1 if state[key.LEFT] else 0)
         self._thrusting = state[key.UP]
         self._braking = state[key.DOWN]
+        self._turbo = state[key.LSHIFT]
     def update(self):
         super( Ship, self ).update()
         self.angular_velocity_degrees = -300.0 * self._spin
         forces = []
         if self._thrusting:
-            dx, dy = polar_degrees( self.angle_degrees, 700.0 )
+            force = (2 if self._turbo else 1) * 700
+            dx, dy = polar_degrees( self.angle_degrees, force )
             forces.append( Vec2d( dx, dy ) )
         if self._braking:
             stopforce = self.body.velocity.normalized() * -500.0
@@ -135,6 +137,8 @@ def main():
     input_layer.cocos_layer.set_key_press_hook( key.SPACE, player.on_fire_key )
     for k in (key.LEFT, key.RIGHT, key.UP, key.DOWN):
         input_layer.cocos_layer.set_key_hook( k, player.on_controls_state )
+    input_layer.cocos_layer.set_key_hook( k, player.on_controls_state )
+    input_layer.cocos_layer.set_key_hook( key.LSHIFT, player.on_controls_state )
     physics_objects = []
     def shoot_bullet(*args, **kwargs):
         sq = create_bullet_thing( window.sim, bulletImg, player )
