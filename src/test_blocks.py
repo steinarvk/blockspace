@@ -67,12 +67,21 @@ def test_attach_four_blocks_in_square():
     d = QuadBlock(1)
     s = BlockStructure(a)
     assert len( s.free_edge_indices ) == 4
+    assert degrees_almost_equal( s.edge( (0,0) ).angle_degrees, 270.0 )
     a_index = 0
+    assert vectors_almost_equal( s.blocks[a_index].create_collision_shape().centroid(), (0,0) )
     b_index = s.attach((0,0), b, 1)
+    assert vectors_almost_equal( s.blocks[b_index].create_collision_shape().centroid(), (0,-1) )
     assert len( s.free_edge_indices ) == 6
+    assert degrees_almost_equal( s.edge( (b_index,1) ).angle_degrees, 90.0 )
+    assert degrees_almost_equal( s.edge( (0,1) ).angle_degrees, 0.0 )
     c_index = s.attach((0,1), c, 2)
+    assert vectors_almost_equal( s.blocks[c_index].create_collision_shape().centroid(), (1,0) )
     assert len( s.free_edge_indices ) == 8
+    assert degrees_almost_equal( s.edge( (c_index,3) ).angle_degrees, 270.0 )
     d_index = s.attach((c_index,3), d, 3)
+    assert vectors_almost_equal( s.blocks[d_index].create_collision_shape().centroid(), (1,-1) )
+    assert degrees_almost_equal( s.edge( (d_index,3) ).angle_degrees, 90.0 )
     assert len( s.free_edge_indices ) == 8
     assert almost_equal( s.edge( (a_index,0) ).angle_degrees, 270 )
     assert almost_equal( s.edge( (a_index,1) ).angle_degrees, 0 )
@@ -88,8 +97,8 @@ def test_attach_four_blocks_in_square():
     assert almost_equal( s.edge( (c_index,3) ).angle_degrees, 270 )
     assert almost_equal( s.edge( (d_index,0) ).angle_degrees, 180 )
     assert almost_equal( s.edge( (d_index,1) ).angle_degrees, 270 )
-    assert almost_equal( s.edge( (d_index,2) ).angle_degrees, 90 )
-    assert almost_equal( s.edge( (d_index,3) ).angle_degrees, 180 )
+    assert almost_equal( s.edge( (d_index,2) ).angle_degrees, 0 )
+    assert almost_equal( s.edge( (d_index,3) ).angle_degrees, 90 )
 
 def test_attach_four_blocks_in_line():
     #  2  1  1  3
@@ -122,8 +131,8 @@ def test_attach_four_blocks_in_line():
     assert almost_equal( s.edge( (c_index,3) ).angle_degrees, 270 )
     assert almost_equal( s.edge( (d_index,0) ).angle_degrees, 180 )
     assert almost_equal( s.edge( (d_index,1) ).angle_degrees, 270 )
-    assert almost_equal( s.edge( (d_index,2) ).angle_degrees, 90 )
-    assert almost_equal( s.edge( (d_index,3) ).angle_degrees, 180 )
+    assert almost_equal( s.edge( (d_index,2) ).angle_degrees, 0 )
+    assert almost_equal( s.edge( (d_index,3) ).angle_degrees, 90 )
 
 def test_attach_four_blocks_in_knightsmove():
     #  2  1  1 
