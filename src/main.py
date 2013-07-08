@@ -39,6 +39,9 @@ class Ship (physics.Thing):
         self._turbo_multiplier = 2
         self._thrust_power = 3500
         self._brake_power = 2500
+        self._ai_time = 0.0
+        self._gun_cooldown = 0.5
+        self._gun_current_cooldown = 0.0
 #        f = self.sprite.cocos_sprite.draw
 #        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
     def on_fire_key(self, symbol, modifiers, state):
@@ -48,8 +51,13 @@ class Ship (physics.Thing):
         self._thrusting = state[key.UP]
         self._braking = state[key.DOWN]
         self._turbo = state[key.LSHIFT]
-    def update(self):
+    def may_fire(self):
+        return self._gun_current_cooldown <= 0.0
+    def fired(self):
+        self._gun_current_cooldown = self._gun_cooldown
+    def update(self, dt):
         super( Ship, self ).update()
+        self._gun_current_cooldown -= dt
         self.angular_velocity_degrees = -300.0 * self._spin
         forces = []
         if self._thrusting:
@@ -64,6 +72,25 @@ class Ship (physics.Thing):
             else:
                 forces.append( stopforce )
         self.body.force = reduce( lambda x,y: x+y, forces, Vec2d(0,0) )
+
+def ai_seek_target( dt, actor, target, fire):
+    actor._ai_time += dt
+    if actor._ai_time > 0.1:
+        actor._ai_time = 0.0
+        delta = (target.position - actor.position)
+        distance = delta.get_length()
+        correctness = delta.normalized().dot( actor.direction )
+        actor._turbo = False
+        if correctness > 0.95:
+            actor._thrusting = True
+            actor._braking = False
+            actor._spin = 0
+        else:
+            actor._thrusting = False
+            actor._braking = True
+            actor._spin = 1
+        if distance > 100.0 and distance < 1000.0:
+            fire()
 
 class Debris (physics.Thing):
     def __init__(self, sim, layer, position, shape, sprite, mass = 1.0, moment = 1.0, **kwargs):
@@ -91,7 +118,11 @@ def create_ship_thing(sim, layer, position, big = False):
         s.attach((1,3), blocks.QuadBlock(32), 0)
     for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
         block.image_name = "element_{0}_square.png".format( col )
-    return Ship( sim, s, layer, position, mass = len(s.blocks), moment = 4000.0, collision_type = collision_type_main )
+    rv = Ship( sim, s, layer, position, mass = len(s.blocks), moment = 4000.0, collision_type = collision_type_main )
+    rv._gun_distance = 65
+    if big:
+        rv._gun_distance += 32
+    return rv
 
 def create_square_thing(sim, layer, position, image):
     points = [(0,0),(32,0),(32,32),(0,32)]
@@ -107,7 +138,7 @@ def create_bullet_thing(sim, image, shooter):
     layer = None
     rv = Debris( sim, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet, group = group_bulletgroup )
     speed = 500
-    rv.position = shooter.position + shooter.direction * (65)
+    rv.position = shooter.position + shooter.direction * shooter._gun_distance
     rv.velocity = shooter.velocity + shooter.direction * (speed)
     rv.angle_radians = degrees_to_radians( shooter.angle_degrees + 90.0 )
     return rv
@@ -125,7 +156,7 @@ def main():
     main_layer = graphics.Layer( scene )
     main_layer.cocos_layer.position = camera.offset()
     player = create_ship_thing( window.sim, main_layer, (0,0) )
-    create_ship_thing( window.sim, main_layer, (500,0), big = True )
+    npc = create_ship_thing( window.sim, main_layer, (500,0), big = True )
     squareImg = pyglet.image.load( "element_red_square.png" )
     bulletImg = pyglet.image.load( "laserGreen.png" )
     batch = cocos.batch.BatchNode()
@@ -148,11 +179,21 @@ def main():
     input_layer.cocos_layer.set_key_hook( key.LSHIFT, player.on_controls_state )
     physics_objects = []
     def shoot_bullet(*args, **kwargs):
-        sq = create_bullet_thing( window.sim, bulletImg, player )
-        sq.ttl = 1.5
-        objects.append( sq.sprite )
-        batch.add( sq.sprite.cocos_sprite )
-        physics_objects.append( sq )
+        if player.may_fire():
+            sq = create_bullet_thing( window.sim, bulletImg, player )
+            sq.ttl = 1.5
+            objects.append( sq.sprite )
+            batch.add( sq.sprite.cocos_sprite )
+            physics_objects.append( sq )
+            player.fired()
+    def npc_shoot_bullet(*args, **kwargs):
+        if npc.may_fire():
+            sq = create_bullet_thing( window.sim, bulletImg, npc )
+            sq.ttl = 1.5
+            objects.append( sq.sprite )
+            batch.add( sq.sprite.cocos_sprite )
+            physics_objects.append( sq )
+            npc.fired()
     def on_mouse_motion( x, y, dx, dy ):
         xy = cocos.director.director.get_virtual_coordinates( x, y )
         xy = (x - camera.focus[0], y - camera.focus[1])
@@ -173,7 +214,7 @@ def main():
                 tbr.append( o )
         for o in tbr:
             physics_objects.remove(o)
-    scene.schedule( lambda dt : (player.update(),update_physics_objects(dt),window.sim.tick(dt)) )
+    scene.schedule( lambda dt : (player.update(dt),ai_seek_target(dt,npc,player,npc_shoot_bullet),npc.update(dt),update_physics_objects(dt),window.sim.tick(dt)) )
     def update_display_objects():
         # This is the hungry line. If we can find a way to
         # only update sprites when they're actually on screen,
