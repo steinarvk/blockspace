@@ -83,7 +83,9 @@ def create_player_thing(sim, layer, position):
     s.attach((0,0), blocks.QuadBlock(32), 0)
     s.attach((0,2), blocks.QuadBlock(32), 0)
     s.attach((1,2), blocks.QuadBlock(32), 0)
-    for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow","red"))):
+    s.attach((1,1), blocks.QuadBlock(32), 0)
+    s.attach((1,3), blocks.QuadBlock(32), 0)
+    for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
         block.image_name = "element_{0}_square.png".format( col )
     return Ship( sim, s, layer, position, moment = 1.0, collision_type = collision_type_main )
 
