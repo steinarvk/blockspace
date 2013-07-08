@@ -8,6 +8,10 @@ from util import radians_to_degrees, degrees_to_radians
 
 infinity = infinite_moment = pymunk.inf
 
+def zero_shape_centroid( shape ):
+    shape.translate( shape.centroid() * -1 )
+    return shape
+
 def calculate_maximum_timestep( minimum_diameter, maximum_speed ):
     return (0.5 * minimum_diameter) / maximum_speed
 
@@ -165,7 +169,7 @@ class CompositeShape (CollisionShape):
                 yield abc
     def translate(self, xy):
         for shape in self.shapes:
-            self.translate( xy )
+            shape.translate( xy )
         
 
 class DiskShape (CollisionShape):

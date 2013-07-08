@@ -89,7 +89,7 @@ class PolygonBlock (object):
 
     def create_collision_shape(self):
         return physics.ConvexPolygonShape( *self.vertices )
-        
+
     def clone(self):
         # TODO refactor out this -- very inconvenient with ducking
         return PolygonBlock( self.vertices )
@@ -166,7 +166,11 @@ class BlockStructure (object):
     def create_collision_shape(self):
         return physics.CompositeShape( *(block.create_collision_shape() for block in self.blocks) )
 
+    def centroid(self):
+        return self.create_collision_shape().centroid()
+
     def create_sprite_structure(self, thing, layer):
         s = graphics.SpriteStructure( thing, layer )
+        c = self.centroid()
         for block in self.blocks:
-            s.add_sprite( block.create_image(), block.translation)
+            s.add_sprite( block.create_image(), block.translation - c )

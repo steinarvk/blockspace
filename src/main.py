@@ -24,7 +24,7 @@ import blocks
 
 class Ship (physics.Thing):
     def __init__(self, sim, block_structure, layer, position, sprite_name = "player.png", mass = 1.0, moment = 1.0, **kwargs):
-        super( Ship, self ).__init__( sim, block_structure.create_collision_shape(), mass, moment, **kwargs )
+        super( Ship, self ).__init__( sim, physics.zero_shape_centroid( block_structure.create_collision_shape() ), mass, moment, **kwargs )
         self.block_structure = block_structure
         self.block_structure.create_sprite_structure( self, layer )
 #        self.sprite.add_sprite( "element_blue_square.png", (0,0) )
@@ -87,7 +87,7 @@ def create_player_thing(sim, layer, position):
     s.attach((1,3), blocks.QuadBlock(32), 0)
     for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
         block.image_name = "element_{0}_square.png".format( col )
-    return Ship( sim, s, layer, position, moment = 1.0, collision_type = collision_type_main )
+    return Ship( sim, s, layer, position, moment = 400.0, collision_type = collision_type_main )
 
 def create_square_thing(sim, layer, position, image):
     points = [(0,0),(32,0),(32,32),(0,32)]
@@ -121,6 +121,7 @@ def main():
     main_layer = graphics.Layer( scene )
     main_layer.cocos_layer.position = camera.offset()
     player = create_player_thing( window.sim, main_layer, (0,0) )
+    create_player_thing( window.sim, main_layer, (500,0) )
     squareImg = pyglet.image.load( "element_red_square.png" )
     bulletImg = pyglet.image.load( "laserGreen.png" )
     batch = cocos.batch.BatchNode()
