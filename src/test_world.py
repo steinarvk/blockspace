@@ -74,8 +74,8 @@ def test_world_timestep():
     w.tick( 1 )
     assert x == []
     w.tick( 1 )
-    assert x == [("A",1), ("B",1), ("C",1)]
+    assert x == [("A",2), ("B",2), ("C",2)]
     w.tick( 1 )
-    assert x == [("A",1), ("B",1), ("C",1)]
+    assert x == [("A",2), ("B",2), ("C",2)]
     w.tick( 1 )
-    assert x == [("A",1), ("B",1), ("C",1),("A",1), ("B",1), ("C",1)]
+    assert x == [("A",2), ("B",2), ("C",2),("A",2), ("B",2), ("C",2)]

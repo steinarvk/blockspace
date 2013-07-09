@@ -25,7 +25,7 @@ class FixedTimestepper (object):
         self.fixed_step_function = fixed_step_function
     def step(self, dt):
         self.t += dt
-        while self.t > self.timestep:
+        while self.t >= self.timestep:
             self.t -= self.timestep
             self.fixed_step_function( self.timestep )
 
@@ -42,13 +42,13 @@ class World (object):
         self.hookpoints.append( self.pre_display )
         self.display = Hookable()
         self.hookpoints.append( self.display )
-        self.stepper = FixedTimestepper( timestep, self.tick )
+        self.stepper = FixedTimestepper( timestep, self.fixed_tick )
     def fixed_tick(self, dt):
         self.pre_physics( dt )
         self.physics( dt )
         self.post_physics( dt )
     def tick(self, dt):
-        self.stepper( dt )
+        self.stepper.step( dt )
     def remove_all_hooks(self, obj):
         for hookable in self.hookpoints:
             hookable.remove_hooks( obj )

@@ -166,6 +166,17 @@ def test_timestep_fixed():
     assert len(set(timesteps)) == 1
     assert len(timesteps) == int(t / timestep)
 
+def test_timestep_unfixed():
+    sim = PhysicsSimulator(timestep = None, size_limit = 10.0, speed_limit = None)
+    timesteps = []
+    def fake_timestep(dt):
+        timesteps.append( dt )
+    sim.space.step = fake_timestep
+    steps = range(1,100)
+    for i in steps:
+        sim.tick( i )
+    assert timesteps == steps
+
 def test_create_thing():
     sim = PhysicsSimulator()
     thing = Thing( sim, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 

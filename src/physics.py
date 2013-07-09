@@ -200,13 +200,15 @@ class PhysicsSimulator (object):
         self._t = 0.0
         self._timestep = timestep
         self._next_group = 1
-        if speed_limit == None:
-            speed_limit = calculate_maximum_speed( self._timestep, size_limit )
-        if size_limit == None:
-            size_limit = calculate_minimum_diameter( self._timestep, speed_limit )
+        if self._timestep:
+            if speed_limit == None:
+                speed_limit = calculate_maximum_speed( self._timestep, size_limit )
+            if size_limit == None:
+                size_limit = calculate_minimum_diameter( self._timestep, speed_limit )
         self.speed_limit = speed_limit
         self.object_size_lower_limit = size_limit
-        assert calculate_maximum_timestep( self.object_size_lower_limit, self.speed_limit ) >= self._timestep
+        if self._timestep:
+            assert calculate_maximum_timestep( self.object_size_lower_limit, self.speed_limit ) >= self._timestep
     def tick(self, dt):
         if self._timestep:
             self._t += dt
