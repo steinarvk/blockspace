@@ -147,7 +147,7 @@ def create_bullet_thing(sim, image, shooter):
 
 class MainWorld (World):
     def __init__(self, resolution = (1300,1000), use_pygame = False, **kwargs):
-        super( MainWorld, self ).__init__(self, **kwargs)
+        super( MainWorld, self ).__init__( **kwargs)
         self.setup_graphics( resolution )
         self.setup_game()
         self.setup_input()
@@ -161,11 +161,10 @@ class MainWorld (World):
         self.pre_physics.add_anonymous_hook( self.update_camera )
         self.display.add_anonymous_hook( self.scene.update )
         self.pre_physics.add_hook( self.player, self.player.update )
-        self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, self.shoot_bullet ) )
+        self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
         self.pre_physics.add_hook( self.enemy, self.enemy.update )
-        self.physics.add_hook( self.sim.tick )
+        self.physics.add_anonymous_hook( self.sim.tick )
         self.scene.schedule( self.update_everything )
-        self.window.run( self.scene )
     def update_everything(self, dt):
         self.tick( dt )
         self.display_update()
@@ -176,8 +175,8 @@ class MainWorld (World):
         self.screen = pygame.display.set_mode( resolution )
     def setup_graphics(self, resolution):
         self.window = graphics.Window( resolution )
-        self.camera = graphics.Camera( window )
-        self.scene = graphics.Scene( window )
+        self.camera = graphics.Camera( self.window )
+        self.scene = graphics.Scene( self.window )
         graphics.Layer( self.scene, cocos.layer.ColorLayer( 0, 0, 0, 1 ) )
         for i in range(8):
             graphics.Layer( self.scene, graphics.BackgroundCocosLayer( self.camera, 10.0 + 0.5 * i, "starfield{0}.png".format(i) ) )
@@ -192,9 +191,10 @@ class MainWorld (World):
         self.batch = cocos.batch.BatchNode()
         self.main_layer.cocos_layer.add( self.batch )
         self.display_objects = []
+        self.physics_objects = []
         for i in range(200):
             cols = "red", "purple", "grey", "blue", "green", "yellow"
-            sq = create_square_thing( window.sim, None, (100,0), self.img_square )
+            sq = create_square_thing( self.sim, None, (100,0), self.img_square )
             sq.position = (random.random()-0.5) * 4000, (random.random()-0.5) * 4000
             sq.angle_radians = random.random() * math.pi * 2
             sq.mylabel = sq.position
@@ -203,13 +203,12 @@ class MainWorld (World):
             self.display_objects.append( sq.sprite )
         self.sim.space.add_collision_handler( collision_type_main, collision_type_bullet, self.collide_general_with_bullet )
     def setup_input(self):
-        input_layer = graphics.Layer( scene, gameinput.CocosInputLayer() )
-        input_layer.cocos_layer.set_key_press_hook( key.SPACE, player.on_fire_key )
+        input_layer = graphics.Layer( self.scene, gameinput.CocosInputLayer() )
         for k in (key.LEFT, key.RIGHT, key.UP, key.DOWN):
-            input_layer.cocos_layer.set_key_hook( k, player.on_controls_state )
-        input_layer.cocos_layer.set_key_hook( k, player.on_controls_state )
-        input_layer.cocos_layer.set_key_hook( key.LSHIFT, player.on_controls_state )
-        input_layer.cocos_layer.set_key_press_hook( key.space, partial( self.shoot_bullet, self.player ) )
+            input_layer.cocos_layer.set_key_hook( k, self.player.on_controls_state )
+        input_layer.cocos_layer.set_key_hook( k, self.player.on_controls_state )
+        input_layer.cocos_layer.set_key_hook( key.LSHIFT, self.player.on_controls_state )
+        input_layer.cocos_layer.set_key_press_hook( key.SPACE, lambda *args, **kwargs: self.shoot_bullet(self.player) )
     def shoot_bullet(self, shooter):
         if shooter.may_fire():
             sq = create_bullet_thing( self.sim, self.img_bullet, shooter )
@@ -254,124 +253,8 @@ class MainWorld (World):
         anything, bullet = arbiter.shapes
         bullet.thing.ttl = min( bullet.thing.ttl, 0.05 )
         return True
-        
-        
-
-
-        
-        
-
-    
-def main():
-    use_pygame = False
-    if use_pygame:
-        pygame.init()
-        screen = pygame.display.set_mode( (800,600) )
-    window = graphics.Window( (1300,1000) )
-    window.sim = physics.PhysicsSimulator()
-    camera = graphics.Camera( window )
-    scene = graphics.Scene( window )
-    graphics.Layer( scene, cocos.layer.ColorLayer( 0, 0, 0, 1 ) )
-    for i in range(8):
-        graphics.Layer( scene, graphics.BackgroundCocosLayer( camera, 10.0 + 0.5 * i, "starfield{0}.png".format(i) ) )
-    main_layer = graphics.Layer( scene )
-    main_layer.cocos_layer.position = camera.offset()
-    player = create_ship_thing( window.sim, main_layer, (0,0) )
-    npc = create_ship_thing( window.sim, main_layer, (500,0), big = True )
-    squareImg = pyglet.image.load( "element_red_square.png" )
-    bulletImg = pyglet.image.load( "laserGreen.png" )
-    batch = cocos.batch.BatchNode()
-    main_layer.cocos_layer.add( batch )
-    objects = []
-    for i in range(200):
-        cols = "red", "purple", "grey", "blue", "green", "yellow"
-        sq = create_square_thing( window.sim, None, (100,0), squareImg )
-        sq.position = (random.random()-0.5) * 4000, (random.random()-0.5) * 4000
-        sq.angle_radians = random.random() * math.pi * 2
-        sq.mylabel = sq.position
-        sq.velocity = (300,10)
-        batch.add( sq.sprite.cocos_sprite )
-        objects.append( sq.sprite )
-    input_layer = graphics.Layer( scene, gameinput.CocosInputLayer() )
-    input_layer.cocos_layer.set_key_press_hook( key.SPACE, player.on_fire_key )
-    for k in (key.LEFT, key.RIGHT, key.UP, key.DOWN):
-        input_layer.cocos_layer.set_key_hook( k, player.on_controls_state )
-    input_layer.cocos_layer.set_key_hook( k, player.on_controls_state )
-    input_layer.cocos_layer.set_key_hook( key.LSHIFT, player.on_controls_state )
-    physics_objects = []
-    def shoot_bullet(*args, **kwargs):
-        if player.may_fire():
-            sq = create_bullet_thing( window.sim, bulletImg, player )
-            sq.ttl = 1.5
-            objects.append( sq.sprite )
-            batch.add( sq.sprite.cocos_sprite )
-            physics_objects.append( sq )
-            player.fired()
-    def npc_shoot_bullet(*args, **kwargs):
-        if npc.may_fire():
-            sq = create_bullet_thing( window.sim, bulletImg, npc )
-            sq.ttl = 1.5
-            objects.append( sq.sprite )
-            batch.add( sq.sprite.cocos_sprite )
-            physics_objects.append( sq )
-            npc.fired()
-    def on_mouse_motion( x, y, dx, dy ):
-        xy = cocos.director.director.get_virtual_coordinates( x, y )
-        xy = (x - camera.focus[0], y - camera.focus[1])
-        things = [shape.thing for shape in window.sim.space.point_query( xy ) ]
-    input_layer.cocos_layer.mouse_motion_hooks.append( on_mouse_motion )
-    input_layer.cocos_layer.set_key_press_hook( key.SPACE, shoot_bullet )
-    camera.following = player
-    main_layer.camera = camera
-    scene.schedule( lambda dt : (camera.update(dt),scene.update()) ) # pre-display
-    player.mylabel = -1
-    def update_physics_objects(dt):
-        tbr = []
-        for o in physics_objects:
-            o.ttl -= dt
-            if o.ttl <= 0.0:
-                o.kill()
-            if not o.alive:
-                tbr.append( o )
-        for o in tbr:
-            physics_objects.remove(o)
-    scene.schedule( lambda dt : (player.update(dt),ai_seek_target(dt,npc,player,npc_shoot_bullet),npc.update(dt),update_physics_objects(dt),window.sim.tick(dt)) ) # pre-physics and physics
-    def update_display_objects():
-        # This is the hungry line. If we can find a way to
-        # only update sprites when they're actually on screen,
-        # we're probably good.
-        # We also need to update
-        x, y = camera.focus
-        hw, hh = 0.5 * window.width, 0.5 * window.height
-        screen_slack = 100.0
-        beyond_slack = screen_slack + 500.0
-        screen_bb = pymunk.BB(x-hw-screen_slack,y-hh-screen_slack,x+hw+screen_slack,y+hh+screen_slack)
-        big_bb = pymunk.BB(x-hw-beyond_slack,y-hh-beyond_slack,x+hw+beyond_slack,y+hh+beyond_slack)
-        onscreen = set(window.sim.space.bb_query( screen_bb ))
-        for shape in onscreen:
-            shape.thing.sprite.update()
-        prech = set(batch.get_children())
-        for spr in objects:
-            if all((shape not in onscreen for shape in spr.thing.shapes)):
-                if spr.cocos_sprite in prech:
-                    batch.remove( spr.cocos_sprite )
-            else:
-                if spr.cocos_sprite not in prech:
-                    batch.add( spr.cocos_sprite )
-    scene.schedule( lambda dt : update_display_objects() ) # pre-display
-    def collide_general_with_bullet( space, arbiter ):
-        anything, bullet = arbiter.shapes
-        bullet.thing.ttl = min( bullet.thing.ttl, 0.05 )
-#        window.sim.space.add_post_step_callback( lambda x : x.kill(), bullet.thing )
-        return True
-    window.sim.space.add_collision_handler( collision_type_main, collision_type_bullet, collide_general_with_bullet )
-    if use_pygame:
-        def update_pygame():
-            screen.fill( pygame.color.THECOLORS[ "black" ] )
-            draw_space( screen, window.sim.space )
-            pygame.display.flip()
-        scene.schedule( lambda dt : update_pygame() ) # pre-display
-    window.run( scene )
+    def run(self):
+        self.window.run( self.scene )
 
 if __name__ == '__main__':
-    main()
+    MainWorld().run()
