@@ -9,3 +9,13 @@ Tick (dt):
         post-physics hook (kt)
             Checking results
                 Hit points
+
+Display update:
+    Pre-display hook:
+        Copy positions and rotations
+            With offscreen culling for efficiency using an AABB physics query
+        Update UI elements
+    Buffer flip
+    (Post-display hook is not useful)
+
+    
