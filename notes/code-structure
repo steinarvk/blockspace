@@ -1,0 +1,11 @@
+Tick (dt):
+    Fix timestep at kt:
+        pre-physics hook (kt)
+            Calculation of intentions and forces
+                AI
+                Computations based on controller state
+        physics tick (kt)
+            Collision handlers
+        post-physics hook (kt)
+            Checking results
+                Hit points
