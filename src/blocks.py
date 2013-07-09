@@ -87,8 +87,8 @@ class PolygonBlock (object):
         self.vertices = map( lambda x : x + xy, self.vertices )
         return self
 
-    def create_collision_shape(self):
-        return physics.ConvexPolygonShape( *self.vertices )
+    def create_collision_shape(self, extra_info = None):
+        return physics.ConvexPolygonShape( *self.vertices, extra_info = extra_info )
 
     def clone(self):
         # TODO refactor out this -- very inconvenient with ducking
@@ -164,7 +164,10 @@ class BlockStructure (object):
         return foreign_block_index
 
     def create_collision_shape(self):
-        return physics.CompositeShape( *(block.create_collision_shape() for block in self.blocks) )
+        rv = []
+        for index, block in indexed_zip(self.blocks):
+            rv.append( block.create_collision_shape( extra_info = index ) )
+        return physics.CompositeShape( *rv )
 
     def centroid(self):
         return self.create_collision_shape().centroid()

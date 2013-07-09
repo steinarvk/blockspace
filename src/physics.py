@@ -49,11 +49,12 @@ def closed_circle_pairs( l ):
     return successive_pairs( closed_circle( l ) )
 
 class CollisionShape (object):
-    def __init__(self, group = None, sensor = None, collision_type = None, elasticity = None):
+    def __init__(self, group = None, sensor = None, collision_type = None, elasticity = None, extra_info = None):
         self.group = group
         self.sensor = sensor
         self.collision_type = collision_type
         self.elasticity = elasticity
+        self.extra_info = extra_info
     def decorate_shape(self, shape):
         if self.group != None:
             shape.group = self.group
@@ -63,6 +64,8 @@ class CollisionShape (object):
             shape.collision_type = self.collision_type
         if self.elasticity != None:
             shape.elasticity = self.elasticity
+        if self.extra_info != None:
+            shape.extra_info = self.extra_info
         return shape
     def generate_shapes(self, body):
         for shape in self.generate_basic_shapes( body ):

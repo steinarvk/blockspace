@@ -251,6 +251,13 @@ class MainWorld (World):
                     self.batch.add( spr.cocos_sprite )
     def collide_general_with_bullet(self, space, arbiter ):
         anything, bullet = arbiter.shapes
+        try:
+            thing = anything.thing
+            index = anything.extra_info
+            block = thing.block_structure.blocks[ index ]
+            print "hit", thing, "in block", index, "which is", block
+        except:
+            print "error determining block"
         bullet.thing.ttl = min( bullet.thing.ttl, 0.05 )
         return True
     def run(self):
