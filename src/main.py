@@ -137,7 +137,7 @@ def create_bullet_thing(sim, image, shooter):
     shape.translate( shape.centroid() * -1)
     layer = None
     rv = Debris( sim, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet, group = group_bulletgroup )
-    speed = 500
+    speed = 700
     rv.position = shooter.position + shooter.direction * shooter._gun_distance
     rv.velocity = shooter.velocity + shooter.direction * (speed)
     rv.angle_radians = degrees_to_radians( shooter.angle_degrees + 90.0 )
@@ -146,7 +146,7 @@ def create_bullet_thing(sim, image, shooter):
 def main():
     pygame.init()
     screen = pygame.display.set_mode( (800,600) )
-    window = graphics.Window()
+    window = graphics.Window( (1300,1000) )
     window.sim = physics.PhysicsSimulator()
     camera = graphics.Camera( window )
     scene = graphics.Scene( window )
