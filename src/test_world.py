@@ -62,3 +62,20 @@ def test_world_hookables():
     w.display_update()
     assert x == ex
     assert y == [ "pre-display 1", "pre-display 2", "display 1", "display 2" ]
+
+def test_world_timestep():
+    x = []
+    def foo( s, dt ):
+        x.append( (s,dt) )
+    w = World(timestep = 2)
+    w.pre_physics.add_anonymous_hook( partial( foo, "A" ) )
+    w.physics.add_anonymous_hook( partial( foo, "B" ) )
+    w.post_physics.add_anonymous_hook( partial( foo, "C" ) )
+    w.tick( 1 )
+    assert x == []
+    w.tick( 1 )
+    assert x == [("A",1), ("B",1), ("C",1)]
+    w.tick( 1 )
+    assert x == [("A",1), ("B",1), ("C",1)]
+    w.tick( 1 )
+    assert x == [("A",1), ("B",1), ("C",1),("A",1), ("B",1), ("C",1)]

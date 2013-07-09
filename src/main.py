@@ -204,7 +204,7 @@ def main():
     input_layer.cocos_layer.set_key_press_hook( key.SPACE, shoot_bullet )
     camera.following = player
     main_layer.camera = camera
-    scene.schedule( lambda dt : (camera.update(dt),scene.update()) )
+    scene.schedule( lambda dt : (camera.update(dt),scene.update()) ) # pre-display
     player.mylabel = -1
     def update_physics_objects(dt):
         tbr = []
@@ -216,7 +216,7 @@ def main():
                 tbr.append( o )
         for o in tbr:
             physics_objects.remove(o)
-    scene.schedule( lambda dt : (player.update(dt),ai_seek_target(dt,npc,player,npc_shoot_bullet),npc.update(dt),update_physics_objects(dt),window.sim.tick(dt)) )
+    scene.schedule( lambda dt : (player.update(dt),ai_seek_target(dt,npc,player,npc_shoot_bullet),npc.update(dt),update_physics_objects(dt),window.sim.tick(dt)) ) # pre-physics and physics
     def update_display_objects():
         # This is the hungry line. If we can find a way to
         # only update sprites when they're actually on screen,
@@ -239,7 +239,7 @@ def main():
             else:
                 if spr.cocos_sprite not in prech:
                     batch.add( spr.cocos_sprite )
-    scene.schedule( lambda dt : update_display_objects() )
+    scene.schedule( lambda dt : update_display_objects() ) # pre-display
     def collide_general_with_bullet( space, arbiter ):
         anything, bullet = arbiter.shapes
         bullet.thing.ttl = min( bullet.thing.ttl, 0.05 )
@@ -251,7 +251,7 @@ def main():
             screen.fill( pygame.color.THECOLORS[ "black" ] )
             draw_space( screen, window.sim.space )
             pygame.display.flip()
-        scene.schedule( lambda dt : update_pygame() )
+        scene.schedule( lambda dt : update_pygame() ) # pre-display
     window.run( scene )
 
 if __name__ == '__main__':

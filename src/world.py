@@ -18,8 +18,19 @@ class Hookable (object):
             for hook in hooks:
                 hook(*args, **kwargs)
 
+class FixedTimestepper (object):
+    def __init__(self, timestep, fixed_step_function):
+        self.timestep = timestep
+        self.t = 0.0
+        self.fixed_step_function = fixed_step_function
+    def step(self, dt):
+        self.t += dt
+        while self.t > self.timestep:
+            self.t -= self.timestep
+            self.fixed_step_function( self.timestep )
+
 class World (object):
-    def __init__(self):
+    def __init__(self, timestep = 0.01):
         self.hookpoints = []
         self.pre_physics = Hookable()
         self.hookpoints.append( self.pre_physics )
@@ -31,10 +42,13 @@ class World (object):
         self.hookpoints.append( self.pre_display )
         self.display = Hookable()
         self.hookpoints.append( self.display )
+        self.stepper = FixedTimestepper( timestep, self.tick )
     def fixed_tick(self, dt):
         self.pre_physics( dt )
         self.physics( dt )
         self.post_physics( dt )
+    def tick(self, dt):
+        self.stepper( dt )
     def remove_all_hooks(self, obj):
         for hookable in self.hookpoints:
             hookable.remove_hooks( obj )

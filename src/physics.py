@@ -208,10 +208,13 @@ class PhysicsSimulator (object):
         self.object_size_lower_limit = size_limit
         assert calculate_maximum_timestep( self.object_size_lower_limit, self.speed_limit ) >= self._timestep
     def tick(self, dt):
-        self._t += dt
-        while self._t >= self._timestep:
-            self.space.step( self._timestep )
-            self._t -= self._timestep
+        if self._timestep:
+            self._t += dt
+            while self._t >= self._timestep:
+                self.space.step( self._timestep )
+                self._t -= self._timestep
+        else:
+            self.space.step( dt )
     def new_group_id(self):
         rv = self._next_group
         self._next_group += 1
