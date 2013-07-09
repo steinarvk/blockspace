@@ -144,8 +144,10 @@ def create_bullet_thing(sim, image, shooter):
     return rv
     
 def main():
-    pygame.init()
-    screen = pygame.display.set_mode( (800,600) )
+    use_pygame = False
+    if use_pygame:
+        pygame.init()
+        screen = pygame.display.set_mode( (800,600) )
     window = graphics.Window( (1300,1000) )
     window.sim = physics.PhysicsSimulator()
     camera = graphics.Camera( window )
@@ -244,11 +246,12 @@ def main():
 #        window.sim.space.add_post_step_callback( lambda x : x.kill(), bullet.thing )
         return True
     window.sim.space.add_collision_handler( collision_type_main, collision_type_bullet, collide_general_with_bullet )
-    def update_pygame():
-        screen.fill( pygame.color.THECOLORS[ "black" ] )
-        draw_space( screen, window.sim.space )
-        pygame.display.flip()
-    scene.schedule( lambda dt : update_pygame() )
+    if use_pygame:
+        def update_pygame():
+            screen.fill( pygame.color.THECOLORS[ "black" ] )
+            draw_space( screen, window.sim.space )
+            pygame.display.flip()
+        scene.schedule( lambda dt : update_pygame() )
     window.run( scene )
 
 if __name__ == '__main__':
