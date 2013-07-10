@@ -34,9 +34,9 @@ def radians_almost_equal(a, b, k = 0.001):
 def degrees_almost_equal(a, b, k = 0.001):
     return radians_almost_equal( degrees_to_radians(a), degrees_to_radians(b), k = k )
 
-def round_scalar( s ):
-    return int(s * 1000000) / float(1000000)
+def round_scalar( s, d = 1000000 ):
+    return int(s * d) / float(d)
 
-def round_vector( xy ):
+def round_vector( xy, d = 1000000 ):
     x, y = xy
-    return Vec2d( round_scalar(x), round_scalar(y) )
+    return Vec2d( round_scalar(x, d = d), round_scalar(y, d = d) )

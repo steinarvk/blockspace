@@ -38,7 +38,7 @@ class Edge (object):
         return self.a.get_distance( self.b )
 
     def __repr__(self):
-        return "<edge {0} to {1} ({2}, {3})>".format( tuple(round_vector(self.a)), tuple(round_vector(self.b)), self.length, self.angle_degrees )
+        return "<edge {0} to {1} ({2}, {3})>".format( tuple(round_vector(self.a,d=1)), tuple(round_vector(self.b,d=1)), self.length, self.angle_degrees )
 
     def matches(self, edge):
         return almost_equal( self.length, edge.length )
@@ -95,7 +95,7 @@ class PolygonBlock (object):
         return PolygonBlock( self.vertices )
         
     def __repr__(self):
-        return "<{0}>".format( "-".join( [ repr((x,y)) for x,y in self.vertices] ) )
+        return "<{0}>".format( "-".join( [ repr(round_vector((x,y),d=1)) for x,y in self.vertices] ) )
 
     def create_image(self):
         return self.image_name
