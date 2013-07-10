@@ -188,3 +188,19 @@ def test_attach_four_blocks_in_knightsmove():
             a, b = connected
             assert connections[ a ][ b ] == (block_index, edge_index)
     assert len( s.extract_connections() ) == 3
+
+def test_integer_map():
+    x = IntegerMap()
+    for i in range(10):
+        assert x.next_index == i
+        x.append( "foo {0}".format( i ) )
+    for i in range(10):
+        assert x[i] == "foo {0}".format( i )
+    assert [ "foo {0}".format(i) for i in range(10) ] == [ s for s in x ]
+    del x[7]
+    for i in range(10):
+        if i != 7:
+            assert x[i] == "foo {0}".format( i )
+    assert x.next_index == 10
+    x.append( "last" )
+    assert x[ x.next_index - 1 ] == "last"

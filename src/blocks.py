@@ -13,6 +13,8 @@ from util import almost_equal, vectors_almost_equal, round_vector
 
 import copy
 
+from collections import OrderedDict
+
 class IllegalOverlapException (Exception):
     pass
 
@@ -111,9 +113,29 @@ class QuadBlock (PolygonBlock):
     def __repr__(self):
         return "<{0}>".format( "-".join( [ repr((x,y)) for x,y in self.vertices] ) )
 
+class IntegerMap (object):
+    def __init__(self):
+        self.d = OrderedDict()
+        self.next_index = 0
+    def append(self, value):
+        self.d[ self.next_index ] = value
+        self.next_index += 1
+    def __iter__(self):
+        for v in self.d.values():
+            yield v
+    def indexed(self):
+        for k, v in self.d.items():
+            yield (k,v)
+    def __getitem__(self, index):
+        return self.d[ index ]
+    def __repr__(self):
+        return "<IntegerMap {0}>".format( str(self.d.items()) )
+    def __delitem__(self, index):
+        del self.d[ index ]
+
 class BlockStructure (object):
     def __init__(self, block):
-        self.blocks = []
+        self.blocks = IntegerMap()
         self.free_edge_indices = []
         self.add_block( block )
 
