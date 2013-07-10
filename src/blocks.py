@@ -15,6 +15,8 @@ import copy
 
 from collections import OrderedDict
 
+import sys
+
 class IllegalOverlapException (Exception):
     pass
 
@@ -58,9 +60,21 @@ class Edge (object):
     @property
     def angle_degrees(self):
         return (self.b - self.a).rotated_degrees(-90).get_angle_degrees() % 360.0
+
+class Block (object):
+    def __init__(self):
+        self.collision_shapes = []
+
+    def register_shape(self, shape):
+        self.collision_shapes.append( shape )
+
+    def clone(self):
+        # TODO refactor out this -- very inconvenient with ducking
+        return copy.copy( self )
         
-class PolygonBlock (object):
+class PolygonBlock (Block):
     def __init__(self, vertices):
+        super( PolygonBlock, self ).__init__()
         self.vertices = map( Vec2d, vertices )
         self.free_edge_indices = range(len(self.edges))
         self.connections = {}
@@ -92,13 +106,9 @@ class PolygonBlock (object):
         self.vertices = map( lambda x : x + xy, self.vertices )
         return self
 
-    def create_collision_shape(self, extra_info = None):
-        return physics.ConvexPolygonShape( *self.vertices, extra_info = extra_info )
+    def create_collision_shape(self, extra_info = None, origin = None):
+        return physics.ConvexPolygonShape( *self.vertices, extra_info = extra_info, origin = origin )
 
-    def clone(self):
-        # TODO refactor out this -- very inconvenient with ducking
-        return PolygonBlock( self.vertices )
-        
     def __repr__(self):
         return "<{0}>".format( "-".join( [ repr(round_vector((x,y),d=1)) for x,y in self.vertices] ) )
 
@@ -205,21 +215,37 @@ class BlockStructure (object):
                     self.free_edge_indices.remove( (local_block_index,local_edge_index) )
                     self.free_edge_indices.remove( (foreign_block_index,foreign_edge_index) )
         return foreign_block_index
+    
+    def remove_block(self, index):
+        # TODO ensure connections consistent etc.
+        block = self.blocks[ index ]
+        del self.blocks[ index ]
+        # TODO ensure connected, and return both the block and any detached parts
+        try:
+            s = self.sprite_structure
+        except AttributeError:
+            s = None
+        if s:
+            s.remove_sprite( block.sprite )
+        for collision_shape in block.collision_shapes:
+            sim = collision_shape.thing.sim
+            collision_shape.thing.shapes.remove( collision_shape )
+            sim.remove( collision_shape )
 
     def create_collision_shape(self):
         rv = []
         for index, block in self.blocks.indexed():
-            rv.append( block.create_collision_shape( extra_info = index ) )
+            rv.append(block.create_collision_shape( extra_info = index, origin = block ))
         return physics.CompositeShape( *rv )
 
     def centroid(self):
         return self.create_collision_shape().centroid()
 
     def create_sprite_structure(self, thing, layer):
-        s = graphics.SpriteStructure( thing, layer )
+        self.sprite_structure = s = graphics.SpriteStructure( thing, layer )
         c = self.centroid()
         for block in self.blocks:
-            s.add_sprite( block.create_image(), block.translation - c )
+            block.sprite = s.add_sprite( block.create_image(), block.translation - c )
 
 def filter_connections( connections, block_indices ):
     def check_connection( connection ):

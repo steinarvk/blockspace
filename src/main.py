@@ -120,9 +120,6 @@ def create_ship_thing(sim, layer, position, big = False):
         s.attach((1,3), blocks.QuadBlock(32), 0)
     for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
         block.image_name = "element_{0}_square.png".format( col )
-        print block.connections
-    print s.extract_connections_map()
-    print s.extract_connections()
     rv = Ship( sim, s, layer, position, mass = len(s.blocks), moment = 4000.0, collision_type = collision_type_main )
     rv._gun_distance = 65
     if big:
@@ -146,6 +143,7 @@ def create_bullet_thing(sim, image, shooter):
     rv.position = shooter.position + shooter.direction * shooter._gun_distance
     rv.velocity = shooter.velocity + shooter.direction * (speed)
     rv.angle_radians = degrees_to_radians( shooter.angle_degrees + 90.0 )
+    rv.inert = False
     return rv
 
 class MainWorld (World):
@@ -166,6 +164,7 @@ class MainWorld (World):
         self.pre_physics.add_hook( self.player, self.player.update )
         self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
         self.pre_physics.add_hook( self.enemy, self.enemy.update )
+        self.post_physics.add_anonymous_hook( ignore_arguments( self.sim.perform_removals ) )
         self.physics.add_anonymous_hook( self.sim.tick )
         self.scene.schedule( self.update_everything )
     def update_everything(self, dt):
@@ -189,6 +188,7 @@ class MainWorld (World):
         self.sim = physics.PhysicsSimulator( timestep = None )
         self.player = create_ship_thing( self.sim, self.main_layer, (0,0) )
         self.enemy = create_ship_thing( self.sim, self.main_layer, (500,0), big = True )
+        self.enemy.invulnerable = False
         self.img_square = pyglet.image.load( "element_red_square.png" )
         self.img_bullet = pyglet.image.load( "laserGreen.png" )
         self.batch = cocos.batch.BatchNode()
@@ -257,12 +257,20 @@ class MainWorld (World):
         try:
             thing = anything.thing
             index = anything.extra_info
-            block = thing.block_structure.blocks[ index ]
-            print "hit", thing, "in block", index, "which is", block
-            print "partitioned:", partition_connections_removing_blocks( thing.block_structure.extract_connections(), [index] )
-        except:
-            print "error determining block"
+        except AttributeError:
+            return True
+        if bullet.thing.inert:
+            return True
+        block = thing.block_structure.blocks[ index ]
+        if not thing.invulnerable:
+            thing.block_structure.remove_block( index )
+            thing.mass = len( thing.block_structure.blocks )
+        if len(thing.block_structure.blocks) == 0:
+            print "killing main thing"
+            thing.kill()
+            self.remove_all_hooks( thing )
         bullet.thing.ttl = min( bullet.thing.ttl, 0.05 )
+        bullet.thing.inert = False
         return True
     def run(self):
         self.window.run( self.scene )

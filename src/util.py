@@ -40,3 +40,6 @@ def round_scalar( s, d = 1000000 ):
 def round_vector( xy, d = 1000000 ):
     x, y = xy
     return Vec2d( round_scalar(x, d = d), round_scalar(y, d = d) )
+
+def ignore_arguments( f ):
+    return lambda *args, **kwargs : f()

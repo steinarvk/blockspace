@@ -102,6 +102,10 @@ class SpriteStructure (object):
         cocos_sprite.position = offset
         self.cocos_sprites.append( cocos_sprite )
         self.node.add( cocos_sprite )
+        return cocos_sprite
+    def remove_sprite(self, cocos_sprite):
+        self.cocos_sprites.remove( cocos_sprite )
+        self.node.remove( cocos_sprite )
     def kill(self):
         if self.layer:
             self.layer.remove_sprite( self )

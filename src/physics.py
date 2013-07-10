@@ -49,12 +49,13 @@ def closed_circle_pairs( l ):
     return successive_pairs( closed_circle( l ) )
 
 class CollisionShape (object):
-    def __init__(self, group = None, sensor = None, collision_type = None, elasticity = None, extra_info = None):
+    def __init__(self, group = None, sensor = None, collision_type = None, elasticity = None, extra_info = None, origin = None):
         self.group = group
         self.sensor = sensor
         self.collision_type = collision_type
         self.elasticity = elasticity
         self.extra_info = extra_info
+        self.origin = origin
     def decorate_shape(self, shape):
         if self.group != None:
             shape.group = self.group
@@ -66,6 +67,8 @@ class CollisionShape (object):
             shape.elasticity = self.elasticity
         if self.extra_info != None:
             shape.extra_info = self.extra_info
+        if self.origin:
+            self.origin.register_shape( shape )
         return shape
     def generate_shapes(self, body):
         for shape in self.generate_basic_shapes( body ):
@@ -212,6 +215,13 @@ class PhysicsSimulator (object):
         self.object_size_lower_limit = size_limit
         if self._timestep:
             assert calculate_maximum_timestep( self.object_size_lower_limit, self.speed_limit ) >= self._timestep
+        self.marked_for_removal = []
+    def remove(self, *args):
+        self.marked_for_removal.extend( args )
+    def perform_removals(self):
+        if self.marked_for_removal:
+            self.space.remove( *set(self.marked_for_removal) )
+            self.marked_for_removal = []
     def tick(self, dt):
         if self._timestep:
             self._t += dt
@@ -243,6 +253,7 @@ class Thing (object):
         self.abstract_shape = shape
         self.shapes = list( shape.generate_shapes( self.body ) )
         self.centroid = shape.centroid()
+        self.invulnerable = True
         for shape in self.shapes:
             bb = shape.cache_bb()
             assert min( abs(bb.right-bb.left), abs(bb.top-bb.bottom) ) >= sim.object_size_lower_limit
@@ -267,7 +278,7 @@ class Thing (object):
         if self.killed:
             return
         self.killed = True
-        self.sim.space.remove( self.body, *self.shapes )
+        self.sim.remove( self.body, *self.shapes )
         self.alive = False
         for hook in self.kill_hooks:
             hook( self )
