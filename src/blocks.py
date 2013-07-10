@@ -7,8 +7,11 @@ import graphics
 
 import math
 from itertools import starmap
+from operator import attrgetter
 
 from util import almost_equal, vectors_almost_equal, round_vector
+
+import copy
 
 class IllegalOverlapException (Exception):
     pass
@@ -134,6 +137,22 @@ class BlockStructure (object):
         # TODO nondegenerate overlap check
         return False
 
+    def extract_connections_map(self):
+        rv = {}
+        for index, block in indexed_zip(self.blocks):
+            rv[ index ] = dict(block.connections)
+        return rv
+
+    def extract_connections(self):
+        rv = []
+        for block_index, c in self.extract_connections_map().items():
+            for local_index, connected in c.items():
+                a = (block_index, local_index)
+                assert a != connected
+                if a < connected:
+                    rv.append( (a,connected) )
+        return rv
+
     def attach(self, index, block, block_edge_index ):
         block_index, edge_index = index
         local_edge = self.edge( index )
@@ -177,3 +196,50 @@ class BlockStructure (object):
         c = self.centroid()
         for block in self.blocks:
             s.add_sprite( block.create_image(), block.translation - c )
+
+def filter_connections( connections, block_indices ):
+    def check_connection( connection ):
+        (a,_), (b,_) = connection
+        return (a not in block_indices) and (b not in block_indices)
+    return filter( check_connection, connections )
+
+def blocks_in_connections( connections ):
+    rv = set()
+    for (a,_), (b,_) in connections:
+        rv.add( a )
+        rv.add( b )
+    return tuple(rv)
+
+def explore_connections( connections, start ):
+    seen = set( [start] )
+    changed = True
+    rv = []
+    while changed:
+        changed = False
+        for connection in connections:
+            (a,_), (b,_) = connection
+            a_new = a not in seen
+            b_new = b not in seen
+            if a_new and not b_new:
+                changed = True
+                seen.add( a_new )
+                rv.append( connection )
+            if b_new and not a_new: 
+                changed = True
+                seen.add( b_new )
+                rv.append( connection )
+    return rv
+        
+def partition_connections( connections ):
+    rv = []
+    while connections:
+        start_block = blocks_in_connections( connections )[0]
+        connections_chunk = explore_connections( connections, start_block )
+        blocks_in_chunk = set( blocks_in_connections( connections_chunk ) )
+        blocks_in_chunk.add( start_block )
+        connections = filter_connections( connections, blocks_in_chunk )
+        rv.append( ( tuple( blocks_in_chunk ), connections_chunk ) )
+    return rv
+
+def partition_connections_removing_blocks( connections, block_indices ):
+    return partition_connections( filter_connections( connections, block_indices ) )

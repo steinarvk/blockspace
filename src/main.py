@@ -120,6 +120,9 @@ def create_ship_thing(sim, layer, position, big = False):
         s.attach((1,3), blocks.QuadBlock(32), 0)
     for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
         block.image_name = "element_{0}_square.png".format( col )
+        print block.connections
+    print s.extract_connections_map()
+    print s.extract_connections()
     rv = Ship( sim, s, layer, position, mass = len(s.blocks), moment = 4000.0, collision_type = collision_type_main )
     rv._gun_distance = 65
     if big:
@@ -256,6 +259,7 @@ class MainWorld (World):
             index = anything.extra_info
             block = thing.block_structure.blocks[ index ]
             print "hit", thing, "in block", index, "which is", block
+            print "partitioned:", partition_connections_removing_blocks( thing.block_structure.extract_connections(), [index] )
         except:
             print "error determining block"
         bullet.thing.ttl = min( bullet.thing.ttl, 0.05 )

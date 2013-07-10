@@ -99,6 +99,12 @@ def test_attach_four_blocks_in_square():
     assert almost_equal( s.edge( (d_index,1) ).angle_degrees, 270 )
     assert almost_equal( s.edge( (d_index,2) ).angle_degrees, 0 )
     assert almost_equal( s.edge( (d_index,3) ).angle_degrees, 90 )
+    connections = s.extract_connections_map()
+    for block_index, block_connections in connections.items():
+        for edge_index, connected in block_connections.items():
+            a, b = connected
+            assert connections[ a ][ b ] == (block_index, edge_index)
+    assert len( s.extract_connections() ) == 4
 
 def test_attach_four_blocks_in_line():
     #  2  1  1  3
@@ -133,6 +139,12 @@ def test_attach_four_blocks_in_line():
     assert almost_equal( s.edge( (d_index,1) ).angle_degrees, 270 )
     assert almost_equal( s.edge( (d_index,2) ).angle_degrees, 0 )
     assert almost_equal( s.edge( (d_index,3) ).angle_degrees, 90 )
+    connections = s.extract_connections_map()
+    for block_index, block_connections in connections.items():
+        for edge_index, connected in block_connections.items():
+            a, b = connected
+            assert connections[ a ][ b ] == (block_index, edge_index)
+    assert len( s.extract_connections() ) == 3
 
 def test_attach_four_blocks_in_knightsmove():
     #  2  1  1 
@@ -170,3 +182,9 @@ def test_attach_four_blocks_in_knightsmove():
     assert almost_equal( s.edge( (d_index,1) ).angle_degrees, 90 )
     assert almost_equal( s.edge( (d_index,2) ).angle_degrees, 180 )
     assert almost_equal( s.edge( (d_index,3) ).angle_degrees, 270 )
+    connections = s.extract_connections_map()
+    for block_index, block_connections in connections.items():
+        for edge_index, connected in block_connections.items():
+            a, b = connected
+            assert connections[ a ][ b ] == (block_index, edge_index)
+    assert len( s.extract_connections() ) == 3
