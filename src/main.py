@@ -266,11 +266,10 @@ class MainWorld (World):
             thing.block_structure.remove_block( index )
             thing.mass = len( thing.block_structure.blocks )
         if len(thing.block_structure.blocks) == 0:
-            print "killing main thing"
             thing.kill()
             self.remove_all_hooks( thing )
         bullet.thing.ttl = min( bullet.thing.ttl, 0.05 )
-        bullet.thing.inert = False
+        bullet.thing.inert = True
         return True
     def run(self):
         self.window.run( self.scene )
