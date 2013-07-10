@@ -132,6 +132,8 @@ class IntegerMap (object):
         return "<IntegerMap {0}>".format( str(self.d.items()) )
     def __delitem__(self, index):
         del self.d[ index ]
+    def __len__(self):
+        return len(self.d)
 
 class BlockStructure (object):
     def __init__(self, block):
@@ -140,7 +142,7 @@ class BlockStructure (object):
         self.add_block( block )
 
     def add_block(self, block):
-        index = len(self.blocks)
+        index = self.blocks.next_index
         self.free_edge_indices.extend(list(map( lambda edge_index : (index,edge_index), range(len(block.edges)))))
         self.blocks.append( block )
 
@@ -161,7 +163,7 @@ class BlockStructure (object):
 
     def extract_connections_map(self):
         rv = {}
-        for index, block in indexed_zip(self.blocks):
+        for index, block in self.blocks.indexed():
             rv[ index ] = dict(block.connections)
         return rv
 
@@ -187,7 +189,7 @@ class BlockStructure (object):
         if self.overlaps( block ):
             raise IllegalOverlapException()
         block.free_edge_indices.remove( block_edge_index )
-        foreign_block_index = len( self.blocks )
+        foreign_block_index = self.blocks.next_index
         local_edge = self.edges[ edge_index ]
         foreign_edge = block.edges[ block_edge_index ]
         self.add_block( block )
@@ -206,7 +208,7 @@ class BlockStructure (object):
 
     def create_collision_shape(self):
         rv = []
-        for index, block in indexed_zip(self.blocks):
+        for index, block in self.blocks.indexed():
             rv.append( block.create_collision_shape( extra_info = index ) )
         return physics.CompositeShape( *rv )
 
