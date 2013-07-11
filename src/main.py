@@ -21,6 +21,9 @@ from pymunk.pygame_util import draw_space
 import pymunk
 
 import blocks
+import component
+
+from operator import attrgetter
 
 from world import World
 
@@ -108,16 +111,25 @@ class Debris (physics.Thing):
 collision_type_main = 1
 collision_type_bullet = 2
 group_bulletgroup = 1
+
+def with_gun( block, edge_index = 1 ):
+    angle = [ -90.0, 0.0, 90.0, 180.0 ][ edge_index ]
+    pos = Vec2d( polar_degrees( angle, 16.0 ) )
+    component.PointComponent( "blaster", block, pos, angle, required_edges = (edge_index,) )
+    return block
         
 def create_ship_thing(sim, layer, position, big = False):
-    s = blocks.BlockStructure( blocks.QuadBlock(32) )
-    s.attach((0,1), blocks.QuadBlock(32), 0)
-    s.attach((0,0), blocks.QuadBlock(32), 0)
-    s.attach((0,2), blocks.QuadBlock(32), 0)
+    # 2
+    #3 1
+    # 0
+    s = blocks.BlockStructure( with_gun( blocks.QuadBlock(32) ) )
+    s.attach((0,2), with_gun(blocks.QuadBlock(32)), 0)
+    s.attach((0,0), with_gun(blocks.QuadBlock(32)), 2)
+    s.attach((0,1), with_gun(blocks.QuadBlock(32)), 3)
     if big:
-        s.attach((1,2), blocks.QuadBlock(32), 0)
-        s.attach((1,1), blocks.QuadBlock(32), 0)
-        s.attach((1,3), blocks.QuadBlock(32), 0)
+       s.attach((3,2), with_gun(blocks.QuadBlock(32)), 0)
+       s.attach((3,0), with_gun(blocks.QuadBlock(32)), 2)
+       s.attach((3,1), with_gun(blocks.QuadBlock(32)), 3)
     for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
         block.image_name = "element_{0}_square.png".format( col )
     rv = Ship( sim, s, layer, position, mass = len(s.blocks), moment = 4000.0, collision_type = collision_type_main )
@@ -133,16 +145,17 @@ def create_square_thing(sim, layer, position, image):
     moment = pymunk.moment_for_poly( 1.0, shape.vertices )
     return Debris( sim, layer, position, shape, image, moment = moment, collision_type = collision_type_main )
 
-def create_bullet_thing(sim, image, shooter):
+def create_bullet_thing(sim, image, shooter, gun):
     points = [(0,0),(9,0),(9,33),(0,33)]
     shape = ConvexPolygonShape(*points)
     shape.translate( shape.centroid() * -1)
     layer = None
     rv = Debris( sim, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet, group = group_bulletgroup )
     speed = 700
-    rv.position = shooter.position + shooter.direction * shooter._gun_distance
-    rv.velocity = shooter.velocity + shooter.direction * (speed)
-    rv.angle_radians = degrees_to_radians( shooter.angle_degrees + 90.0 )
+    rv.velocity = shooter.velocity + gun.direction * speed
+    boost = gun.direction * 8.0
+    rv.position = gun.position + boost
+    rv.angle_radians = degrees_to_radians( gun.angle_degrees + 90.0 )
     rv.inert = False
     return rv
 
@@ -214,11 +227,13 @@ class MainWorld (World):
         input_layer.cocos_layer.set_key_press_hook( key.SPACE, lambda *args, **kwargs: self.shoot_bullet(self.player) )
     def shoot_bullet(self, shooter):
         if shooter.may_fire():
-            sq = create_bullet_thing( self.sim, self.img_bullet, shooter )
-            sq.ttl = 1.5
-            self.display_objects.append( sq.sprite )
-            self.batch.add( sq.sprite.cocos_sprite )
-            self.physics_objects.append( sq )
+            guns = shooter.block_structure.get_components( attrgetter("active") )
+            for gun in guns:
+                sq = create_bullet_thing( self.sim, self.img_bullet, shooter, gun )
+                sq.ttl = 1.5
+                self.display_objects.append( sq.sprite )
+                self.batch.add( sq.sprite.cocos_sprite )
+                self.physics_objects.append( sq )
             shooter.fired()
     def update_physics_objects(self, dt):
         tbr = []

@@ -64,6 +64,7 @@ class Edge (object):
 class Block (object):
     def __init__(self):
         self.collision_shapes = []
+        self.components = []
 
     def register_shape(self, shape):
         self.collision_shapes.append( shape )
@@ -71,6 +72,16 @@ class Block (object):
     def clone(self):
         # TODO refactor out this -- very inconvenient with ducking
         return copy.copy( self )
+
+    def centroid(self):
+        return self.create_collision_shape().centroid()
+
+    @property
+    def thing(self):
+        for collision_shape in self.collision_shapes:
+            return collision_shape.thing
+        return None
+
         
 class PolygonBlock (Block):
     def __init__(self, vertices):
@@ -110,7 +121,7 @@ class PolygonBlock (Block):
         return physics.ConvexPolygonShape( *self.vertices, extra_info = extra_info, origin = origin )
 
     def __repr__(self):
-        return "<{0}>".format( "-".join( [ repr(round_vector((x,y),d=1)) for x,y in self.vertices] ) )
+        return "<PolygonBlock {0}>".format( "-".join( [ repr(round_vector((x,y),d=1)) for x,y in self.vertices] ) )
 
     def create_image(self):
         return self.image_name
@@ -121,7 +132,7 @@ class QuadBlock (PolygonBlock):
         self.image_name = "element_red_square.png"
 
     def __repr__(self):
-        return "<{0}>".format( "-".join( [ repr((x,y)) for x,y in self.vertices] ) )
+        return "<QuadBlock {0}>".format( "-".join( [ repr((x,y)) for x,y in self.vertices] ) )
 
 class IntegerMap (object):
     def __init__(self):
@@ -161,6 +172,12 @@ class BlockStructure (object):
         rv = []
         for block in self.blocks:
             rv.extend( block.edges )
+        return rv
+
+    def get_components(self, check = lambda component : True):
+        rv = []
+        for block in self.blocks:
+            rv.extend( [ x for x in block.components if check(x) ] )
         return rv
 
     def edge(self, index):
@@ -217,6 +234,7 @@ class BlockStructure (object):
         return foreign_block_index
     
     def remove_block(self, index):
+        # TODO ensure centroid is correct, and adjust sprites
         # TODO ensure connections consistent etc.
         block = self.blocks[ index ]
         del self.blocks[ index ]
