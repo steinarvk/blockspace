@@ -28,8 +28,8 @@ from operator import attrgetter
 from world import World
 
 class Ship (physics.Thing):
-    def __init__(self, sim, block_structure, layer, position, sprite_name = "player.png", mass = 1.0, moment = 1.0, **kwargs):
-        super( Ship, self ).__init__( sim, block_structure.create_collision_shape(), mass, moment, **kwargs )
+    def __init__(self, world, block_structure, layer, position, sprite_name = "player.png", mass = 1.0, moment = 1.0, **kwargs):
+        super( Ship, self ).__init__( world, block_structure.create_collision_shape(), mass, moment, **kwargs )
         self.block_structure = block_structure
         self.block_structure.create_sprite_structure( self, layer )
 #        self.sprite.add_sprite( "element_blue_square.png", (0,0) )
@@ -98,8 +98,8 @@ def ai_seek_target( dt, actor, target, fire):
             fire()
 
 class Debris (physics.Thing):
-    def __init__(self, sim, layer, position, shape, sprite, mass = 1.0, moment = 1.0, **kwargs):
-        super( Debris, self ).__init__( sim, shape, mass, moment, **kwargs )
+    def __init__(self, world, layer, position, shape, sprite, mass = 1.0, moment = 1.0, **kwargs):
+        super( Debris, self ).__init__( world, shape, mass, moment, **kwargs )
         graphics.Sprite( sprite, self, layer )
         self.position = position
 #        f = self.sprite.cocos_sprite.draw
@@ -128,7 +128,7 @@ def with_gun( block, edge_index = 1 ):
 def with_guns( block ):
     return with_gun( block, range(4) )
         
-def create_ship_thing(sim, layer, position, big = False):
+def create_ship_thing(world, layer, position, big = False):
     # 2
     #3 1
     # 0
@@ -143,26 +143,26 @@ def create_ship_thing(sim, layer, position, big = False):
     s.zero_centroid()
     for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
         block.image_name = "element_{0}_square.png".format( col )
-    rv = Ship( sim, s, layer, position, mass = len(s.blocks), moment = 4000.0, collision_type = collision_type_main )
+    rv = Ship( world, s, layer, position, mass = len(s.blocks), moment = 4000.0, collision_type = collision_type_main )
     rv._gun_distance = 65
     if big:
         rv._gun_distance += 32
     return rv
 
-def create_square_thing(sim, layer, position, image):
+def create_square_thing(world, layer, position, image):
     points = [(0,0),(32,0),(32,32),(0,32)]
     shape = ConvexPolygonShape(*points)
     shape.translate( shape.centroid() * -1)
     moment = pymunk.moment_for_poly( 1.0, shape.vertices )
-    return Debris( sim, layer, position, shape, image, moment = moment, collision_type = collision_type_main )
+    return Debris( world, layer, position, shape, image, moment = moment, collision_type = collision_type_main )
 
-def create_bullet_thing(sim, image, shooter, gun):
+def create_bullet_thing(world, image, shooter, gun):
     points = [(0,0),(9,0),(9,33),(0,33)]
     shape = ConvexPolygonShape(*points)
     shape.translate( shape.centroid() * -1)
 #    shape = DiskShape(5) # useful for debugging with pygame to see bullet origins
     layer = None
-    rv = Debris( sim, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet, group = group_bulletgroup )
+    rv = Debris( world, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet, group = group_bulletgroup )
     speed = 700
     rv.velocity = shooter.velocity + gun.direction * speed
     rv.position = gun.position
@@ -183,7 +183,6 @@ class MainWorld (World):
         if use_pygame:
             self.setup_pygame( resolution )
             self.display.add_anonymous_hook( self.update_pygame )
-        self.pre_physics.add_anonymous_hook( self.update_physics_objects )
         self.pre_display.add_anonymous_hook( self.update_display_objects )
         self.pre_physics.add_anonymous_hook( self.update_camera )
         self.display.add_anonymous_hook( self.scene.update )
@@ -212,8 +211,8 @@ class MainWorld (World):
         self.main_layer.cocos_layer.position = self.camera.offset()
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self.sim, self.main_layer, (300,300) )
-        self.enemy = create_ship_thing( self.sim, self.main_layer, (500,500), big = True )
+        self.player = create_ship_thing( self, self.main_layer, (300,300) )
+        self.enemy = create_ship_thing( self, self.main_layer, (500,500), big = True )
         self.enemy.invulnerable = False
         self.img_square = pyglet.image.load( "element_red_square.png" )
         self.img_bullet = pyglet.image.load( "laserGreen.png" )
@@ -223,7 +222,7 @@ class MainWorld (World):
         self.physics_objects = []
         for i in range(200):
             cols = "red", "purple", "grey", "blue", "green", "yellow"
-            sq = create_square_thing( self.sim, None, (100,0), self.img_square )
+            sq = create_square_thing( self, None, (100,0), self.img_square )
             sq.position = (random.random()-0.5) * 4000, (random.random()-0.5) * 4000
             sq.angle_radians = random.random() * math.pi * 2
             sq.mylabel = sq.position
@@ -242,23 +241,24 @@ class MainWorld (World):
         if shooter.may_fire():
             guns = shooter.block_structure.get_components( attrgetter("active") )
             for gun in guns:
-                sq = create_bullet_thing( self.sim, self.img_bullet, shooter, gun )
+                sq = create_bullet_thing( self, self.img_bullet, shooter, gun )
+                def update_bullet( bullet, dt ):
+                    if not bullet.alive:
+                        return
+                    bullet.ttl -= dt
+                    bullet.grace -= dt
+                    if bullet.ttl <= 0.0:
+                        bullet.kill()
+                def kill_bullet( sq ):
+                    self.display_objects.remove( sq.sprite )
+                    if sq.sprite.cocos_sprite in self.batch:
+                        self.batch.remove( sq.sprite.cocos_sprite )
                 sq.ttl = 1.5
                 self.display_objects.append( sq.sprite )
                 self.batch.add( sq.sprite.cocos_sprite )
-                self.physics_objects.append( sq )
+                sq.kill_hooks.append( kill_bullet )
+                self.pre_physics.add_hook( sq, partial(update_bullet,sq) )
             shooter.fired()
-    def update_physics_objects(self, dt):
-        tbr = []
-        for o in self.physics_objects:
-            o.ttl -= dt
-            o.grace -= dt
-            if o.ttl <= 0.0:
-                o.kill()
-            if not o.alive:
-                tbr.append( o )
-        for o in tbr:
-            self.physics_objects.remove(o)
     def update_pygame(self):
         self.screen.fill( pygame.color.THECOLORS[ "black" ] )
         draw_space( self.screen, self.sim.space )

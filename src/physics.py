@@ -245,18 +245,19 @@ class StaticObstacle (object):
         sim.space.add( *self.shapes )
 
 class Thing (object):
-    def __init__(self, sim, shape, mass, moment, group = False, name = "anonymous", collision_type = None ):
-        self.sim = sim
+    def __init__(self, world, shape, mass, moment, group = False, name = "anonymous", collision_type = None ):
+        self.world = world
+        self.sim = self.world.sim
         self.name = name
         self.body = pymunk.Body( mass, moment )
-        self.body.velocity_limit = sim.speed_limit
+        self.body.velocity_limit = self.sim.speed_limit
         self.abstract_shape = shape
         self.shapes = list( shape.generate_shapes( self.body ) )
         self.centroid = shape.centroid()
         self.invulnerable = True
         for shape in self.shapes:
             bb = shape.cache_bb()
-            assert min( abs(bb.right-bb.left), abs(bb.top-bb.bottom) ) >= sim.object_size_lower_limit
+            assert min( abs(bb.right-bb.left), abs(bb.top-bb.bottom) ) >= self.sim.object_size_lower_limit
             shape.thing = self
         if collision_type:
             for shape in self.shapes:
@@ -268,7 +269,7 @@ class Thing (object):
         self.update_hooks = []
         self.alive = True
         self.killed = False
-        sim.space.add( self.body, *self.shapes )
+        self.sim.space.add( self.body, *self.shapes )
 
     def update(self):
         for hook in self.update_hooks:
@@ -280,6 +281,7 @@ class Thing (object):
         self.killed = True
         self.sim.remove( self.body, *self.shapes )
         self.alive = False
+        self.world.remove_all_hooks( self )
         for hook in self.kill_hooks:
             hook( self )
 
