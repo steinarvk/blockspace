@@ -243,8 +243,14 @@ class BlockStructure (object):
     
     def remove_block(self, index):
         # TODO ensure centroid is correct, and adjust sprites
-        # TODO ensure connections consistent etc.
         block = self.blocks[ index ]
+        for connection in block.connections.values():
+            other_block_index, other_edge_index = connection
+            other_block = self.blocks[ other_block_index ]
+            other_block.free_edge_indices.append( other_edge_index )
+            self.free_edge_indices.append( connection )
+            assert other_block.connections[ other_edge_index ][0] == index
+            del other_block.connections[ other_edge_index ]
         del self.blocks[ index ]
         # TODO ensure connected, and return both the block and any detached parts
         try:
