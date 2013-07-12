@@ -37,6 +37,7 @@ class Ship (physics.Thing):
 #        self.sprite.add_sprite( "element_green_square.png", (32,0) )
 #        self.sprite.add_sprite( "element_yellow_square.png", (-32,0) )
         self.body.velocity_limit = min( self.body.velocity_limit, 700.0 )
+        self.body.angular_velocity_limit = degrees_to_radians( 960.0 )
         self.position = position
         self._spin = 0
         self._thrusting = False
@@ -63,7 +64,20 @@ class Ship (physics.Thing):
     def update(self, dt):
         super( Ship, self ).update()
         self._gun_current_cooldown -= dt
-        self.angular_velocity_degrees = -300.0 * self._spin
+        self.body.reset_forces()
+        spin = self._spin
+        if spin == 0:
+            k = 1.0
+            if self.body.angular_velocity > k:
+                spin = 1
+            elif self.body.angular_velocity < -k:
+                spin = -1
+            else:
+                self.body.angular_velocity = 0
+        rotation_force = Vec2d(100,0) * spin
+        rotation_offset = Vec2d(0,100)
+        self.body.apply_force( rotation_force, rotation_offset )
+        self.body.apply_force( -rotation_force, -rotation_offset )
         forces = []
         if self._thrusting:
             force = (self._turbo_multiplier if self._turbo else 1) * self._thrust_power
@@ -76,7 +90,7 @@ class Ship (physics.Thing):
                 self.body.velocity = Vec2d(0,0)
             else:
                 forces.append( stopforce )
-        self.body.force = reduce( lambda x,y: x+y, forces, Vec2d(0,0) )
+        self.body.apply_force( reduce( lambda x,y: x+y, forces, Vec2d(0,0) ) )
 
 def ai_seek_target( dt, actor, target, fire):
     actor._ai_time += dt
