@@ -287,19 +287,25 @@ class MainWorld (World):
             thing = anything.thing
             index = anything.extra_info
         except AttributeError:
-            return True
+            bullet.thing.ttl = min( bullet.thing.ttl, 0.05 )
+            return False
+        if bullet.thing.inert:
+            return False
         if (bullet.thing.shooter == thing) and bullet.thing.grace > 0.0:
             return False
-        block = thing.block_structure.blocks[ index ]
+        try:
+            block = thing.block_structure.blocks[ index ]
+        except KeyError:
+            return False
         if not thing.invulnerable:
             thing.block_structure.remove_block( index )
             thing.mass = len( thing.block_structure.blocks )
         if len(thing.block_structure.blocks) == 0:
             thing.kill()
             self.remove_all_hooks( thing )
-        bullet.thing.ttl = min( bullet.thing.ttl, 0.05 )
         bullet.thing.inert = True
-        return True
+        bullet.thing.ttl = min( bullet.thing.ttl, 0.05 )
+        return False
     def run(self):
         self.window.run( self.scene )
 
