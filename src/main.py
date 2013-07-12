@@ -2,7 +2,7 @@ import graphics
 import physics
 import gameinput
 
-from physics import ConvexPolygonShape, Vec2d
+from physics import ConvexPolygonShape, DiskShape, Vec2d
 from gameinput import key
 
 import cocos
@@ -29,7 +29,7 @@ from world import World
 
 class Ship (physics.Thing):
     def __init__(self, sim, block_structure, layer, position, sprite_name = "player.png", mass = 1.0, moment = 1.0, **kwargs):
-        super( Ship, self ).__init__( sim, physics.zero_shape_centroid( block_structure.create_collision_shape() ), mass, moment, **kwargs )
+        super( Ship, self ).__init__( sim, block_structure.create_collision_shape(), mass, moment, **kwargs )
         self.block_structure = block_structure
         self.block_structure.create_sprite_structure( self, layer )
 #        self.sprite.add_sprite( "element_blue_square.png", (0,0) )
@@ -113,23 +113,34 @@ collision_type_bullet = 2
 group_bulletgroup = 1
 
 def with_gun( block, edge_index = 1 ):
+    try:
+        rv = block
+        for index in edge_index:
+            rv = with_gun( rv, index )
+        return rv
+    except TypeError:
+        pass
     angle = [ -90.0, 0.0, 90.0, 180.0 ][ edge_index ]
     pos = Vec2d( polar_degrees( angle, 16.0 ) )
     component.PointComponent( "blaster", block, pos, angle, required_edges = (edge_index,) )
     return block
+
+def with_guns( block ):
+    return with_gun( block, range(4) )
         
 def create_ship_thing(sim, layer, position, big = False):
     # 2
     #3 1
     # 0
-    s = blocks.BlockStructure( with_gun( blocks.QuadBlock(32) ) )
-    s.attach((0,2), with_gun(blocks.QuadBlock(32)), 0)
-    s.attach((0,0), with_gun(blocks.QuadBlock(32)), 2)
-    s.attach((0,1), with_gun(blocks.QuadBlock(32)), 3)
+    s = blocks.BlockStructure( with_guns( blocks.QuadBlock(32) ) )
+    s.attach((0,2), with_guns(blocks.QuadBlock(32)), 0)
+    s.attach((0,0), with_guns(blocks.QuadBlock(32)), 2)
+    s.attach((0,1), with_guns(blocks.QuadBlock(32)), 3)
     if big:
-       s.attach((3,2), with_gun(blocks.QuadBlock(32)), 0)
-       s.attach((3,0), with_gun(blocks.QuadBlock(32)), 2)
-       s.attach((3,1), with_gun(blocks.QuadBlock(32)), 3)
+        s.attach((3,2), with_guns(blocks.QuadBlock(32)), 0)
+        s.attach((3,0), with_guns(blocks.QuadBlock(32)), 2)
+        s.attach((3,1), with_guns(blocks.QuadBlock(32)), 3)
+    s.zero_centroid()
     for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
         block.image_name = "element_{0}_square.png".format( col )
     rv = Ship( sim, s, layer, position, mass = len(s.blocks), moment = 4000.0, collision_type = collision_type_main )
@@ -149,14 +160,16 @@ def create_bullet_thing(sim, image, shooter, gun):
     points = [(0,0),(9,0),(9,33),(0,33)]
     shape = ConvexPolygonShape(*points)
     shape.translate( shape.centroid() * -1)
+#    shape = DiskShape(5) # useful for debugging with pygame to see bullet origins
     layer = None
     rv = Debris( sim, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet, group = group_bulletgroup )
     speed = 700
     rv.velocity = shooter.velocity + gun.direction * speed
-    boost = gun.direction * 8.0
-    rv.position = gun.position + boost
+    rv.position = gun.position
     rv.angle_radians = degrees_to_radians( gun.angle_degrees + 90.0 )
     rv.inert = False
+    rv.grace = 0.15
+    rv.shooter = shooter
     return rv
 
 class MainWorld (World):
@@ -199,8 +212,8 @@ class MainWorld (World):
         self.main_layer.cocos_layer.position = self.camera.offset()
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self.sim, self.main_layer, (0,0) )
-        self.enemy = create_ship_thing( self.sim, self.main_layer, (500,0), big = True )
+        self.player = create_ship_thing( self.sim, self.main_layer, (300,300) )
+        self.enemy = create_ship_thing( self.sim, self.main_layer, (500,500), big = True )
         self.enemy.invulnerable = False
         self.img_square = pyglet.image.load( "element_red_square.png" )
         self.img_bullet = pyglet.image.load( "laserGreen.png" )
@@ -239,6 +252,7 @@ class MainWorld (World):
         tbr = []
         for o in self.physics_objects:
             o.ttl -= dt
+            o.grace -= dt
             if o.ttl <= 0.0:
                 o.kill()
             if not o.alive:
@@ -247,7 +261,7 @@ class MainWorld (World):
             self.physics_objects.remove(o)
     def update_pygame(self):
         self.screen.fill( pygame.color.THECOLORS[ "black" ] )
-        draw_space( self.screen, self.sim )
+        draw_space( self.screen, self.sim.space )
         pygame.display.flip()
     def update_display_objects(self):
         x, y = self.camera.focus
@@ -274,8 +288,8 @@ class MainWorld (World):
             index = anything.extra_info
         except AttributeError:
             return True
-        if bullet.thing.inert:
-            return True
+        if (bullet.thing.shooter == thing) and bullet.thing.grace > 0.0:
+            return False
         block = thing.block_structure.blocks[ index ]
         if not thing.invulnerable:
             thing.block_structure.remove_block( index )

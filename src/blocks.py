@@ -162,6 +162,14 @@ class BlockStructure (object):
         self.free_edge_indices = []
         self.add_block( block )
 
+    def translate(self, xy):
+        for block in self.blocks:
+            block.translate( xy )
+
+    def zero_centroid(self):
+        self.translate( -self.centroid() )
+        
+
     def add_block(self, block):
         index = self.blocks.next_index
         self.free_edge_indices.extend(list(map( lambda edge_index : (index,edge_index), range(len(block.edges)))))

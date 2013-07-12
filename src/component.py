@@ -38,3 +38,5 @@ class PointComponent (Component):
     @property
     def direction(self):
         return Vec2d(1,0).rotated_degrees( self.angle_degrees )
+
+
