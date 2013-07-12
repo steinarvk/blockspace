@@ -128,25 +128,41 @@ def with_gun( block, edge_index = 1 ):
 def with_guns( block ):
     return with_gun( block, range(4) )
         
-def create_ship_thing(world, layer, position, big = False):
+def create_ship_thing(world, layer, position, name = "small"):
     # 2
     #3 1
     # 0
     s = blocks.BlockStructure( with_guns( blocks.QuadBlock(32) ) )
-    s.attach((0,2), with_guns(blocks.QuadBlock(32)), 0)
-    s.attach((0,0), with_guns(blocks.QuadBlock(32)), 2)
-    s.attach((0,1), with_guns(blocks.QuadBlock(32)), 3)
-    if big:
+    if name == "small":
+        s.attach((0,2), with_guns(blocks.QuadBlock(32)), 0)
+        s.attach((0,0), with_guns(blocks.QuadBlock(32)), 2)
+        s.attach((0,1), with_guns(blocks.QuadBlock(32)), 3)
         s.attach((3,2), with_guns(blocks.QuadBlock(32)), 0)
         s.attach((3,0), with_guns(blocks.QuadBlock(32)), 2)
         s.attach((3,1), with_guns(blocks.QuadBlock(32)), 3)
+    elif name == "big":
+        s.attach((0,2), with_guns(blocks.QuadBlock(32)), 0)
+        s.attach((0,0), with_guns(blocks.QuadBlock(32)), 2)
+        s.attach((0,1), with_guns(blocks.QuadBlock(32)), 3)
+        s.attach((3,2), with_guns(blocks.QuadBlock(32)), 0)
+        s.attach((3,0), with_guns(blocks.QuadBlock(32)), 2)
+        s.attach((3,1), with_guns(blocks.QuadBlock(32)), 3)
+    elif name == "wide":
+        s.attach((0,1), with_guns(blocks.QuadBlock(32)), 3)
+        l, r = 0, 0
+        for i in range(6):
+            l = s.attach((l,2), with_guns(blocks.QuadBlock(32)), 0)
+            r = s.attach((r,0), with_guns(blocks.QuadBlock(32)), 2)
+    elif name == "long":
+        l, r = 0, 0
+        for i in range(6):
+            l = s.attach((l,3), with_guns(blocks.QuadBlock(32)), 1)
+            r = s.attach((r,1), with_guns(blocks.QuadBlock(32)), 3)
     s.zero_centroid()
     for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
         block.image_name = "element_{0}_square.png".format( col )
     rv = Ship( world, s, layer, position, mass = len(s.blocks), moment = 4000.0, collision_type = collision_type_main )
     rv._gun_distance = 65
-    if big:
-        rv._gun_distance += 32
     return rv
 
 def create_square_thing(world, layer, position, image):
@@ -211,8 +227,8 @@ class MainWorld (World):
         self.main_layer.cocos_layer.position = self.camera.offset()
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (300,300) )
-        self.enemy = create_ship_thing( self, self.main_layer, (500,500), big = True )
+        self.player = create_ship_thing( self, self.main_layer, (300,300), name = "wide" )
+        self.enemy = create_ship_thing( self, self.main_layer, (500,500), name = "long" )
         self.enemy.invulnerable = False
         self.img_square = pyglet.image.load( "element_red_square.png" )
         self.img_bullet = pyglet.image.load( "laserGreen.png" )
