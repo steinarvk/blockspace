@@ -74,7 +74,7 @@ class Ship (physics.Thing):
                 spin = -1
             else:
                 self.body.angular_velocity = 0
-        rotation_force = Vec2d(100,0) * spin
+        rotation_force = Vec2d(1000,0) * spin
         rotation_offset = Vec2d(0,100)
         self.body.apply_force( rotation_force, rotation_offset )
         self.body.apply_force( -rotation_force, -rotation_offset )
@@ -175,7 +175,7 @@ def create_ship_thing(world, layer, position, name = "small"):
     s.zero_centroid()
     for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
         block.image_name = "element_{0}_square.png".format( col )
-    rv = Ship( world, s, layer, position, mass = len(s.blocks), moment = 4000.0, collision_type = collision_type_main )
+    rv = Ship( world, s, layer, position, mass = len(s.blocks), moment = 20000.0, collision_type = collision_type_main )
     rv._gun_distance = 65
     return rv
 
