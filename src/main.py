@@ -74,7 +74,7 @@ class Ship (physics.Thing):
                 spin = -1
             else:
                 self.body.angular_velocity = 0
-        rotation_force = Vec2d(1000,0) * spin
+        rotation_force = Vec2d(10000,0) * spin
         rotation_offset = Vec2d(0,100)
         self.body.apply_force( rotation_force, rotation_offset )
         self.body.apply_force( -rotation_force, -rotation_offset )
