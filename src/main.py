@@ -344,16 +344,21 @@ class MainWorld (World):
 #            block.sprite = thing.block_structure.sprite_structure.replace_sprite( block.sprite, "element_grey_square.png" )
             detached_block = thing.block_structure.remove_block( index )
             detached_blocks = [ detached_block ]
+            for index, block in thing.block_structure.blocks.indexed():
+                if random.random() > 0.5:
+                    detached_blocks.append( thing.block_structure.remove_block( index ) )
             for db in detached_blocks:
-                vel = db.velocity
-                deg = db.angle_degrees
-                pos = db.position
-                db.create_image = lambda : "element_grey_square.png"
-                def create_later():
-                    debris = create_ship_thing( self, self.main_layer, pos, shape = blocks.BlockStructure( db ) )
-                    debris.angle_degrees = deg
-                    debris.velocity = vel
-                self.queue_once( create_later )
+                def on_detached( detached_block ):
+                    vel = detached_block.velocity
+                    deg = detached_block.angle_degrees
+                    pos = detached_block.position
+                    detached_block.create_image = lambda : "element_grey_square.png"
+                    def create_later():
+                        debris = create_ship_thing( self, self.main_layer, pos, shape = blocks.BlockStructure( detached_block ) )
+                        debris.angle_degrees = deg
+                        debris.velocity = vel
+                    self.queue_once( create_later )
+                on_detached(db)
             remaining_block = thing.block_structure.any_block()
             if remaining_block:
                 wpv = [(1,b.position-thing.position,b.velocity) for b in thing.block_structure.blocks ]
