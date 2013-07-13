@@ -37,7 +37,7 @@ class Ship (physics.Thing):
 #        self.sprite.add_sprite( "element_green_square.png", (32,0) )
 #        self.sprite.add_sprite( "element_yellow_square.png", (-32,0) )
         self.body.velocity_limit = min( self.body.velocity_limit, 700.0 )
-        self.body.angular_velocity_limit = degrees_to_radians( 960.0 )
+        self.body.angular_velocity_limit = degrees_to_radians( 360.0 )
         self.position = position
         self._spin = 0
         self._thrusting = False
@@ -146,8 +146,8 @@ def create_ship_thing(world, layer, position, name = "small"):
     # 2
     #3 1
     # 0
-    s = blocks.BlockStructure( with_guns( blocks.QuadBlock(32) ) )
     if name == "small":
+        s = blocks.BlockStructure( blocks.QuadBlock(32) )
         s.attach((0,2), with_guns(blocks.QuadBlock(32)), 0)
         s.attach((0,0), with_guns(blocks.QuadBlock(32)), 2)
         s.attach((0,1), with_guns(blocks.QuadBlock(32)), 3)
@@ -155,23 +155,32 @@ def create_ship_thing(world, layer, position, name = "small"):
         s.attach((3,0), with_guns(blocks.QuadBlock(32)), 2)
         s.attach((3,1), with_guns(blocks.QuadBlock(32)), 3)
     elif name == "big":
+        s = blocks.BlockStructure( blocks.QuadBlock(32) )
         s.attach((0,2), with_guns(blocks.QuadBlock(32)), 0)
         s.attach((0,0), with_guns(blocks.QuadBlock(32)), 2)
         s.attach((0,1), with_guns(blocks.QuadBlock(32)), 3)
         s.attach((3,2), with_guns(blocks.QuadBlock(32)), 0)
         s.attach((3,0), with_guns(blocks.QuadBlock(32)), 2)
         s.attach((3,1), with_guns(blocks.QuadBlock(32)), 3)
+    elif name == "single":
+        s = blocks.BlockStructure( with_guns( blocks.QuadBlock(32) ) )
     elif name == "wide":
+        s = blocks.BlockStructure( blocks.QuadBlock(32) )
         s.attach((0,1), with_guns(blocks.QuadBlock(32)), 3)
         l, r = 0, 0
         for i in range(6):
             l = s.attach((l,2), with_guns(blocks.QuadBlock(32)), 0)
             r = s.attach((r,0), with_guns(blocks.QuadBlock(32)), 2)
+        l = s.attach((l,2), with_guns(blocks.QuadBlock(32)), 0)
+        r = s.attach((r,0), with_guns(blocks.QuadBlock(32)), 2)
     elif name == "long":
+        s = blocks.BlockStructure( blocks.QuadBlock(32) )
         l, r = 0, 0
         for i in range(6):
             l = s.attach((l,3), with_guns(blocks.QuadBlock(32)), 1)
             r = s.attach((r,1), with_guns(blocks.QuadBlock(32)), 3)
+    else:
+        assert False
     s.zero_centroid()
     for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
         block.image_name = "element_{0}_square.png".format( col )
@@ -193,10 +202,11 @@ def create_bullet_thing(world, image, shooter, gun):
 #    shape = DiskShape(5) # useful for debugging with pygame to see bullet origins
     layer = None
     rv = Debris( world, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet, group = group_bulletgroup )
-    speed = 700
-    rv.velocity = shooter.velocity + gun.direction * speed
+    speed = 1400
+    rv.velocity = gun.velocity + gun.direction * speed
     rv.position = gun.position
-    rv.angle_radians = degrees_to_radians( gun.angle_degrees + 90.0 )
+    rv.angle_radians = degrees_to_radians( gun.angle_degrees + 90.0 ) # realistic
+#    rv.angle_radians = degrees_to_radians( rv.velocity.get_angle_degrees() + 999.0 ) # might look better
     rv.inert = False
     rv.grace = 0.15
     rv.shooter = shooter

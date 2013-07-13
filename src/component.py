@@ -1,4 +1,5 @@
 from physics import Vec2d
+import math
 
 class Component (object):
     def __init__(self, name, block, required_edges = ()):
@@ -38,5 +39,15 @@ class PointComponent (Component):
     @property
     def direction(self):
         return Vec2d(1,0).rotated_degrees( self.angle_degrees )
+
+    @property
+    def velocity(self):
+        rel = self.block.translation + self.relative_position
+        r = rel.length
+        b = rel.rotated_degrees( self.block.thing.angle_degrees + 90.0 ).normalized()
+        rv = b * (self.block.thing.angular_velocity_radians * r)
+        circum = 2 * math.pi * r
+        av = self.block.thing.velocity
+        return av + rv
 
 
