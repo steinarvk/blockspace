@@ -93,6 +93,8 @@ class Ship (physics.Thing):
         self.body.apply_force( reduce( lambda x,y: x+y, forces, Vec2d(0,0) ) )
 
 def ai_seek_target( dt, actor, target, fire):
+    actor._spin = 1
+    return
     actor._ai_time += dt
     if actor._ai_time > 0.1:
         actor._ai_time = 0.0
@@ -108,8 +110,6 @@ def ai_seek_target( dt, actor, target, fire):
             actor._thrusting = False
             actor._braking = True
             actor._spin = 1
-        actor._spin = 1
-        return
         if distance > 100.0 and distance < 1000.0:
             fire()
 
@@ -257,7 +257,6 @@ class MainWorld (World):
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "long" )
         self.enemy.invulnerable = False
         self.enemy.body.angular_velocity_limit = degrees_to_radians(36.0)
-        self.enemy.body.velocity_limit = 0.0
         self.img_square = pyglet.image.load( "element_red_square.png" )
         self.img_bullet = pyglet.image.load( "laserGreen.png" )
         self.batch = cocos.batch.BatchNode()
@@ -349,6 +348,7 @@ class MainWorld (World):
             pos = detached_block.position
             remaining_block = thing.block_structure.any_block()
             if remaining_block:
+                wpv = [(1,b.position-thing.position,b.velocity) for b in thing.block_structure.blocks ]
                 pos_before = remaining_block.position
                 angle_before = remaining_block.angle_degrees
                 thing.block_structure.zero_centroid()
@@ -359,6 +359,9 @@ class MainWorld (World):
                 pos_after = remaining_block.position
                 angle_after = remaining_block.angle_degrees
                 thing.position -= (pos_after - pos_before)
+                linear, rotational = physics.calculate_velocities( wpv )
+                thing.velocity = linear
+                thing.angular_velocity = rotational
                 pos_after = remaining_block.position
                 angle_after = remaining_block.angle_degrees
                 assert degrees_almost_equal( angle_after, angle_before )

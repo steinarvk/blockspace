@@ -364,3 +364,18 @@ class Thing (object):
     @property
     def direction(self):
         return Vec2d(1,0).rotated( self.body.angle )
+
+def calculate_velocities( wpv ):
+    total_force = Vec2d(0,0)
+    total_weight = 0.0
+    total_rot = 0.0
+    for weight, position, force in wpv:
+        position = Vec2d(position)
+        force = Vec2d(force)
+        total_weight += weight
+        total_force += force * weight
+        r = position.get_length()
+        if r > 0.0:
+            rot = force * 180.0 / (2 * math.pi * r)
+            total_rot += rot * weight
+    return total_force / total_weight, total_rot / total_weight
