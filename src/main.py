@@ -346,6 +346,7 @@ class MainWorld (World):
             detached_block = thing.block_structure.remove_block( index )
             vel = detached_block.velocity
             deg = detached_block.angle_degrees
+            pos = detached_block.position
             remaining_block = thing.block_structure.any_block()
             if remaining_block:
                 pos_before = remaining_block.position
@@ -364,7 +365,7 @@ class MainWorld (World):
                 assert vectors_almost_equal( pos_before, pos_after )
             detached_block.create_image = lambda : "element_grey_square.png"
             def create_later():
-                debris = create_ship_thing( self, self.main_layer, detached_block.position, shape = blocks.BlockStructure( detached_block ) )
+                debris = create_ship_thing( self, self.main_layer, pos, shape = blocks.BlockStructure( detached_block ) )
                 debris.angle_degrees = deg
                 debris.velocity = vel
             self.queue_once( create_later )
