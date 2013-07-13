@@ -343,24 +343,37 @@ class MainWorld (World):
         if not thing.invulnerable:
 #            block.sprite = thing.block_structure.sprite_structure.replace_sprite( block.sprite, "element_grey_square.png" )
             detached_block = thing.block_structure.remove_block( index )
-            detached_blocks = [ detached_block ]
-            for index, block in thing.block_structure.blocks.indexed():
-                if random.random() > 0.5:
-                    detached_blocks.append( thing.block_structure.remove_block( index ) )
-            for db in detached_blocks:
-                def on_detached( detached_block ):
-                    vel = detached_block.velocity
-                    deg = detached_block.angle_degrees
-                    pos = detached_block.position
-                    detached_block.create_image = lambda : "element_grey_square.png"
-                    def create_later():
-                        debris = create_ship_thing( self, self.main_layer, pos, shape = blocks.BlockStructure( detached_block ) )
-                        debris.angle_degrees = deg
-                        debris.velocity = vel
-                    self.queue_once( create_later )
-                on_detached(db)
-            remaining_block = thing.block_structure.any_block()
-            if remaining_block:
+            survivor = thing.block_structure.any_block_index()
+            detachable_blocks = []
+            detached_parts = []
+            if survivor != None:
+                survivors = thing.block_structure.connectivity_set_of( survivor )
+                for index, block in thing.block_structure.blocks.indexed():
+                    if index not in survivors:
+                        detachable_blocks.append( index )
+            while detachable_blocks:
+                x = thing.block_structure.connectivity_set_of( detachable_blocks.pop(0) )
+                detached_parts.append( x )
+                detachable_blocks = filter( lambda z : z not in x, detachable_blocks )
+            print "breakaways", detached_parts
+            def on_detached_single_block( detached_block ):
+                vel = detached_block.velocity
+                deg = detached_block.angle_degrees
+                pos = detached_block.position
+                detached_block.create_image = lambda : "element_grey_square.png"
+                def create_later():
+                    debris = create_ship_thing( self, self.main_layer, pos, shape = blocks.BlockStructure( detached_block ) )
+                    debris.angle_degrees = deg
+                    debris.velocity = vel
+                self.queue_once( create_later )
+            on_detached_single_block( detached_block )
+            for detached_part in detached_parts:
+                # this must be amended to reconstruct the connections
+                for index in detached_part:
+                    db = thing.block_structure.remove_block( index )
+                    on_detached_single_block( db )
+            if survivor != None:
+                remaining_block = thing.block_structure.blocks[survivor]
                 wpv = [(1,b.position-thing.position,b.velocity) for b in thing.block_structure.blocks ]
                 pos_before = remaining_block.position
                 angle_before = remaining_block.angle_degrees

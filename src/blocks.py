@@ -203,6 +203,13 @@ class BlockStructure (object):
         except:
             return None
 
+    def any_block_index(self):
+        try:
+            index, block = self.blocks.indexed().next()
+            return index
+        except:
+            return None
+
     @property
     def edges(self):
         rv = []
@@ -223,6 +230,17 @@ class BlockStructure (object):
     def overlaps(self, block):
         # TODO nondegenerate overlap check
         return False
+    
+    def connectivity_set_of(self, index):
+        q = [index]
+        rv = set()
+        while q:
+            x = q.pop(0)
+            rv.add(x)
+            for (i,_) in self.blocks[x].connections.values():
+                if (i not in rv) and (i not in q):
+                    q.append(i)
+        return rv
 
     def extract_connections_map(self):
         rv = {}
