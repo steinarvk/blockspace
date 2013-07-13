@@ -109,6 +109,7 @@ def ai_seek_target( dt, actor, target, fire):
             actor._braking = True
             actor._spin = 1
         actor._spin = 1
+        return
         if distance > 100.0 and distance < 1000.0:
             fire()
 
@@ -149,12 +150,9 @@ def create_ship_thing(world, layer, position, shape = "small"):
     # 0
     if shape == "small":
         s = blocks.BlockStructure( blocks.QuadBlock(32) )
-        s.attach((0,2), with_guns(blocks.QuadBlock(32)), 0)
-        s.attach((0,0), with_guns(blocks.QuadBlock(32)), 2)
-        s.attach((0,1), with_guns(blocks.QuadBlock(32)), 3)
-        s.attach((3,2), with_guns(blocks.QuadBlock(32)), 0)
-        s.attach((3,0), with_guns(blocks.QuadBlock(32)), 2)
-        s.attach((3,1), with_guns(blocks.QuadBlock(32)), 3)
+        s.attach((0,2), blocks.QuadBlock(32), 0)
+        s.attach((0,0), blocks.QuadBlock(32), 2)
+        s.attach((0,1), with_gun(blocks.QuadBlock(32), 1), 3)
     elif shape == "big":
         s = blocks.BlockStructure( blocks.QuadBlock(32) )
         s.attach((0,2), with_guns(blocks.QuadBlock(32)), 0)
@@ -216,7 +214,7 @@ def create_bullet_thing(world, image, shooter, gun):
     return rv
 
 class MainWorld (World):
-    def __init__(self, resolution = (1300,1000), use_pygame = False, **kwargs):
+    def __init__(self, resolution = (1000,800), use_pygame = False, **kwargs):
         super( MainWorld, self ).__init__( **kwargs)
         self.setup_graphics( resolution )
         self.setup_game()
@@ -233,6 +231,7 @@ class MainWorld (World):
         self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
         self.pre_physics.add_hook( self.enemy, self.enemy.update )
         self.post_physics.add_anonymous_hook( ignore_arguments( self.sim.perform_removals ) )
+        self.post_physics.add_anonymous_hook( ignore_arguments( self.sim.perform_additions ) )
         self.physics.add_anonymous_hook( self.sim.tick )
         self.scene.schedule( self.update_everything )
     def update_everything(self, dt):
@@ -254,9 +253,11 @@ class MainWorld (World):
         self.main_layer.cocos_layer.position = self.camera.offset()
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "wide" )
+        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "small" )
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "long" )
         self.enemy.invulnerable = False
+        self.enemy.body.angular_velocity_limit = degrees_to_radians(36.0)
+        self.enemy.body.velocity_limit = 0.0
         self.img_square = pyglet.image.load( "element_red_square.png" )
         self.img_bullet = pyglet.image.load( "laserGreen.png" )
         self.batch = cocos.batch.BatchNode()
@@ -343,9 +344,25 @@ class MainWorld (World):
         if not thing.invulnerable:
 #            block.sprite = thing.block_structure.sprite_structure.replace_sprite( block.sprite, "element_grey_square.png" )
             detached_block = thing.block_structure.remove_block( index )
-            detached_block.create_image = lambda : "element_grey_square.png"
             vel = detached_block.velocity
             deg = detached_block.angle_degrees
+            remaining_block = thing.block_structure.any_block()
+            if remaining_block:
+                pos_before = remaining_block.position
+                angle_before = remaining_block.angle_degrees
+                thing.block_structure.zero_centroid()
+                thing.block_structure.clear_collision_shape()
+                thing.block_structure.clear_sprite_structure( thing )
+                thing.block_structure.create_sprite_structure( thing, self.main_layer )
+                thing.reshape( thing.block_structure.create_collision_shape() )
+                pos_after = remaining_block.position
+                angle_after = remaining_block.angle_degrees
+                thing.position -= (pos_after - pos_before)
+                pos_after = remaining_block.position
+                angle_after = remaining_block.angle_degrees
+                assert degrees_almost_equal( angle_after, angle_before )
+                assert vectors_almost_equal( pos_before, pos_after )
+            detached_block.create_image = lambda : "element_grey_square.png"
             def create_later():
                 debris = create_ship_thing( self, self.main_layer, detached_block.position, shape = blocks.BlockStructure( detached_block ) )
                 debris.angle_degrees = deg

@@ -216,12 +216,19 @@ class PhysicsSimulator (object):
         if self._timestep:
             assert calculate_maximum_timestep( self.object_size_lower_limit, self.speed_limit ) >= self._timestep
         self.marked_for_removal = []
+        self.marked_for_addition = []
     def remove(self, *args):
         self.marked_for_removal.extend( args )
+    def add(self, *args):
+        self.marked_for_addition.extend( args )
     def perform_removals(self):
         if self.marked_for_removal:
             self.space.remove( *set(self.marked_for_removal) )
             self.marked_for_removal = []
+    def perform_additions(self):
+        if self.marked_for_addition:
+            self.space.add( *set(self.marked_for_addition) )
+            self.marked_for_addition = []
     def tick(self, dt):
         if self._timestep:
             self._t += dt
@@ -251,25 +258,38 @@ class Thing (object):
         self.name = name
         self.body = pymunk.Body( mass, moment )
         self.body.velocity_limit = self.sim.speed_limit
-        self.abstract_shape = shape
-        self.shapes = list( shape.generate_shapes( self.body ) )
-        self.centroid = shape.centroid()
+        self.shapes = []
         self.invulnerable = True
+        self.group = group
+        self.collision_type = collision_type
+        self.reshape( shape )
         for shape in self.shapes:
             bb = shape.cache_bb()
             assert min( abs(bb.right-bb.left), abs(bb.top-bb.bottom) ) >= self.sim.object_size_lower_limit
             shape.thing = self
-        if collision_type:
-            for shape in self.shapes:
-                shape.collision_type = collision_type
-        if group:
-            for shape in self.shapes:
-                shape.group = group
         self.kill_hooks = []
         self.update_hooks = []
         self.alive = True
         self.killed = False
-        self.sim.space.add( self.body, *self.shapes )
+        self.sim.space.add( self.body )
+
+    def reshape(self, shape):
+        if self.shapes:
+            self.sim.remove( *self.shapes )
+        self.abstract_shape = shape
+        self.centroid = shape.centroid()
+        self.shapes = list( shape.generate_shapes( self.body ) )
+        for shape in self.shapes:
+            bb = shape.cache_bb()
+            assert min( abs(bb.right-bb.left), abs(bb.top-bb.bottom) ) >= self.sim.object_size_lower_limit
+            shape.thing = self
+        if self.collision_type:
+            for shape in self.shapes:
+                shape.collision_type = self.collision_type
+        if self.group:
+            for shape in self.shapes:
+                shape.group = self.group
+        self.sim.add( *self.shapes )
 
     def update(self):
         for hook in self.update_hooks:

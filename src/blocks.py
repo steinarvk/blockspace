@@ -196,6 +196,13 @@ class BlockStructure (object):
         self.free_edge_indices.extend(list(map( lambda edge_index : (index,edge_index), range(len(block.edges)))))
         self.blocks.append( block )
 
+    def any_block(self):
+        try:
+            index, block = self.blocks.indexed().next()
+            return block
+        except:
+            return None
+
     @property
     def edges(self):
         rv = []
@@ -292,6 +299,13 @@ class BlockStructure (object):
             rv.append(block.create_collision_shape( extra_info = index, origin = block ))
         return physics.CompositeShape( *rv )
 
+    def clear_collision_shape(self):
+        for index, block in self.blocks.indexed():
+            for collision_shape in block.collision_shapes:
+                sim = collision_shape.thing.sim
+                sim.remove( collision_shape )
+            block.collision_shapes = []
+
     def centroid(self):
         return self.create_collision_shape().centroid()
 
@@ -300,6 +314,14 @@ class BlockStructure (object):
         c = self.centroid()
         for block in self.blocks:
             block.sprite = s.add_sprite( block.create_image(), block.translation - c )
+
+    def clear_sprite_structure(self, thing):
+        self.sprite_structure.kill()
+        del self.sprite_structure
+        for block in self.blocks:
+            block.sprite = None
+        thing.kill_hooks.remove( graphics.kill_sprite )
+        thing.update_hooks.remove( graphics.update_sprite )
 
 def filter_connections( connections, block_indices ):
     def check_connection( connection ):
