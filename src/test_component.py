@@ -1,0 +1,85 @@
+from component import *
+from blocks import *
+from world import World
+from physics import Thing, Vec2d, PhysicsSimulator
+from math import pi
+import random
+
+from util import *
+
+def rnd():
+    import random
+    return 360 * 2 * (random.random() - 0.5)
+
+def rnd2():
+    return rnd(), rnd()
+
+def setup_world():
+    w = World()
+    w.sim = PhysicsSimulator( timestep = None )
+    block = QuadBlock(32)
+    bs = BlockStructure(block)
+    thing = Thing( w, bs.create_collision_shape(), 1.0, 1.0 )
+    return block, thing
+
+def test_point_component_at_origin():
+    block, thing = setup_world()
+    component = PointComponent( "test", block, (0,0), 0.0 )
+    assert component.position == block.position
+    assert component.position == Vec2d(0,0)
+    assert component.angle_degrees == block.angle_degrees
+    assert component.angle_degrees == 0.0
+
+def create_and_check_point_component( thing_xy, thing_angle, vel, angvel, comp_xy, comp_angle ):
+    comp_xy = Vec2d(comp_xy)
+    thing_xy = Vec2d(thing_xy)
+    vel = Vec2d(vel)
+    block, thing = setup_world()
+    thing.position = thing_xy
+    thing.angle_degrees = thing_angle
+    thing.velocity = vel
+    thing.angular_velocity_degrees = angvel
+    component = PointComponent( "test", block, comp_xy, comp_angle )
+    assert almost_equal( component.position.get_distance( thing.position ), comp_xy.get_length() )
+    assert degrees_almost_equal( component.angle_degrees, thing.angle_degrees + comp_angle )
+    return component, block, thing
+
+def test_point_components_basic_zero():
+    create_and_check_point_component( (0,0), 0.0, (0,0), 0.0, (0,0), 0.0 )
+
+def test_point_components_random_basic():
+    for i in range(1000):
+        create_and_check_point_component( rnd2(), rnd(), rnd2(), rnd(), rnd2(), rnd() )
+
+def test_point_components_random_pure_rotational_velocity_at_zero_angle():
+    for i in range(1000):
+        a = rnd()
+        r = rnd()
+        c, _, _ = create_and_check_point_component( rnd2(), 0.0, (0,0), a, Vec2d(r,0), rnd() )
+        assert vectors_almost_equal( c.velocity, (0, pi * r * a / 180.0) )
+
+def test_point_components_random_pure_rotational_velocity():
+    for i in range(1000):
+        a = rnd()
+        r = rnd()
+        ang = rnd()
+        c, _, _ = create_and_check_point_component( rnd2(), ang, (0,0), a, Vec2d(r,0), rnd() )
+        assert vectors_almost_equal( c.velocity, Vec2d(0, pi * r * a / 180.0).rotated_degrees(ang) )
+
+def test_point_components_random_pure_linear_velocity():
+    for i in range(1000):
+        a = rnd()
+        v = rnd2()
+        c, _, thing = create_and_check_point_component( rnd2(), rnd(), v, 0.0, rnd2(), rnd() )
+        assert vectors_almost_equal( c.velocity, v )
+        assert vectors_almost_equal( c.velocity, thing.velocity )
+
+def test_point_components_random_combined_velocities():
+    for i in range(1000):
+        a = rnd()
+        r = rnd()
+        ang = rnd()
+        v = rnd2()
+        c, block, thing = create_and_check_point_component( rnd2(), ang, v, a, Vec2d(r,0), rnd() )
+        print thing.velocity, v, c.velocity
+        assert vectors_almost_equal( c.velocity - thing.velocity, Vec2d(0, pi * r * a / 180.0).rotated_degrees(ang) )
