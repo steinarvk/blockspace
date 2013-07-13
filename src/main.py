@@ -203,7 +203,9 @@ def create_bullet_thing(world, image, shooter, gun):
     layer = None
     rv = Debris( world, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet, group = group_bulletgroup )
     speed = 1400
-    rv.velocity = gun.velocity + gun.direction * speed
+    base_velocity = gun.velocity
+    base_velocity = shooter.velocity # unrealistic but possibly better
+    rv.velocity = base_velocity + gun.direction * speed
     rv.position = gun.position
     rv.angle_radians = degrees_to_radians( gun.angle_degrees + 90.0 ) # realistic
 #    rv.angle_radians = degrees_to_radians( rv.velocity.get_angle_degrees() + 999.0 ) # might look better
@@ -338,7 +340,8 @@ class MainWorld (World):
         except KeyError:
             return False
         if not thing.invulnerable:
-            thing.block_structure.remove_block( index )
+            block.sprite = thing.block_structure.sprite_structure.replace_sprite( block.sprite, "element_grey_square.png" )
+#            thing.block_structure.remove_block( index )
             thing.mass = len( thing.block_structure.blocks )
         if len(thing.block_structure.blocks) == 0:
             thing.kill()

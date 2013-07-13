@@ -103,6 +103,15 @@ class SpriteStructure (object):
         self.cocos_sprites.append( cocos_sprite )
         self.node.add( cocos_sprite )
         return cocos_sprite
+    def replace_sprite(self, old_sprite, new_sprite ):
+        old_position = old_sprite.position
+        cocos_sprite = cocos.sprite.Sprite( new_sprite )
+        cocos_sprite.position = old_position
+        self.node.remove( old_sprite )
+        self.cocos_sprites.remove( old_sprite )
+        self.node.add( cocos_sprite )
+        self.cocos_sprites.append( cocos_sprite )
+        return cocos_sprite
     def remove_sprite(self, cocos_sprite):
         self.cocos_sprites.remove( cocos_sprite )
         self.node.remove( cocos_sprite )
