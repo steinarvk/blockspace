@@ -77,6 +77,27 @@ class Block (object):
         return self.create_collision_shape().centroid()
 
     @property
+    def position(self):
+        return self.thing.position + self.translation.rotated( self.thing.angle_radians )
+
+    @property
+    def angle_degrees(self):
+        return self.thing.angle_degrees + self.rotation_degrees
+
+    @property
+    def angle_radians(self):
+        return degrees_to_radians( self.angle_degrees )
+
+    @property
+    def velocity(self):
+        rel = self.translation
+        r = rel.length
+        b = rel.rotated_degrees( self.thing.angle_degrees + 90.0 ).normalized()
+        rv = b * (self.thing.angular_velocity_radians * r)
+        av = self.thing.velocity
+        return av + rv
+
+    @property
     def thing(self):
         for collision_shape in self.collision_shapes:
             return collision_shape.thing
@@ -263,6 +284,7 @@ class BlockStructure (object):
             sim = collision_shape.thing.sim
             collision_shape.thing.shapes.remove( collision_shape )
             sim.remove( collision_shape )
+        return block
 
     def create_collision_shape(self):
         rv = []

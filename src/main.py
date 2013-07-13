@@ -108,6 +108,7 @@ def ai_seek_target( dt, actor, target, fire):
             actor._thrusting = False
             actor._braking = True
             actor._spin = 1
+        actor._spin = 1
         if distance > 100.0 and distance < 1000.0:
             fire()
 
@@ -142,11 +143,11 @@ def with_gun( block, edge_index = 1 ):
 def with_guns( block ):
     return with_gun( block, range(4) )
         
-def create_ship_thing(world, layer, position, name = "small"):
+def create_ship_thing(world, layer, position, shape = "small"):
     # 2
     #3 1
     # 0
-    if name == "small":
+    if shape == "small":
         s = blocks.BlockStructure( blocks.QuadBlock(32) )
         s.attach((0,2), with_guns(blocks.QuadBlock(32)), 0)
         s.attach((0,0), with_guns(blocks.QuadBlock(32)), 2)
@@ -154,7 +155,7 @@ def create_ship_thing(world, layer, position, name = "small"):
         s.attach((3,2), with_guns(blocks.QuadBlock(32)), 0)
         s.attach((3,0), with_guns(blocks.QuadBlock(32)), 2)
         s.attach((3,1), with_guns(blocks.QuadBlock(32)), 3)
-    elif name == "big":
+    elif shape == "big":
         s = blocks.BlockStructure( blocks.QuadBlock(32) )
         s.attach((0,2), with_guns(blocks.QuadBlock(32)), 0)
         s.attach((0,0), with_guns(blocks.QuadBlock(32)), 2)
@@ -162,9 +163,9 @@ def create_ship_thing(world, layer, position, name = "small"):
         s.attach((3,2), with_guns(blocks.QuadBlock(32)), 0)
         s.attach((3,0), with_guns(blocks.QuadBlock(32)), 2)
         s.attach((3,1), with_guns(blocks.QuadBlock(32)), 3)
-    elif name == "single":
+    elif shape == "single":
         s = blocks.BlockStructure( with_guns( blocks.QuadBlock(32) ) )
-    elif name == "wide":
+    elif shape == "wide":
         s = blocks.BlockStructure( blocks.QuadBlock(32) )
         s.attach((0,1), with_guns(blocks.QuadBlock(32)), 3)
         l, r = 0, 0
@@ -173,14 +174,14 @@ def create_ship_thing(world, layer, position, name = "small"):
             r = s.attach((r,0), with_guns(blocks.QuadBlock(32)), 2)
         l = s.attach((l,2), with_guns(blocks.QuadBlock(32)), 0)
         r = s.attach((r,0), with_guns(blocks.QuadBlock(32)), 2)
-    elif name == "long":
+    elif shape == "long":
         s = blocks.BlockStructure( blocks.QuadBlock(32) )
         l, r = 0, 0
         for i in range(6):
             l = s.attach((l,3), with_guns(blocks.QuadBlock(32)), 1)
             r = s.attach((r,1), with_guns(blocks.QuadBlock(32)), 3)
     else:
-        assert False
+        s = shape
     s.zero_centroid()
     for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
         block.image_name = "element_{0}_square.png".format( col )
@@ -253,8 +254,8 @@ class MainWorld (World):
         self.main_layer.cocos_layer.position = self.camera.offset()
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (300,300), name = "wide" )
-        self.enemy = create_ship_thing( self, self.main_layer, (500,500), name = "long" )
+        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "wide" )
+        self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "long" )
         self.enemy.invulnerable = False
         self.img_square = pyglet.image.load( "element_red_square.png" )
         self.img_bullet = pyglet.image.load( "laserGreen.png" )
@@ -340,8 +341,16 @@ class MainWorld (World):
         except KeyError:
             return False
         if not thing.invulnerable:
-            block.sprite = thing.block_structure.sprite_structure.replace_sprite( block.sprite, "element_grey_square.png" )
-#            thing.block_structure.remove_block( index )
+#            block.sprite = thing.block_structure.sprite_structure.replace_sprite( block.sprite, "element_grey_square.png" )
+            detached_block = thing.block_structure.remove_block( index )
+            detached_block.create_image = lambda : "element_grey_square.png"
+            vel = detached_block.velocity
+            deg = detached_block.angle_degrees
+            def create_later():
+                debris = create_ship_thing( self, self.main_layer, detached_block.position, shape = blocks.BlockStructure( detached_block ) )
+                debris.angle_degrees = deg
+                debris.velocity = vel
+            self.queue_once( create_later )
             thing.mass = len( thing.block_structure.blocks )
         if len(thing.block_structure.blocks) == 0:
             thing.kill()

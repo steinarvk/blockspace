@@ -38,15 +38,20 @@ class World (object):
         self.hookpoints.append( self.physics )
         self.post_physics = Hookable()
         self.hookpoints.append( self.post_physics )
+        self.post_physics_once_queue = []
         self.pre_display = Hookable()
         self.hookpoints.append( self.pre_display )
         self.display = Hookable()
         self.hookpoints.append( self.display )
         self.stepper = FixedTimestepper( timestep, self.fixed_tick )
+    def queue_once(self, f):
+        self.post_physics_once_queue.append( f )
     def fixed_tick(self, dt):
         self.pre_physics( dt )
         self.physics( dt )
         self.post_physics( dt )
+        while self.post_physics_once_queue:
+            self.post_physics_once_queue.pop(0)()
     def tick(self, dt):
         self.stepper.step( dt )
     def remove_all_hooks(self, obj):
