@@ -9,6 +9,7 @@ from test_util import radians_to_degrees, degrees_to_radians
 from physics import *
 
 from itertools import starmap
+from world import World
 
 def test_physics_limit_calculations():
     for i in range(100):
@@ -178,16 +179,18 @@ def test_timestep_unfixed():
     assert timesteps == steps
 
 def test_create_thing():
-    sim = PhysicsSimulator()
-    thing = Thing( sim, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
+    world = World()
+    sim = world.sim = PhysicsSimulator()
+    thing = Thing( world, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
     assert thing.name == "anonymous"
     assert thing.position == (0,0)
     assert thing.velocity == (0,0)
     assert thing.body in sim.space.bodies
 
 def test_thing_vector_getter():
-    sim = PhysicsSimulator()
-    thing = Thing( sim, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
+    world = World()
+    sim = world.sim = PhysicsSimulator()
+    thing = Thing( world, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
     pos = thing.position
     vel = thing.velocity
     assert thing.position == (0,0)
@@ -198,8 +201,9 @@ def test_thing_vector_getter():
     assert thing.velocity == (0,0)
 
 def test_constant_velocity():
-    sim = PhysicsSimulator()
-    thing = Thing( sim, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
+    world = World()
+    sim = world.sim = PhysicsSimulator()
+    thing = Thing( world, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
     original_position = thing.position
     v = 100.0
     t = 60.0
@@ -210,10 +214,11 @@ def test_constant_velocity():
     assert almost_leq( original_position.get_distance( final_position ), (v * t) )
 
 def test_collision_with_wall():
-    sim = PhysicsSimulator()
-    thing = Thing( sim, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
+    world = World()
+    sim = world.sim = PhysicsSimulator()
+    thing = Thing( world, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
     wall_x = 100
-    obstacle = StaticObstacle( sim, SegmentShape((wall_x,-100),(wall_x,100)) )
+    obstacle = StaticObstacle( world.sim, SegmentShape((wall_x,-100),(wall_x,100)) )
     v = 100.0
     t = 60.0
     thing.velocity = (v,0)
@@ -221,10 +226,11 @@ def test_collision_with_wall():
     assert thing.position.x < wall_x
 
 def test_bounce_with_wall():
-    sim = PhysicsSimulator()
-    thing = Thing( sim, DiskShape(10.0, elasticity = 0.9), mass = 1.0, moment = 1.0 ) 
+    world = World()
+    sim = world.sim = PhysicsSimulator()
+    thing = Thing( world, DiskShape(10.0, elasticity = 0.9), mass = 1.0, moment = 1.0 ) 
     wall_x = 100
-    obstacle = StaticObstacle( sim, SegmentShape((wall_x,-100),(wall_x,100), elasticity = 0.9) )
+    obstacle = StaticObstacle( world.sim, SegmentShape((wall_x,-100),(wall_x,100), elasticity = 0.9) )
     v = 100.0
     t = 60.0
     thing.velocity = (v,0)
@@ -232,12 +238,13 @@ def test_bounce_with_wall():
     assert thing.position.x < -100.0
 
 def test_thing_angles():
-    sim = PhysicsSimulator()
-    thing = Thing( sim, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
+    world = World()
+    sim = world.sim = PhysicsSimulator()
+    thing = Thing( world, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
     thing.angular_velocity_radians = 1.0
     angles = []
     for i in range(6000):
-        sim.tick(0.01)
+        world.sim.tick(0.01)
         radians = thing.angle_radians
         degrees = thing.angle_degrees
         angles.append( radians )
@@ -247,8 +254,9 @@ def test_thing_angles():
 
 def test_max_speed_collision_with_wall():
     for i in range(100):
-        sim = PhysicsSimulator()
-        thing = Thing( sim, DiskShape(0.5*sim.object_size_lower_limit), mass = 1.0, moment = 1.0 ) 
+        world = World()
+        sim = world.sim = PhysicsSimulator()
+        thing = Thing( world, DiskShape(0.5*sim.object_size_lower_limit), mass = 1.0, moment = 1.0 ) 
         wall_x = 100
         obstacle = StaticObstacle( sim, SegmentShape((wall_x,-100),(wall_x,100)) )
         thing.position = (random.random(), 0)
@@ -260,33 +268,36 @@ def test_max_speed_collision_with_wall():
 
 def test_raise_on_too_small_thing():
     with pytest.raises( AssertionError ):
-        sim = PhysicsSimulator()
-        thing = Thing( sim, DiskShape(0.4 * sim.object_size_lower_limit), mass = 1.0, moment = 1.0 ) 
+        world = World()
+        sim = world.sim = PhysicsSimulator()
+        thing = Thing( world, DiskShape(0.4 * sim.object_size_lower_limit), mass = 1.0, moment = 1.0 ) 
 
 def test_kill_thing():
-    sim = PhysicsSimulator()
-    thing = Thing( sim, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
-    thing2 = Thing( sim, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
-    assert thing.body in sim.space.bodies
-    assert thing2.body in sim.space.bodies
+    world = World()
+    sim = world.sim = PhysicsSimulator()
+    thing = Thing( world, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
+    thing2 = Thing( world, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
+    assert thing.body in world.sim.space.bodies
+    assert thing2.body in world.sim.space.bodies
     assert thing.shapes
     for shape in thing.shapes:
-        assert shape in sim.space.shapes
+        assert shape in world.sim.space.shapes
     assert thing2.shapes
     for shape in thing2.shapes:
-        assert shape in sim.space.shapes
+        assert shape in world.sim.space.shapes
     thing.kill()
-    assert thing.body not in sim.space.bodies
-    assert thing2.body in sim.space.bodies
+    assert thing.body not in world.sim.space.bodies
+    assert thing2.body in world.sim.space.bodies
     for shape in thing.shapes:
-        assert shape not in sim.space.shapes
+        assert shape not in world.sim.space.shapes
     assert thing2.shapes
     for shape in thing2.shapes:
-        assert shape in sim.space.shapes
+        assert shape in world.sim.space.shapes
 
 def test_kill_thing_hook():
-    sim = PhysicsSimulator()
-    thing = Thing( sim, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
+    world = World()
+    sim = world.sim = PhysicsSimulator()
+    thing = Thing( world, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
     def hook( x ):
         x.name = "killed"
     thing.kill_hooks.append( hook )
