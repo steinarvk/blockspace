@@ -24,14 +24,11 @@ class PointComponent (Component):
 
     @property
     def position(self):
-        rv = self.block.translation + self.relative_position
-        rv.rotate( self.block.thing.angle_radians )
-        rv += self.block.thing.position
-        return rv
+        return self.block.position + self.relative_position.rotated( self.block.thing.angle_radians ) # correct?
 
     @property
     def angle_degrees(self):
-        return (self.block.thing.angle_degrees + self.block.rotation_degrees + self.relative_angle_degrees) % 360.0
+        return (self.block.angle_degrees + self.relative_angle_degrees) % 360.0
 
     def __repr__(self):
         return "<PointComponent {3} at {1} {2} attached to {0}>".format( repr(self.block), self.position, self.angle_degrees, self.name )
@@ -46,8 +43,7 @@ class PointComponent (Component):
         r = rel.length
         b = rel.rotated_degrees( self.block.thing.angle_degrees + 90.0 ).normalized()
         rv = b * (self.block.thing.angular_velocity_radians * r)
-        circum = 2 * math.pi * r
-        av = self.block.thing.velocity
-        return av + rv
+        lv = self.block.thing.velocity
+        return lv + rv
 
 
