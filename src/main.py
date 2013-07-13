@@ -343,9 +343,17 @@ class MainWorld (World):
         if not thing.invulnerable:
 #            block.sprite = thing.block_structure.sprite_structure.replace_sprite( block.sprite, "element_grey_square.png" )
             detached_block = thing.block_structure.remove_block( index )
-            vel = detached_block.velocity
-            deg = detached_block.angle_degrees
-            pos = detached_block.position
+            detached_blocks = [ detached_block ]
+            for db in detached_blocks:
+                vel = db.velocity
+                deg = db.angle_degrees
+                pos = db.position
+                db.create_image = lambda : "element_grey_square.png"
+                def create_later():
+                    debris = create_ship_thing( self, self.main_layer, pos, shape = blocks.BlockStructure( db ) )
+                    debris.angle_degrees = deg
+                    debris.velocity = vel
+                self.queue_once( create_later )
             remaining_block = thing.block_structure.any_block()
             if remaining_block:
                 wpv = [(1,b.position-thing.position,b.velocity) for b in thing.block_structure.blocks ]
@@ -366,12 +374,6 @@ class MainWorld (World):
                 angle_after = remaining_block.angle_degrees
                 assert degrees_almost_equal( angle_after, angle_before )
                 assert vectors_almost_equal( pos_before, pos_after )
-            detached_block.create_image = lambda : "element_grey_square.png"
-            def create_later():
-                debris = create_ship_thing( self, self.main_layer, pos, shape = blocks.BlockStructure( detached_block ) )
-                debris.angle_degrees = deg
-                debris.velocity = vel
-            self.queue_once( create_later )
             thing.mass = len( thing.block_structure.blocks )
         if len(thing.block_structure.blocks) == 0:
             thing.kill()
