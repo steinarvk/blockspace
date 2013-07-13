@@ -277,6 +277,7 @@ def test_kill_thing():
     sim = world.sim = PhysicsSimulator()
     thing = Thing( world, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
     thing2 = Thing( world, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
+    print thing.body, thing2.body, world.sim.space.bodies
     assert thing.body in world.sim.space.bodies
     assert thing2.body in world.sim.space.bodies
     assert thing.shapes
@@ -286,6 +287,7 @@ def test_kill_thing():
     for shape in thing2.shapes:
         assert shape in world.sim.space.shapes
     thing.kill()
+    sim.perform_removals()
     assert thing.body not in world.sim.space.bodies
     assert thing2.body in world.sim.space.bodies
     for shape in thing.shapes:
