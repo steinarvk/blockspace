@@ -43,3 +43,10 @@ def round_vector( xy, d = 1000000 ):
 
 def ignore_arguments( f ):
     return lambda *args, **kwargs : f()
+
+def sign( n ):
+    if n > 0:
+        return 1
+    if n < 0:
+        return -1
+    return 0

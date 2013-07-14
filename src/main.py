@@ -94,23 +94,37 @@ class Ship (physics.Thing):
 
 def ai_seek_target( dt, actor, target, fire):
     actor._ai_time += dt
-    if actor._ai_time > 0.1:
+    if actor._ai_time > 0.01:
         actor._ai_time = 0.0
         delta = (target.position - actor.position)
         distance = delta.get_length()
         correctness = delta.normalized().dot( actor.direction )
         angle = radians_to_degrees( math.acos( correctness ) )
+        sangle = (radians_to_degrees( math.atan2( delta.y, delta.x ) ) - actor.angle_degrees + 180.0) % 360.0 - 180.0
         actor._turbo = False
-        if correctness > 0.85:
+        if distance > 500.0:
+            forwards = angle < 90.0
+        else:
+            forwards = angle < 20.0
+        last_spin = actor._spin
+        new_spin = -sign(sangle)
+        if actor.may_fire():
+            # note that by using _relative_ velocity here we actually lead our target
+            # we need to assume a bullet velocity
+            shot_angle = (actor.direction * 1400 + actor.velocity - target.velocity).get_angle_degrees()
+            aim_angle = (radians_to_degrees( math.atan2( delta.y, delta.x ) ) - shot_angle + 180.0) % 360.0 - 180.0
+            actor._spin = -sign(aim_angle)
+        elif new_spin != last_spin:
+            actor._spin = 0 if abs(sangle) < 15.0 else new_spin
+        if forwards:
             actor._thrusting = True
             actor._braking = False
-            actor._spin = 0
         else:
             actor._thrusting = False
             actor._braking = True
-            actor._spin = 1
-        if angle < 20.0 and distance < 1000.0:
-            fire()
+        if actor.may_fire():
+            if aim_angle < 5.0 and distance < 1000.0:
+                fire()
 
 class Debris (physics.Thing):
     def __init__(self, world, layer, position, shape, sprite, mass = 1.0, moment = 1.0, **kwargs):
@@ -148,9 +162,9 @@ def create_ship_thing(world, layer, position, shape = "small"):
     #3 1
     # 0
     if shape == "small":
-        s = blocks.BlockStructure( blocks.QuadBlock(32) )
-        s.attach((0,2), blocks.QuadBlock(32), 0)
-        s.attach((0,0), blocks.QuadBlock(32), 2)
+        s = blocks.BlockStructure( with_gun(blocks.QuadBlock(32)) )
+        s.attach((0,2), with_gun(blocks.QuadBlock(32)), 0)
+        s.attach((0,0), with_gun(blocks.QuadBlock(32)), 2)
         s.attach((0,1), with_gun(blocks.QuadBlock(32), 1), 3)
     elif shape == "big":
         s = blocks.BlockStructure( blocks.QuadBlock(32) )
@@ -259,10 +273,10 @@ class MainWorld (World):
         self.player.invulnerable = False
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "big" )
         self.enemy.invulnerable = False
-        self.enemy.body.angular_velocity_limit = degrees_to_radians(144)
+        self.enemy.body.angular_velocity_limit = degrees_to_radians(144*2)
         self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "big" )
         self.enemy2.invulnerable = False
-        self.enemy2.body.angular_velocity_limit = degrees_to_radians(144)
+        self.enemy2.body.angular_velocity_limit = degrees_to_radians(144*2)
         self.img_square = pyglet.image.load( "element_grey_square.png" )
         self.img_bullet = pyglet.image.load( "laserGreen.png" )
         self.batch = cocos.batch.BatchNode()
