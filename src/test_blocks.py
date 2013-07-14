@@ -2,6 +2,8 @@ from blocks import *
 from util import almost_equal, degrees_almost_equal, vectors_almost_equal
 import physics
 
+from world import World
+
 def test_quad_block():
     for side in (16.0,17.5,32):
         q = QuadBlock( side )
@@ -204,3 +206,40 @@ def test_integer_map():
     assert x.next_index == 10
     x.append( "last" )
     assert x[ x.next_index - 1 ] == "last"
+
+def test_reshape():
+    w = World()
+    w.sim = physics.PhysicsSimulator( timestep = None )
+    a = QuadBlock(32)
+    b = QuadBlock(35)
+    thing = physics.Thing( w, BlockStructure(a).create_collision_shape(), 1.0, 1.0 )
+    w.sim.perform_removals_and_additions()
+    assert thing.abstract_shape.area() == a.area()
+    thing.reshape( BlockStructure(b).create_collision_shape() )
+    assert thing.abstract_shape.area() == b.area()
+    w.sim.perform_removals_and_additions()
+
+def test_reshape_twice():
+    w = World()
+    w.sim = physics.PhysicsSimulator( timestep = None )
+    a = QuadBlock(32)
+    b = QuadBlock(35)
+    thing = physics.Thing( w, BlockStructure(a).create_collision_shape(), 1.0, 1.0 )
+    w.sim.perform_removals_and_additions()
+    assert thing.abstract_shape.area() == a.area()
+    thing.reshape( BlockStructure(b).create_collision_shape() )
+    assert thing.abstract_shape.area() == b.area()
+    thing.reshape( BlockStructure(a).create_collision_shape() )
+    assert thing.abstract_shape.area() == a.area()
+    w.sim.perform_removals_and_additions()
+
+def test_reshape_early():
+    w = World()
+    w.sim = physics.PhysicsSimulator( timestep = None )
+    a = QuadBlock(32)
+    b = QuadBlock(35)
+    thing = physics.Thing( w, BlockStructure(a).create_collision_shape(), 1.0, 1.0 )
+    assert thing.abstract_shape.area() == a.area()
+    thing.reshape( BlockStructure(b).create_collision_shape() )
+    assert thing.abstract_shape.area() == b.area()
+    w.sim.perform_removals_and_additions()

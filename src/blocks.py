@@ -66,6 +66,9 @@ class Block (object):
         self.collision_shapes = []
         self.components = []
 
+    def area(self):
+        return self.create_collision_shape().area()
+
     def register_shape(self, shape):
         self.collision_shapes.append( shape )
 
@@ -182,6 +185,9 @@ class BlockStructure (object):
         self.blocks = IntegerMap()
         self.free_edge_indices = []
         self.add_block( block )
+
+    def area(self):
+        return sum( [ block.area() for block in self.blocks ] )
 
     def translate(self, xy):
         for block in self.blocks:
