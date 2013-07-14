@@ -108,7 +108,8 @@ def ai_seek_target( dt, actor, target, fire):
             forwards = angle < 20.0
         last_spin = actor._spin
         new_spin = -sign(sangle)
-        if actor.may_fire():
+        may_fire = target.alive and actor.may_fire() and distance < 1000.0
+        if may_fire:
             # note that by using _relative_ velocity here we actually lead our target
             # we need to assume a bullet velocity
             shot_angle = (actor.direction * 1400 + actor.velocity - target.velocity).get_angle_degrees()
@@ -122,8 +123,8 @@ def ai_seek_target( dt, actor, target, fire):
         else:
             actor._thrusting = False
             actor._braking = True
-        if actor.may_fire():
-            if aim_angle < 5.0 and distance < 1000.0:
+        if may_fire:
+            if aim_angle < 5.0:
                 fire()
 
 class Debris (physics.Thing):
@@ -242,9 +243,9 @@ class MainWorld (World):
         self.pre_physics.add_anonymous_hook( self.update_camera )
         self.display.add_anonymous_hook( self.scene.update )
         self.pre_physics.add_hook( self.player, self.player.update )
-        self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
+        self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.enemy2, partial( self.shoot_bullet, self.enemy ) ) )
         self.pre_physics.add_hook( self.enemy, self.enemy.update )
-        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
+        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_seek_target( dt, self.enemy2, self.enemy, partial( self.shoot_bullet, self.enemy2 ) ) )
         self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
         self.post_physics.add_anonymous_hook( ignore_arguments( self.sim.perform_removals ) )
         self.post_physics.add_anonymous_hook( ignore_arguments( self.sim.perform_additions ) )
@@ -277,6 +278,8 @@ class MainWorld (World):
         self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "big" )
         self.enemy2.invulnerable = False
         self.enemy2.body.angular_velocity_limit = degrees_to_radians(144*2)
+        self.enemy.angle_degrees = random.random() * 360.0
+        self.enemy2.angle_degrees = random.random() * 360.0
         self.img_square = pyglet.image.load( "element_grey_square.png" )
         self.img_bullet = pyglet.image.load( "laserGreen.png" )
         self.batch = cocos.batch.BatchNode()
