@@ -230,8 +230,8 @@ class PhysicsSimulator (object):
             self.space.add( *set(self.marked_for_addition) )
             self.marked_for_addition = []
     def perform_removals_and_additions(self):   
-        self.perform_removals()
         self.perform_additions()
+        self.perform_removals()
     def tick(self, dt):
         if self._timestep:
             self._t += dt
