@@ -277,6 +277,7 @@ def test_kill_thing():
     sim = world.sim = PhysicsSimulator()
     thing = Thing( world, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
     thing2 = Thing( world, DiskShape(10.0), mass = 1.0, moment = 1.0 ) 
+    world.sim.perform_removals_and_additions()
     print thing.body, thing2.body, world.sim.space.bodies
     assert thing.body in world.sim.space.bodies
     assert thing2.body in world.sim.space.bodies

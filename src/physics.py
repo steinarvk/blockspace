@@ -236,10 +236,14 @@ class PhysicsSimulator (object):
         if self._timestep:
             self._t += dt
             while self._t >= self._timestep:
+                self.perform_removals_and_additions()
                 self.space.step( self._timestep )
+                self.perform_removals_and_additions()
                 self._t -= self._timestep
         else:
+            self.perform_removals_and_additions()
             self.space.step( dt )
+            self.perform_removals_and_additions()
     def new_group_id(self):
         rv = self._next_group
         self._next_group += 1

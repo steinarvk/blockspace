@@ -247,7 +247,6 @@ class MainWorld (World):
         self.pre_physics.add_hook( self.enemy, self.enemy.update )
         self.pre_physics.add_hook( self.enemy2, lambda dt : ai_seek_target( dt, self.enemy2, self.enemy, partial( self.shoot_bullet, self.enemy2 ) ) )
         self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
-        self.post_physics.add_anonymous_hook( ignore_arguments( self.sim.perform_removals_and_additions ) )
         self.physics.add_anonymous_hook( self.sim.tick )
         self.scene.schedule( self.update_everything )
     def update_everything(self, dt):
