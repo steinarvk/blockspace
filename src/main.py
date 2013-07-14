@@ -99,6 +99,7 @@ def ai_seek_target( dt, actor, target, fire):
         delta = (target.position - actor.position)
         distance = delta.get_length()
         correctness = delta.normalized().dot( actor.direction )
+        angle = radians_to_degrees( math.acos( correctness ) )
         actor._turbo = False
         if correctness > 0.85:
             actor._thrusting = True
@@ -108,7 +109,7 @@ def ai_seek_target( dt, actor, target, fire):
             actor._thrusting = False
             actor._braking = True
             actor._spin = 1
-        if distance > 100.0 and distance < 1000.0:
+        if angle < 20.0 and distance < 1000.0:
             fire()
 
 class Debris (physics.Thing):
@@ -153,12 +154,12 @@ def create_ship_thing(world, layer, position, shape = "small"):
         s.attach((0,1), with_gun(blocks.QuadBlock(32), 1), 3)
     elif shape == "big":
         s = blocks.BlockStructure( blocks.QuadBlock(32) )
-        s.attach((0,2), with_guns(blocks.QuadBlock(32)), 0)
-        s.attach((0,0), with_guns(blocks.QuadBlock(32)), 2)
-        s.attach((0,1), with_guns(blocks.QuadBlock(32)), 3)
-        s.attach((3,2), with_guns(blocks.QuadBlock(32)), 0)
-        s.attach((3,0), with_guns(blocks.QuadBlock(32)), 2)
-        s.attach((3,1), with_guns(blocks.QuadBlock(32)), 3)
+        s.attach((0,2), blocks.QuadBlock(32), 0)
+        s.attach((0,0), blocks.QuadBlock(32), 2)
+        s.attach((0,1), blocks.QuadBlock(32), 3)
+        s.attach((3,2), blocks.QuadBlock(32), 0)
+        s.attach((3,0), blocks.QuadBlock(32), 2)
+        s.attach((3,1), with_gun(blocks.QuadBlock(32), 1), 3)
     elif shape == "single":
         s = blocks.BlockStructure( with_guns( blocks.QuadBlock(32) ) )
     elif shape == "wide":
@@ -181,6 +182,7 @@ def create_ship_thing(world, layer, position, shape = "small"):
     s.zero_centroid()
     for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
         block.image_name = "element_{0}_square.png".format( col )
+    s.blocks[0].image_name = "element_red_square.png"
     rv = Ship( world, s, layer, position, mass = len(s.blocks), moment = 20000.0, collision_type = collision_type_main )
     rv._gun_distance = 65
     return rv
@@ -228,6 +230,8 @@ class MainWorld (World):
         self.pre_physics.add_hook( self.player, self.player.update )
         self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
         self.pre_physics.add_hook( self.enemy, self.enemy.update )
+        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
+        self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
         self.post_physics.add_anonymous_hook( ignore_arguments( self.sim.perform_removals ) )
         self.post_physics.add_anonymous_hook( ignore_arguments( self.sim.perform_additions ) )
         self.physics.add_anonymous_hook( self.sim.tick )
@@ -252,9 +256,14 @@ class MainWorld (World):
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
         self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "small" )
+        self.player.invulnerable = False
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "big" )
         self.enemy.invulnerable = False
-        self.img_square = pyglet.image.load( "element_red_square.png" )
+        self.enemy.body.angular_velocity_limit = degrees_to_radians(144)
+        self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "big" )
+        self.enemy2.invulnerable = False
+        self.enemy2.body.angular_velocity_limit = degrees_to_radians(144)
+        self.img_square = pyglet.image.load( "element_grey_square.png" )
         self.img_bullet = pyglet.image.load( "laserGreen.png" )
         self.batch = cocos.batch.BatchNode()
         self.main_layer.cocos_layer.add( self.batch )
