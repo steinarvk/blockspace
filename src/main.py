@@ -93,8 +93,6 @@ class Ship (physics.Thing):
         self.body.apply_force( reduce( lambda x,y: x+y, forces, Vec2d(0,0) ) )
 
 def ai_seek_target( dt, actor, target, fire):
-    actor._spin = 1
-    return
     actor._ai_time += dt
     if actor._ai_time > 0.1:
         actor._ai_time = 0.0
@@ -102,7 +100,7 @@ def ai_seek_target( dt, actor, target, fire):
         distance = delta.get_length()
         correctness = delta.normalized().dot( actor.direction )
         actor._turbo = False
-        if correctness > 0.95:
+        if correctness > 0.85:
             actor._thrusting = True
             actor._braking = False
             actor._spin = 0
@@ -254,9 +252,8 @@ class MainWorld (World):
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
         self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "small" )
-        self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "long" )
+        self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "big" )
         self.enemy.invulnerable = False
-        self.enemy.body.angular_velocity_limit = degrees_to_radians(36.0)
         self.img_square = pyglet.image.load( "element_red_square.png" )
         self.img_bullet = pyglet.image.load( "laserGreen.png" )
         self.batch = cocos.batch.BatchNode()
@@ -361,7 +358,6 @@ class MainWorld (World):
                 x = thing.block_structure.connectivity_set_of( detachable_blocks.pop(0) )
                 detached_parts.append( x )
                 detachable_blocks = filter( lambda z : z not in x, detachable_blocks )
-            print "breakaways", detached_parts
             def on_detached_single_block( detached_block ):
                 vel = detached_block.velocity
                 deg = detached_block.angle_degrees
