@@ -8,3 +8,16 @@ murderer. Similarly you can pay off people to stop fighting before the
 fight even begins, and you can simply trade with ships you meet.
 
 Communication would be by choosing a response with the number keys.
+
+Pilots have factions, and you can build up a reputation with them
+(possibly even join them).
+
+
+Natural radio messages:
+    - Hello, I've arrived
+    - Hello, newcomer [when you arrive after them]
+    - Want to trade?
+    - I will be attacking you now because [...]
+    - Requesting emergency assistance [e.g. sell me an engine block/fuel]
+    - I surrender and will pay you X to stop fighting
+    - I'll pay you to do [quest -- e.g. killing another pilot]
