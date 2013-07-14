@@ -343,14 +343,20 @@ class MainWorld (World):
         if not thing.invulnerable:
 #            block.sprite = thing.block_structure.sprite_structure.replace_sprite( block.sprite, "element_grey_square.png" )
             detached_block = thing.block_structure.remove_block( index )
-            survivor = thing.block_structure.any_block_index()
             detachable_blocks = []
             detached_parts = []
-            if survivor != None:
-                survivors = thing.block_structure.connectivity_set_of( survivor )
+            if index == 0:
+                survivor = None
                 for index, block in thing.block_structure.blocks.indexed():
-                    if index not in survivors:
-                        detachable_blocks.append( index )
+                        if index != 0:
+                            detachable_blocks.append( index )
+            else:
+                survivor = thing.block_structure.any_block_index()
+                if survivor != None:
+                    survivors = thing.block_structure.connectivity_set_of( survivor )
+                    for index, block in thing.block_structure.blocks.indexed():
+                        if index not in survivors:
+                            detachable_blocks.append( index )
             while detachable_blocks:
                 x = thing.block_structure.connectivity_set_of( detachable_blocks.pop(0) )
                 detached_parts.append( x )
