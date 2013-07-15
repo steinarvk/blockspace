@@ -1,0 +1,29 @@
+Bullet:
+    Constant-velocity fixed low-damage projectle.
+    Low cooldown, low energy cost.
+    High damage.
+
+Smart missile:  
+    Fixed-fuel missile.
+    After grace period, locks onto closest hostile target and seeks it.
+    Explodes on impact.
+    High cooldown, high energy cost.
+    High damage.
+
+Dumb missile:
+    Fixed-fuel missile. Accelerates in its direction.
+    Medium cooldown, medium cost.
+    High damage.
+
+-
+
+Energy ray:
+    Continual ray.
+    While active, as a side effect transfers its energy to the target.
+    Heats up the entire ship. Once a threshold is reached the cockpit explodes
+    (allowing the ship to be taken mostly intact).
+
+Bomb:
+    Slow projectile, explodes after 2s.
+    Bounces on impact.
+    High damage and blast.
