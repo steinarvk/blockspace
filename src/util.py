@@ -86,6 +86,11 @@ def generate_regular_polygon_vertices(n, r = 1.0, start_angle = None):
         angle = start_angle + i * step
         yield r * math.cos( angle ), r * math.sin( angle )
 
+def radius_for_side_length(n, side_length):
+    a, b = list(generate_regular_polygon_vertices(n,1.0))[:2]
+    ratio = side_length / (Vec2d(a)-Vec2d(b)).get_length()
+    return ratio
+
 def generate_square_vertices(s):
     h = 0.5 * s
     return [(-h,-h),(h,-h),(h,h),(-h,h)]

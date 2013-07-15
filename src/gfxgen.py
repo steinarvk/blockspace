@@ -93,7 +93,7 @@ def generate_starfields_main():
 
 def generate_simple_polygon(n = 3):
     size = 256
-    vs = map(lambda p : (Vec2d(p)+Vec2d(1,1))*0.5*size, generate_regular_polygon_vertices(n) )
+    vs = map(lambda p : (Vec2d(p)+Vec2d(1,1))*0.5*size, generate_regular_polygon_vertices(n, radius_for_side_length(n, 0.3)) )
     print vs
     img, ar = create_new_image( size, size )
     for x in range(size):
@@ -102,6 +102,6 @@ def generate_simple_polygon(n = 3):
     img.save( "polygon_test.{0}.generated.png".format(n) )
             
 if __name__ == '__main__':
-    for i in range(3,8+1):
+    for i in (8,6,5,4,3):
         generate_simple_polygon(i)
     
