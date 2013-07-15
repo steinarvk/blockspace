@@ -46,6 +46,7 @@ class Ship (physics.Thing):
         self._thrust_power = 3500
         self._brake_power = 2500
         self._ai_time = 0.0
+        self._shooting = False
 #        f = self.sprite.cocos_sprite.draw
 #        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
     def on_fire_key(self, symbol, modifiers, state):
@@ -55,6 +56,7 @@ class Ship (physics.Thing):
         self._thrusting = state[key.UP]
         self._braking = state[key.DOWN]
         self._turbo = state[key.LSHIFT]
+        self._shooting = state[key.SPACE]
     def ready_guns(self):
         rv = self.block_structure.get_components( lambda x : "gun" in x.categories and x.may_activate() )
         rv.sort( key = lambda x : x.last_usage )
@@ -63,6 +65,8 @@ class Ship (physics.Thing):
         return bool( self.ready_guns() )
     def update(self, dt):
         super( Ship, self ).update()
+        if self._shooting:
+            self.world.shoot_bullet( self )
         self.body.reset_forces()
         spin = self._spin
         if spin == 0:
@@ -272,7 +276,7 @@ class MainWorld (World):
         self.main_layer.cocos_layer.position = self.camera.offset()
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "small", hp = 3 )
+        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "small", hp = 10 )
         self.player.invulnerable = False
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "big" )
         self.enemy.invulnerable = False
@@ -304,7 +308,8 @@ class MainWorld (World):
             input_layer.cocos_layer.set_key_hook( k, self.player.on_controls_state )
         input_layer.cocos_layer.set_key_hook( k, self.player.on_controls_state )
         input_layer.cocos_layer.set_key_hook( key.LSHIFT, self.player.on_controls_state )
-        input_layer.cocos_layer.set_key_press_hook( key.SPACE, lambda *args, **kwargs: self.shoot_bullet(self.player) )
+        input_layer.cocos_layer.set_key_press_hook( key.SPACE, lambda *args, **kwargs: (self.player.on_controls_state(*args,**kwargs), self.shoot_bullet(self.player)) )
+        input_layer.cocos_layer.set_key_release_hook( key.SPACE, lambda *args, **kwargs: self.player.on_controls_state(*args,**kwargs) )
     def shoot_bullet(self, shooter):
         guns = shooter.ready_guns()
         print len(guns), "guns ready", "power", shooter.psu.power
