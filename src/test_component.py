@@ -83,3 +83,54 @@ def test_point_components_random_combined_velocities():
         c, block, thing = create_and_check_point_component( rnd2(), ang, v, a, Vec2d(r,0), rnd() )
         print thing.velocity, v, c.velocity
         assert vectors_almost_equal( c.velocity - thing.velocity, Vec2d(0, pi * r * a / 180.0).rotated_degrees(ang) )
+
+def test_basic_power_supply():
+    psu = PowerSupply( 1000 )
+    assert psu.power == 0
+    psu.set_production( "generator", 3 )
+    for i in range(167):
+        assert psu.power == min(1000,(6*i))
+        psu.tick(2)
+    for i in range(500):
+        assert psu.power == 1000
+        psu.tick(2)
+    psu.set_consumption( "thruster", 53.0 )
+    for i in range(10):
+        assert psu.power == (1000 - 100 * i)
+        psu.tick(2)
+
+def test_power_supply_production_override():
+    psu = PowerSupply( 1000 )
+    assert psu.power == 0
+    psu.set_production( "generator", 2 )
+    psu.set_production( "generator", 3 )
+    for i in range(167):
+        assert psu.power == min(1000,(6*i))
+        psu.tick(2)
+
+def test_power_supply_production_combine():
+    psu = PowerSupply( 1000 )
+    assert psu.power == 0
+    psu.set_production( "generator1", 1 )
+    psu.set_production( "generator2", 2 )
+    for i in range(167):
+        assert psu.power == min(1000,(6*i))
+        psu.tick(2)
+
+def test_power_supply_consumption_override():
+    psu = PowerSupply( 1000 )
+    psu.power = 1000
+    psu.set_consumption( "thruster", 1 )
+    psu.set_consumption( "thruster", 3 )
+    for i in range(100):
+        assert psu.power == 1000 - 6 * i
+        psu.tick(2)
+
+def test_power_supply_consumption_combine():
+    psu = PowerSupply( 1000 )
+    psu.power = 1000
+    psu.set_consumption( "thruster1", 2 )
+    psu.set_consumption( "thruster2", 3 )
+    for i in range(100):
+        assert psu.power == 1000 - 10 * i
+        psu.tick(2)

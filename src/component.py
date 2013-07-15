@@ -16,6 +16,41 @@ class Component (object):
     def __repr__(self):
         return "<Component {1} attached to {0}>".format( repr(self.block), self.name )
 
+class OutOfPower (Exception):
+    pass
+
+class PowerSupply (object):
+    def __init__(self, max_storage):
+        self.max_storage = max_storage
+        self.production = {}
+        self.consumption = {}
+        self.power = 0.0
+        self.consumption_fails_hook = lambda x : x.lose_power()
+    def set_production(self, key, amount):
+        self.production[key] = amount
+    def set_consumption(self, key, amount):
+        self.consumption[key] = amount
+    def remove_production(self, key):
+        del self.production[key]
+    def remove_consumption(self, key):
+        del self.consumption[key]
+    def tick(self, dt):
+        self.power += sum( self.production.values() ) * dt
+        for key, value in self.consumption.items():
+            try:
+                self.consume( value * dt )
+            except OutOfPower:
+                self.consumption_fails_hook( key )
+        self.power = min( self.power, self.max_storage )
+    def charge_rate(self):
+        return self.power / self.max_storage
+    def consume(self, value):
+        if self.power < value:
+            raise OutOfPower()
+        self.power -= value
+    def may_consume(self, value):
+        return self.power >= value
+
 class PointComponent (Component):
     def __init__(self, name, block, position, angle_degrees, **kwargs):
         super( PointComponent, self ).__init__( name, block, **kwargs )
