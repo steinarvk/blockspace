@@ -158,7 +158,7 @@ def with_gun( block, edge_index = 1 ):
 def with_guns( block ):
     return with_gun( block, range(4) )
         
-def create_ship_thing(world, layer, position, shape = "small"):
+def create_ship_thing(world, layer, position, shape = "small", hp = 1):
     # 2
     #3 1
     # 0
@@ -197,7 +197,7 @@ def create_ship_thing(world, layer, position, shape = "small"):
     s.zero_centroid()
     for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
         block.image_name = "element_{0}_square.png".format( col )
-        block.hp = 3
+        block.hp = hp
     s.blocks[0].image_name = "element_red_square.png"
     rv = Ship( world, s, layer, position, mass = len(s.blocks), moment = 20000.0, collision_type = collision_type_main )
     rv._gun_distance = 65
@@ -244,9 +244,9 @@ class MainWorld (World):
         self.pre_physics.add_anonymous_hook( self.update_camera )
         self.display.add_anonymous_hook( self.scene.update )
         self.pre_physics.add_hook( self.player, self.player.update )
-        self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.enemy2, partial( self.shoot_bullet, self.enemy ) ) )
+        self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
         self.pre_physics.add_hook( self.enemy, self.enemy.update )
-        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_seek_target( dt, self.enemy2, self.enemy, partial( self.shoot_bullet, self.enemy2 ) ) )
+        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
         self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
         self.physics.add_anonymous_hook( self.sim.tick )
         self.scene.schedule( self.update_everything )
@@ -269,7 +269,7 @@ class MainWorld (World):
         self.main_layer.cocos_layer.position = self.camera.offset()
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "small" )
+        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "small", hp = 3 )
         self.player.invulnerable = False
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "big" )
         self.enemy.invulnerable = False
