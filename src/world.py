@@ -44,6 +44,7 @@ class World (object):
         self.display = Hookable()
         self.hookpoints.append( self.display )
         self.stepper = FixedTimestepper( timestep, self.fixed_tick )
+        self.t = 0
     def queue_once(self, f):
         self.post_physics_once_queue.append( f )
     def fixed_tick(self, dt):
@@ -52,6 +53,7 @@ class World (object):
         self.post_physics( dt )
         while self.post_physics_once_queue:
             self.post_physics_once_queue.pop(0)()
+        self.t += dt
     def tick(self, dt):
         self.stepper.step( dt )
     def remove_all_hooks(self, obj):

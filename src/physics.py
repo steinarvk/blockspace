@@ -2,6 +2,7 @@ import pymunk
 import sys
 import math
 import random
+import component
 
 from pymunk import Vec2d
 from util import radians_to_degrees, degrees_to_radians
@@ -278,6 +279,9 @@ class Thing (object):
         self.update_hooks = []
         self.alive = True
         self.killed = False
+        self.psu = component.PowerSupply( 1000.0 )
+        self.psu.power = 1000.0
+        self.psu.set_production( "generator", 1000.0 )
         self.sim.space.add( self.body )
 
     def reshape(self, shape):
@@ -297,6 +301,9 @@ class Thing (object):
             for shape in self.shapes:
                 shape.group = self.group
         self.sim.add( *self.shapes )
+
+    def tick(self, dt):
+        self.psu.tick(dt)
 
     def update(self):
         for hook in self.update_hooks:

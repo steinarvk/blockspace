@@ -24,7 +24,7 @@ def setup_world():
 
 def test_point_component_at_origin():
     block, thing = setup_world()
-    component = PointComponent( "test", block, (0,0), 0.0 )
+    component = PointComponent( block, (0,0), 0.0 )
     assert component.position == block.position
     assert component.position == Vec2d(0,0)
     assert component.angle_degrees == block.angle_degrees
@@ -39,7 +39,7 @@ def create_and_check_point_component( thing_xy, thing_angle, vel, angvel, comp_x
     thing.angle_degrees = thing_angle
     thing.velocity = vel
     thing.angular_velocity_degrees = angvel
-    component = PointComponent( "test", block, comp_xy, comp_angle )
+    component = PointComponent( block, comp_xy, comp_angle )
     assert almost_equal( component.position.get_distance( thing.position ), comp_xy.get_length() )
     assert degrees_almost_equal( component.angle_degrees, thing.angle_degrees + comp_angle )
     return component, block, thing

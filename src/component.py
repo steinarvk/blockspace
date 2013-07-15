@@ -1,12 +1,43 @@
-from physics import Vec2d
+from pymunk import Vec2d
 import math
 
 class Component (object):
-    def __init__(self, name, block, required_edges = ()):
-        self.name = name
+    def __init__(self, block, required_edges = (), categories = (), category = None, name = None):
+        self.name = name or "unnamed"
         self.block = block
         self.required_edges = required_edges
         self.block.components.append( self )
+        self.cooldown = None
+        self.cooldown_finished = 0.0
+        self.power_usage = None
+        self.last_usage = None
+        self.categories = list(categories)
+        if category:
+            self.categories.append( category )
+
+    @property
+    def world(self):
+        return self.thing.world
+
+    @property
+    def thing(self):
+        return self.block.thing
+
+    def may_activate(self):
+        if not self.active:
+            return False
+        if self.cooldown and self.cooldown_finished and (self.cooldown_finished > self.world.t):
+            return False
+        if self.power_usage and not self.thing.psu.may_consume( self.power_usage ):
+            return False
+        return True
+
+    def activated(self, activation_sequence_no = 0):
+        if self.cooldown:
+            self.cooldown_finished = self.world.t + self.cooldown
+        if self.power_usage:
+            self.thing.psu.consume( self.power_usage )
+        self.last_usage = (self.world.t, activation_sequence_no )
 
     @property
     def active(self):
@@ -52,8 +83,8 @@ class PowerSupply (object):
         return self.power >= value
 
 class PointComponent (Component):
-    def __init__(self, name, block, position, angle_degrees, **kwargs):
-        super( PointComponent, self ).__init__( name, block, **kwargs )
+    def __init__(self, block, position, angle_degrees, **kwargs):
+        super( PointComponent, self ).__init__( block, **kwargs )
         self.relative_position = Vec2d(position) # to block
         self.relative_angle_degrees = angle_degrees # relative to block
 

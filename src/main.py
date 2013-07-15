@@ -46,8 +46,6 @@ class Ship (physics.Thing):
         self._thrust_power = 3500
         self._brake_power = 2500
         self._ai_time = 0.0
-        self._gun_cooldown = 0.5
-        self._gun_current_cooldown = 0.0
 #        f = self.sprite.cocos_sprite.draw
 #        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
     def on_fire_key(self, symbol, modifiers, state):
@@ -57,13 +55,14 @@ class Ship (physics.Thing):
         self._thrusting = state[key.UP]
         self._braking = state[key.DOWN]
         self._turbo = state[key.LSHIFT]
+    def ready_guns(self):
+        rv = self.block_structure.get_components( lambda x : "gun" in x.categories and x.may_activate() )
+        rv.sort( key = lambda x : x.last_usage )
+        return rv
     def may_fire(self):
-        return self._gun_current_cooldown <= 0.0
-    def fired(self):
-        self._gun_current_cooldown = self._gun_cooldown
+        return bool( self.ready_guns() )
     def update(self, dt):
         super( Ship, self ).update()
-        self._gun_current_cooldown -= dt
         self.body.reset_forces()
         spin = self._spin
         if spin == 0:
@@ -152,7 +151,9 @@ def with_gun( block, edge_index = 1 ):
         pass
     angle = [ -90.0, 0.0, 90.0, 180.0 ][ edge_index ]
     pos = Vec2d( polar_degrees( angle, 16.0 ) )
-    component.PointComponent( "blaster", block, pos, angle, required_edges = (edge_index,) )
+    gun = component.PointComponent( block, pos, angle, required_edges = (edge_index,), category = "gun" )
+    gun.cooldown = 0.2
+    gun.power_usage = 200.0
     return block
 
 def with_guns( block ):
@@ -248,6 +249,8 @@ class MainWorld (World):
         self.pre_physics.add_hook( self.enemy, self.enemy.update )
         self.pre_physics.add_hook( self.enemy2, lambda dt : ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
         self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
+        for x in (self.player, self.enemy, self.enemy2):
+            self.post_physics.add_hook( x, x.tick )
         self.physics.add_anonymous_hook( self.sim.tick )
         self.scene.schedule( self.update_everything )
     def update_everything(self, dt):
@@ -303,27 +306,31 @@ class MainWorld (World):
         input_layer.cocos_layer.set_key_hook( key.LSHIFT, self.player.on_controls_state )
         input_layer.cocos_layer.set_key_press_hook( key.SPACE, lambda *args, **kwargs: self.shoot_bullet(self.player) )
     def shoot_bullet(self, shooter):
-        if shooter.may_fire():
-            guns = shooter.block_structure.get_components( attrgetter("active") )
-            for gun in guns:
-                sq = create_bullet_thing( self, self.img_bullet, shooter, gun )
-                def update_bullet( bullet, dt ):
-                    if not bullet.alive:
-                        return
-                    bullet.ttl -= dt
-                    bullet.grace -= dt
-                    if bullet.ttl <= 0.0:
-                        bullet.kill()
-                def kill_bullet( sq ):
-                    self.display_objects.remove( sq.sprite )
-                    if sq.sprite.cocos_sprite in self.batch:
-                        self.batch.remove( sq.sprite.cocos_sprite )
-                sq.ttl = 1.5
-                self.display_objects.append( sq.sprite )
-                self.batch.add( sq.sprite.cocos_sprite )
-                sq.kill_hooks.append( kill_bullet )
-                self.pre_physics.add_hook( sq, partial(update_bullet,sq) )
-            shooter.fired()
+        guns = shooter.ready_guns()
+        print len(guns), "guns ready", "power", shooter.psu.power
+        index = 0
+        for gun in guns:
+            if not gun.may_activate():
+                continue
+            gun.activated( index )
+            sq = create_bullet_thing( self, self.img_bullet, shooter, gun )
+            def update_bullet( bullet, dt ):
+                if not bullet.alive:
+                    return
+                bullet.ttl -= dt
+                bullet.grace -= dt
+                if bullet.ttl <= 0.0:
+                    bullet.kill()
+            def kill_bullet( sq ):
+                self.display_objects.remove( sq.sprite )
+                if sq.sprite.cocos_sprite in self.batch:
+                    self.batch.remove( sq.sprite.cocos_sprite )
+            sq.ttl = 1.5
+            self.display_objects.append( sq.sprite )
+            self.batch.add( sq.sprite.cocos_sprite )
+            sq.kill_hooks.append( kill_bullet )
+            self.pre_physics.add_hook( sq, partial(update_bullet,sq) )
+            index += 1
     def update_pygame(self):
         self.screen.fill( pygame.color.THECOLORS[ "black" ] )
         draw_space( self.screen, self.sim.space )
