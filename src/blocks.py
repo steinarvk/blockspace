@@ -9,7 +9,7 @@ import math
 from itertools import starmap
 from operator import attrgetter
 
-from util import almost_equal, vectors_almost_equal, round_vector
+from util import *
 
 import copy
 
@@ -19,21 +19,6 @@ import sys
 
 class IllegalOverlapException (Exception):
     pass
-
-def generate_regular_polygon_vertices(n, r = 1.0, start_angle = None):
-    step = math.pi * 2.0 / float(n)
-    if start_angle == None:
-        start_angle = 0.5 * step
-    for i in range(n):
-        angle = start_angle + i * step
-        yield r * math.cos( angle ), r * math.sin( angle )
-
-def generate_square_vertices(s):
-    h = 0.5 * s
-    return [(-h,-h),(h,-h),(h,h),(-h,h)]
-
-def indexed_zip( l ):
-    return zip( range(len(l)), l )
 
 class Edge (object):
     def __init__(self, a, b):

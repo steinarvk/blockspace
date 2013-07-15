@@ -5,7 +5,7 @@ import random
 import component
 
 from pymunk import Vec2d
-from util import radians_to_degrees, degrees_to_radians
+from util import *
 
 infinity = infinite_moment = pymunk.inf
 
@@ -21,33 +21,6 @@ def calculate_minimum_diameter( timestep, maximum_speed ):
 
 def calculate_maximum_speed( timestep, minimum_diameter ):
     return (0.5 * minimum_diameter) / timestep
-
-def closed_circle( l ):
-    it = l.__iter__()
-    first_element = it.next()
-    yield first_element
-    for element in it:
-        yield element
-    yield first_element
-
-def successive_ntuples( n, l ):
-    rv = []
-    it = l.__iter__()
-    for i in range(n):
-        rv.append( it.next() )
-    while True:
-        yield tuple(rv)
-        rv.pop(0)
-        rv.append( it.next() )
-
-def successive_pairs( l ):
-    return successive_ntuples(2, l)
-
-def successive_triples( l ):
-    return successive_ntuples(3, l)
-
-def closed_circle_pairs( l ):
-    return successive_pairs( closed_circle( l ) )
 
 class CollisionShape (object):
     def __init__(self, group = None, sensor = None, collision_type = None, elasticity = None, extra_info = None, origin = None):

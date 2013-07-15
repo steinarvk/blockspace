@@ -50,3 +50,45 @@ def sign( n ):
     if n < 0:
         return -1
     return 0
+
+def closed_circle( l ):
+    it = l.__iter__()
+    first_element = it.next()
+    yield first_element
+    for element in it:
+        yield element
+    yield first_element
+
+def successive_ntuples( n, l ):
+    rv = []
+    it = l.__iter__()
+    for i in range(n):
+        rv.append( it.next() )
+    while True:
+        yield tuple(rv)
+        rv.pop(0)
+        rv.append( it.next() )
+
+def successive_pairs( l ):
+    return successive_ntuples(2, l)
+
+def successive_triples( l ):
+    return successive_ntuples(3, l)
+
+def closed_circle_pairs( l ):
+    return successive_pairs( closed_circle( l ) )
+
+def generate_regular_polygon_vertices(n, r = 1.0, start_angle = None):
+    step = math.pi * 2.0 / float(n)
+    if start_angle == None:
+        start_angle = 0.5 * step
+    for i in range(n):
+        angle = start_angle + i * step
+        yield r * math.cos( angle ), r * math.sin( angle )
+
+def generate_square_vertices(s):
+    h = 0.5 * s
+    return [(-h,-h),(h,-h),(h,h),(-h,h)]
+
+def indexed_zip( l ):
+    return zip( range(len(l)), l )

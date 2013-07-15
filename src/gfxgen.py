@@ -4,6 +4,10 @@ import math
 
 from random import randint
 from functools import partial
+from itertools import starmap
+
+from pymunk import Vec2d
+from util import *
 
 def rand(n):
     return random.randint(0, n - 1)
@@ -65,7 +69,21 @@ def put_pixel_intensity( o, col, xy, a ):
     r, g, b = col
     o[ xy ] = blend( o[xy], (r,g,b,a) )
 
-if __name__ == '__main__':
+def side_of_line( p, xy0, xy1 ):
+    p = Vec2d(p)
+    xy0 = Vec2d(xy0)
+    xy1 = Vec2d(xy1)
+    d = (xy1-xy0).normalized()
+    n = d.perpendicular_normal()
+    return sign( (p-xy0).dot( n ) )
+
+def inside_convex_polygon( p, vs ):
+    rv = set(starmap( partial( side_of_line, p ), closed_circle_pairs(vs) ))
+    if 0 in rv:
+        rv.remove(0)
+    return len(rv) == 1
+    
+def generate_starfields_main():
     size = 1024
     img, ar = create_new_image( size, size )
     for i in range(20):
@@ -73,3 +91,17 @@ if __name__ == '__main__':
         on_hybrid_star( rand(1024), rand(1024), rand(32)+1, random.random() * 0.3 + 0.1, lambda xy, a : put_pixel_intensity(ar, (220+rand(35),220+rand(35),rand(35)), xy, a * min( 1.0, alph * 2 ) ) )
     img.save( "my_image.generated.png" )
 
+def generate_simple_polygon(n = 3):
+    size = 256
+    vs = map(lambda p : (Vec2d(p)+Vec2d(1,1))*0.5*size, generate_regular_polygon_vertices(n) )
+    print vs
+    img, ar = create_new_image( size, size )
+    for x in range(size):
+        for y in range(size):
+            ar[x,y] = (200,100,100,255) if inside_convex_polygon( (x,y), vs ) else (100,200,50,255)
+    img.save( "polygon_test.{0}.generated.png".format(n) )
+            
+if __name__ == '__main__':
+    for i in range(3,8+1):
+        generate_simple_polygon(i)
+    
