@@ -4,7 +4,7 @@ import math
 
 from random import randint
 from functools import partial
-from itertools import starmap
+from itertools import starmap,product
 
 from pymunk import Vec2d
 from util import *
@@ -91,17 +91,62 @@ def generate_starfields_main():
         on_hybrid_star( rand(1024), rand(1024), rand(32)+1, random.random() * 0.3 + 0.1, lambda xy, a : put_pixel_intensity(ar, (220+rand(35),220+rand(35),rand(35)), xy, a * min( 1.0, alph * 2 ) ) )
     img.save( "my_image.generated.png" )
 
-def generate_simple_polygon(n = 3):
-    size = 256
-    vs = map(lambda p : (Vec2d(p)+Vec2d(1,1))*0.5*size, generate_regular_polygon_vertices(n, radius_for_side_length(n, 0.3)) )
+def generate_simple_polygon(n = 3, size = 256, side_length = 0.3):
+    vs = map(lambda p : (Vec2d(p)+Vec2d(1,1)*0.5)*size, generate_regular_polygon_vertices(n, radius_for_side_length(n, side_length)) )
     print vs
     img, ar = create_new_image( size, size )
     for x in range(size):
         for y in range(size):
             ar[x,y] = (200,100,100,255) if inside_convex_polygon( (x,y), vs ) else (100,200,50,255)
     img.save( "polygon_test.{0}.generated.png".format(n) )
+
+def generate_fancy_polygon(n = 3, size = 256, side_length = 0.3, subpixel_resolution = 10):
+    outer_r = radius_for_side_length(n, side_length)
+    inner_r = outer_r - side_length/3.0
+    print outer_r, inner_r, side_length
+    outer_vs = map(Vec2d,generate_regular_polygon_vertices(n, outer_r))
+    inner_vs = map(Vec2d,generate_regular_polygon_vertices(n, inner_r))
+    print outer_vs, [ x.normalized() for x in outer_vs ]
+    print inner_vs, [ x.normalized() for x in inner_vs ]
+    polygons = []
+    light_direction = Vec2d(-1,-1).normalized()
+    for ((a,b),(d,c)) in closed_circle_pairs( zip(inner_vs, outer_vs) ):
+        print (a,b,c,d)
+        polygons.append( ((a,b,c,d), ((a+b+c+d).normalized().dot( light_direction ) + 1) * 0.5 ) )
+    print inner_vs
+    polygons.append( (inner_vs, 0.8) )
+    def average( rgbas ):   
+        rs, gs, bs, alphas = [], [], [], []
+        for r, g, b, a in rgbas:
+            if r != None: rs.append( r )
+            if g != None: gs.append( g )
+            if b != None: bs.append( b )
+            if a != None: alphas.append( a )
+        r = sum(rs) / float(len(rs)) if rs else 0.0
+        g = sum(gs) / float(len(gs)) if gs else 0.0
+        b = sum(bs) / float(len(bs)) if bs else 0.0
+        a = sum(alphas) / float(len(alphas)) if alphas else 0.0
+        return int(r), int(g), int(b), int(a)
+    def sample( p ):
+        p = (p - Vec2d(size,size)*0.5) / size
+        for polygon, shade in polygons:
+            if inside_convex_polygon( p, polygon ):
+                return (shade*255,shade*255,shade*255,255)
+        return (0,0,0,255) # solid black (not transparent -- that's None, None, None, 0)
+    img, ar = create_new_image( size, size )
+    print "generating fancy {0}-gon".format(n)
+    for x, y in product( range(size), repeat = 2 ):
+        print x, y
+        results = []
+        for sx, sy in product( [i/float(subpixel_resolution) for i in range(subpixel_resolution)], repeat = 2):
+            p = (x + sx, y + sy)
+            rv = sample(p)
+            results.append( rv )
+        result = average( results )
+        ar[x,y] = result
+    img.save( "polygon_fancy.{0}.generated.png".format(n) )
             
 if __name__ == '__main__':
-    for i in (8,6,5,4,3):
-        generate_simple_polygon(i)
+    for i in (3,6,5,4,8):
+        generate_fancy_polygon(i, size = 64, side_length = 0.3)
     
