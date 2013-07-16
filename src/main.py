@@ -157,7 +157,7 @@ def with_gun( block, edge_index = 1 ):
     pos = Vec2d( polar_degrees( angle, 16.0 ) )
     gun = component.PointComponent( block, pos, angle, required_edges = (edge_index,), category = "gun" )
     gun.cooldown = 0.2
-    gun.power_usage = 200.0
+    gun.power_usage = (1000 * gun.cooldown) * 2.0/3.0
     return block
 
 def with_guns( block ):
