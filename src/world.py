@@ -1,22 +1,4 @@
-class Hookable (object):
-    def __init__(self):
-        self.hooks = {}
-    def add_hook(self, obj, f ):
-        try:
-            self.hooks[ obj ].append( f )
-        except KeyError:
-            self.hooks[ obj ] = [ f ]
-    def add_anonymous_hook(self, f ):
-        self.add_hook( None, f )
-    def remove_hooks(self, obj ):
-        try:
-            del self.hooks[ obj ]
-        except KeyError:
-            pass
-    def __call__(self, *args, **kwargs):
-        for hooks in self.hooks.values():
-            for hook in hooks:
-                hook(*args, **kwargs)
+from util import Hookable
 
 class FixedTimestepper (object):
     def __init__(self, timestep, fixed_step_function):

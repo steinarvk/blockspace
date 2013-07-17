@@ -31,7 +31,12 @@ class Ship (physics.Thing):
     def __init__(self, world, block_structure, layer, position, sprite_name = "player.png", mass = 1.0, moment = 1.0, **kwargs):
         super( Ship, self ).__init__( world, block_structure.create_collision_shape(), mass, moment, **kwargs )
         self.block_structure = block_structure
-        self.block_structure.create_sprite_structure( self, layer )
+        self.layer = layer
+        self.main_sprite_structure = self.block_structure.create_sprite_structure( self, self.layer )
+        def recreate_sprite_structure():
+            self.main_sprite_structure.kill()
+            self.main_sprite_structure = self.block_structure.create_sprite_structure( self, self.layer )
+        self.reshape_hooks.add_anonymous_hook( recreate_sprite_structure )
         self.body.velocity_limit = min( self.body.velocity_limit, 700.0 )
         self.body.angular_velocity_limit = degrees_to_radians( 360.0 )
         self.position = position
@@ -429,8 +434,6 @@ class MainWorld (World):
                     angle_before = remaining_block.angle_degrees
                     thing.block_structure.zero_centroid()
                     thing.block_structure.clear_collision_shape()
-                    thing.block_structure.clear_sprite_structure( thing )
-                    thing.block_structure.create_sprite_structure( thing, self.main_layer )
                     thing.reshape( thing.block_structure.create_collision_shape() )
                     pos_after = remaining_block.position
                     angle_after = remaining_block.angle_degrees

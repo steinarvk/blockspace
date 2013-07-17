@@ -323,18 +323,11 @@ class BlockStructure (object):
         return self.create_collision_shape().centroid()
 
     def create_sprite_structure(self, thing, layer):
-        self.sprite_structure = s = graphics.SpriteStructure( thing, layer )
+        s = graphics.SpriteStructure( thing, layer )
         c = self.centroid()
         for block in self.blocks:
-            block.sprite = s.add_sprite( block.create_sprite(), block.translation - c )
-
-    def clear_sprite_structure(self, thing):
-        self.sprite_structure.kill()
-        del self.sprite_structure
-        for block in self.blocks:
-            block.sprite = None
-        thing.kill_hooks.remove( graphics.kill_sprite )
-        thing.update_hooks.remove( graphics.update_sprite )
+            s.add_sprite( block.create_sprite(), block.translation - c, key = block )
+        return s
 
 def filter_connections( connections, block_indices ):
     def check_connection( connection ):

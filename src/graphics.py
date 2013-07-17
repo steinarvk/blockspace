@@ -1,6 +1,7 @@
 import cocos
 import math
 
+from util import ignore_arguments
 from operator import attrgetter
 from pyglet.gl import *
 
@@ -89,19 +90,24 @@ class SpriteStructure (object):
         self.layer = layer
         self.cocos_sprites = []
         self.thing = thing
-        self.thing.kill_hooks.append( kill_sprite )
-        self.thing.update_hooks.append( update_sprite )
+        self.kill_hook = ignore_arguments( self.kill )
+        self.update_hook = ignore_arguments( self.update )
+        self.thing.kill_hooks.append( self.kill_hook )
+        self.thing.update_hooks.append( self.update_hook )
         self.thing.sprite = self
         self.node = cocos.cocosnode.CocosNode()
+        self.subcomponent = {}
         if self.layer:
             self.layer.add_sprite( self )
             self.layer.cocos_layer.add( self.node )
-    def add_sprite(self, sprite, offset = (0,0)):
+    def add_sprite(self, sprite, offset = (0,0), key = None):
         cocos_sprite = sprite
         w, h = cocos_sprite.width, cocos_sprite.height
         cocos_sprite.position = offset
         self.cocos_sprites.append( cocos_sprite )
         self.node.add( cocos_sprite )
+        if key:
+            self.subcomponent[key] = cocos_sprite
         return cocos_sprite
     def replace_sprite(self, old_sprite, new_sprite ):
         old_position = old_sprite.position
@@ -116,6 +122,8 @@ class SpriteStructure (object):
         self.cocos_sprites.remove( cocos_sprite )
         self.node.remove( cocos_sprite )
     def kill(self):
+        self.thing.kill_hooks.remove( self.kill_hook )
+        self.thing.update_hooks.remove( self.update_hook )
         if self.layer:
             self.layer.remove_sprite( self )
             self.layer.cocos_layer.remove( self.node )

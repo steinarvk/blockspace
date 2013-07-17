@@ -243,6 +243,7 @@ class Thing (object):
         self.invulnerable = True
         self.group = group
         self.collision_type = collision_type
+        self.reshape_hooks = Hookable()
         self.reshape( shape )
         for shape in self.shapes:
             bb = shape.cache_bb()
@@ -274,6 +275,7 @@ class Thing (object):
             for shape in self.shapes:
                 shape.group = self.group
         self.sim.add( *self.shapes )
+        self.reshape_hooks()
 
     def tick(self, dt):
         self.psu.tick(dt)
