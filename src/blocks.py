@@ -322,8 +322,8 @@ class BlockStructure (object):
     def centroid(self):
         return self.create_collision_shape().centroid()
 
-    def create_sprite_structure(self, thing, layer):
-        s = graphics.SpriteStructure( thing, layer )
+    def create_sprite_structure(self, **kwargs):
+        s = graphics.SpriteStructure( **kwargs )
         c = self.centroid()
         for block in self.blocks:
             s.add_sprite( block.create_sprite(), block.translation - c, key = block )

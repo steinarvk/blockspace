@@ -32,10 +32,10 @@ class Ship (physics.Thing):
         super( Ship, self ).__init__( world, block_structure.create_collision_shape(), mass, moment, **kwargs )
         self.block_structure = block_structure
         self.layer = layer
-        self.main_sprite_structure = self.block_structure.create_sprite_structure( self, self.layer )
+        self.sprite = self.main_sprite_structure = self.block_structure.create_sprite_structure( layer = self.layer, thing = self )
         def recreate_sprite_structure():
             self.main_sprite_structure.kill()
-            self.main_sprite_structure = self.block_structure.create_sprite_structure( self, self.layer )
+            self.sprite = self.main_sprite_structure = self.block_structure.create_sprite_structure( layer = self.layer, thing = self )
         self.reshape_hooks.add_anonymous_hook( recreate_sprite_structure )
         self.body.velocity_limit = min( self.body.velocity_limit, 700.0 )
         self.body.angular_velocity_limit = degrees_to_radians( 360.0 )
@@ -207,12 +207,14 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
                     "green": (0,255,0),
                     "yellow": (255,255,0),
                     "red": (255,0,0) }
-        for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
+        for block, col in zip(s.blocks,cycle(("blue","purple","red","yellow"))):
     #        block.image_name = "element_{0}_square.png".format( col )
             block.colour = colours[col]
-            block.hp = hp
+            block.max_hp = block.hp = hp
+            block.cockpit = False
     #    s.blocks[0].image_name = "element_red_square.png"
-        s.blocks[0].colour = colours["red"]
+        s.blocks[0].colour = colours["green"]
+        s.blocks[0].cockpit = True
     rv = Ship( world, s, layer, position, mass = len(s.blocks), moment = 20000.0, collision_type = collision_type_main )
     rv._gun_distance = 65
     return rv
@@ -250,6 +252,7 @@ class MainWorld (World):
         self.setup_graphics( resolution )
         self.setup_game()
         self.setup_input()
+        self.setup_hud()
         self.camera.following = self.player
         self.main_layer.camera = self.camera
         if use_pygame:
@@ -282,11 +285,42 @@ class MainWorld (World):
         graphics.Layer( self.scene, cocos.layer.ColorLayer( 0, 0, 0, 1 ) )
         for i in range(8):
             graphics.Layer( self.scene, graphics.BackgroundCocosLayer( self.camera, 10.0 + 0.5 * i, "starfield{0}.png".format(i) ) )
+        self.hud_width = 170
         self.main_layer = graphics.Layer( self.scene )
         self.main_layer.cocos_layer.position = self.camera.offset()
+        self.main_layer.size = (self.window.width-self.hud_width,self.window.height)
+        self.hud_cocos_layer = graphics.BlankingCocosLayer()
+        self.hud_cocos_layer.clear_colour = (0,40,40,255)
+        self.hud_cocos_layer.clear_rect = ((self.window.width-self.hud_width,0),(self.window.width,0),(self.window.width,self.window.height),(self.window.width-self.hud_width,self.window.height))
+        self.hud_layer = graphics.Layer( self.scene, cocos_layer = self.hud_cocos_layer )
+        self.hud_layer.cocos_layer.position = 0,0
+    def setup_hud(self):
+        def update_hp_display():
+            undamaged = 255,255,255
+            undamaged_cockpit = 0,255,0
+            damaged = damaged_cockpit = 255,0,0
+            for block, sprite in self.hud_sprite.subcomponent.items():
+                rel = float(block.hp) / block.max_hp
+                a = damaged_cockpit if block.cockpit else damaged
+                b = undamaged_cockpit if block.cockpit else undamaged
+                sprite.color = vector_lerp( rel, a, b )
+                cockpit = False
+        def create_hp_display():
+            self.hud_sprite = self.player.block_structure.create_sprite_structure( layer = self.hud_layer )
+            expected_size = self.hud_width
+            self.hud_sprite.node.position = self.window.width - expected_size*0.5, self.window.height - expected_size * 0.5
+            self.hud_sprite.node.rotation = -90.0
+            self.hud_sprite.node.scale = 0.5
+            update_hp_display()
+        def recreate_hp_display():
+            self.hud_sprite.kill()
+            create_hp_display()
+        create_hp_display()
+        self.post_physics.add_anonymous_hook( ignore_arguments( update_hp_display ) )
+        self.player.reshape_hooks.add_anonymous_hook( recreate_hp_display )
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "small", hp = 10 )
+        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "small", hp = 4 )
         self.player.invulnerable = False
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "big" )
         self.enemy.invulnerable = False

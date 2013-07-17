@@ -1,6 +1,9 @@
 import math
 from pymunk import Vec2d
 
+from functools import partial
+from itertools import starmap
+
 def degrees_to_radians( degrees ):
     return math.pi * degrees / 180.0
 
@@ -97,6 +100,17 @@ def generate_square_vertices(s):
 
 def indexed_zip( l ):
     return zip( range(len(l)), l )
+
+def lerp( p, a, b ):
+    if p <= 0.0:
+        return a
+    if p >= 1.0:
+        return b
+    return p * b + (1.0-p) * a
+
+def vector_lerp( p, a, b ):
+    return starmap( partial(lerp, p), zip(a,b) )
+    
 
 class Hookable (object):
     def __init__(self):

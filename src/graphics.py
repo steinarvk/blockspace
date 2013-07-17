@@ -47,6 +47,23 @@ class Scene (object):
         for layer in self.layers:
             layer.update()
 
+class BlankingCocosLayer (cocos.layer.Layer):
+    def __init__(self, *args, **kwargs):
+        super(BlankingCocosLayer, self).__init__(*args, **kwargs)
+        self.clear_rect = None
+        self.clear_colour = None
+    def draw(self):
+        glPushMatrix()
+        self.transform()
+        if self.clear_rect:
+            glColor4ub( *self.clear_colour )
+            glBegin( GL_QUADS )
+            for p in self.clear_rect:
+                glVertex2i( *p )
+            glEnd()
+        glPopMatrix()
+        super(BlankingCocosLayer, self).draw()
+
 class Layer (object):
     def __init__(self, scene, cocos_layer = None):
         self.scene = scene
@@ -54,6 +71,7 @@ class Layer (object):
         self.sprites = set()
         self.cocos_layer.position = self.scene.window.center()
         self.camera = None
+        self.size = None
         scene.add_layer( self )
     def add_sprite(self, sprite):
         self.sprites.add( sprite )
@@ -63,7 +81,7 @@ class Layer (object):
         for sprite in self.sprites:
             sprite.update()
         if self.camera:
-            self.cocos_layer.position = self.camera.offset()
+            self.cocos_layer.position = self.camera.offset( window_size = self.size )
         
 
 class Sprite (object):
@@ -86,20 +104,23 @@ class Sprite (object):
         self.cocos_sprite.rotation = 180.0 - self.thing.angle_degrees
 
 class SpriteStructure (object):
-    def __init__(self, thing, layer = None):
+    def __init__(self, thing = None, layer = None):
         self.layer = layer
         self.cocos_sprites = []
-        self.thing = thing
         self.kill_hook = ignore_arguments( self.kill )
         self.update_hook = ignore_arguments( self.update )
-        self.thing.kill_hooks.append( self.kill_hook )
-        self.thing.update_hooks.append( self.update_hook )
-        self.thing.sprite = self
+        self.thing = None
         self.node = cocos.cocosnode.CocosNode()
         self.subcomponent = {}
         if self.layer:
             self.layer.add_sprite( self )
             self.layer.cocos_layer.add( self.node )
+        if thing:
+            self.follow_thing( thing )
+    def follow_thing(self, thing):
+        self.thing = thing
+        self.thing.kill_hooks.append( self.kill_hook )
+        self.thing.update_hooks.append( self.update_hook )
     def add_sprite(self, sprite, offset = (0,0), key = None):
         cocos_sprite = sprite
         w, h = cocos_sprite.width, cocos_sprite.height
@@ -122,16 +143,18 @@ class SpriteStructure (object):
         self.cocos_sprites.remove( cocos_sprite )
         self.node.remove( cocos_sprite )
     def kill(self):
-        self.thing.kill_hooks.remove( self.kill_hook )
-        self.thing.update_hooks.remove( self.update_hook )
+        if self.thing:
+            self.thing.kill_hooks.remove( self.kill_hook )
+            self.thing.update_hooks.remove( self.update_hook )
         if self.layer:
             self.layer.remove_sprite( self )
             self.layer.cocos_layer.remove( self.node )
     def update(self):
-        p = self.thing.position
-        r = - self.thing.angle_degrees
-        self.node.position  = p
-        self.node.rotation = r
+        if self.thing:
+            p = self.thing.position
+            r = - self.thing.angle_degrees
+            self.node.position  = p
+            self.node.rotation = r
         
 
 class Camera (object):
@@ -141,9 +164,12 @@ class Camera (object):
         self.following = None
         self.tracking_inertia = 0.06
 
-    def offset(self):
+    def offset(self, window_size = None):
         x, y = self.focus
-        return 0.5 * self.window.width - x, 0.5 * self.window.height - y
+        if not window_size:
+            window_size = self.window.width, self.window.height
+        w, h = window_size
+        return 0.5 * w - x, 0.5 * h - y
 
     def update(self, dt):
         if self.following:
@@ -172,7 +198,7 @@ class BackgroundCocosLayer (cocos.layer.Layer):
         x, y = self._camera.focus
         rx, ry = self._k * x, self._k * y
         glEnable( self._texture.target )
-#        glColor4f( 0.3, 0.3, 0.3, 0.5 ) 
+        glColor4f( 1, 1, 1, 1 )
         glBindTexture( GL_TEXTURE_2D, self._texture.id )
         glPushMatrix()
         self.transform()
