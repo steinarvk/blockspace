@@ -32,10 +32,6 @@ class Ship (physics.Thing):
         super( Ship, self ).__init__( world, block_structure.create_collision_shape(), mass, moment, **kwargs )
         self.block_structure = block_structure
         self.block_structure.create_sprite_structure( self, layer )
-#        self.sprite.add_sprite( "element_blue_square.png", (0,0) )
-#        self.sprite.add_sprite( "element_purple_square.png", (0,32) )
-#        self.sprite.add_sprite( "element_green_square.png", (32,0) )
-#        self.sprite.add_sprite( "element_yellow_square.png", (-32,0) )
         self.body.velocity_limit = min( self.body.velocity_limit, 700.0 )
         self.body.angular_velocity_limit = degrees_to_radians( 360.0 )
         self.position = position
@@ -163,7 +159,7 @@ def with_gun( block, edge_index = 1 ):
 def with_guns( block ):
     return with_gun( block, range(4) )
         
-def create_ship_thing(world, layer, position, shape = "small", hp = 1):
+def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour = True):
     # 2
     #3 1
     # 0
@@ -200,10 +196,18 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1):
     else:
         s = shape
     s.zero_centroid()
-    for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
-        block.image_name = "element_{0}_square.png".format( col )
-        block.hp = hp
-    s.blocks[0].image_name = "element_red_square.png"
+    if recolour:
+        colours = { "blue": (0,0,255),
+                    "purple": (255,0,255),
+                    "green": (0,255,0),
+                    "yellow": (255,255,0),
+                    "red": (255,0,0) }
+        for block, col in zip(s.blocks,cycle(("blue","purple","green","yellow"))):
+    #        block.image_name = "element_{0}_square.png".format( col )
+            block.colour = colours[col]
+            block.hp = hp
+    #    s.blocks[0].image_name = "element_red_square.png"
+        s.blocks[0].colour = colours["red"]
     rv = Ship( world, s, layer, position, mass = len(s.blocks), moment = 20000.0, collision_type = collision_type_main )
     rv._gun_distance = 65
     return rv
@@ -213,7 +217,8 @@ def create_square_thing(world, layer, position, image):
     shape = ConvexPolygonShape(*points)
     shape.translate( shape.centroid() * -1)
     moment = pymunk.moment_for_poly( 1.0, shape.vertices )
-    return Debris( world, layer, position, shape, image, moment = moment, collision_type = collision_type_main )
+    rv = Debris( world, layer, position, shape, image, moment = moment, collision_type = collision_type_main )
+    return rv
 
 def create_bullet_thing(world, image, shooter, gun):
     points = [(0,0),(9,0),(9,33),(0,33)]
@@ -286,7 +291,7 @@ class MainWorld (World):
         self.enemy2.body.angular_velocity_limit = degrees_to_radians(144*2)
         self.enemy.angle_degrees = random.random() * 360.0
         self.enemy2.angle_degrees = random.random() * 360.0
-        self.img_square = pyglet.image.load( "element_grey_square.png" )
+        self.img_square = pyglet.image.load( "myblockgray.png" )
         self.img_bullet = pyglet.image.load( "laserGreen.png" )
         self.batch = cocos.batch.BatchNode()
         self.main_layer.cocos_layer.add( self.batch )
@@ -378,7 +383,6 @@ class MainWorld (World):
         except AttributeError:
             return False
         if not thing.invulnerable:
-#            block.sprite = thing.block_structure.sprite_structure.replace_sprite( block.sprite, "element_grey_square.png" )
             block.hp = hp - 1
             if block.hp <= 0:
                 detached_block = thing.block_structure.remove_block( index )
@@ -404,9 +408,11 @@ class MainWorld (World):
                     vel = detached_block.velocity
                     deg = detached_block.angle_degrees
                     pos = detached_block.position
-                    detached_block.create_image = lambda : "element_grey_square.png"
+                    r, g, b = detached_block.colour
+                    tr,tg,tb = 0.5,0.5,0.75
+                    detached_block.colour = int(r*tr),int(g*tg),int(b*tb)
                     def create_later():
-                        debris = create_ship_thing( self, self.main_layer, pos, shape = blocks.BlockStructure( detached_block ) )
+                        debris = create_ship_thing( self, self.main_layer, pos, shape = blocks.BlockStructure( detached_block ), recolour = False )
                         debris.angle_degrees = deg
                         debris.velocity = vel
                     self.queue_once( create_later )

@@ -109,12 +109,16 @@ def generate_fancy_polygon(n = 3, size = 256, side_length = 0.3, subpixel_resolu
     print outer_vs, [ x.normalized() for x in outer_vs ]
     print inner_vs, [ x.normalized() for x in inner_vs ]
     polygons = []
-    light_direction = Vec2d(-1,-1).normalized()
+    light_angle = 0.12345678 # unlikely for two angles to have exactly equal dot product
+    light_direction = Vec2d(math.cos(light_angle), math.sin(light_angle))
     for ((a,b),(d,c)) in closed_circle_pairs( zip(inner_vs, outer_vs) ):
         print (a,b,c,d)
-        polygons.append( ((a,b,c,d), ((a+b+c+d).normalized().dot( light_direction ) + 1) * 0.5 ) )
+        t = ((a+b+c+d).normalized().dot( light_direction ) + 1) * 0.5
+        t2 = 0.1 + 0.8 * t
+        polygons.append( ((a,b,c,d),t2) ) 
     print inner_vs
-    polygons.append( (inner_vs, 0.8) )
+    polygons.append( (inner_vs, 0.7512345) )
+    print map( lambda x: x[1], polygons )
     def average( rgbas ):   
         rs, gs, bs, alphas = [], [], [], []
         for r, g, b, a in rgbas:
@@ -147,6 +151,6 @@ def generate_fancy_polygon(n = 3, size = 256, side_length = 0.3, subpixel_resolu
     img.save( "polygon_fancy.{0}.generated.png".format(n) )
             
 if __name__ == '__main__':
-    for i in (3,6,5,4,8):
-        generate_fancy_polygon(i, size = 64, side_length = 0.3)
+    for i in (4,6,5,8,3):
+        generate_fancy_polygon(i, size = 256, side_length = 0.3)
     

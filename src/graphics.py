@@ -96,8 +96,8 @@ class SpriteStructure (object):
         if self.layer:
             self.layer.add_sprite( self )
             self.layer.cocos_layer.add( self.node )
-    def add_sprite(self, image, offset = (0,0)):
-        cocos_sprite = cocos.sprite.Sprite( image )
+    def add_sprite(self, sprite, offset = (0,0)):
+        cocos_sprite = sprite
         w, h = cocos_sprite.width, cocos_sprite.height
         cocos_sprite.position = offset
         self.cocos_sprites.append( cocos_sprite )
@@ -105,7 +105,7 @@ class SpriteStructure (object):
         return cocos_sprite
     def replace_sprite(self, old_sprite, new_sprite ):
         old_position = old_sprite.position
-        cocos_sprite = cocos.sprite.Sprite( new_sprite )
+        cocos_sprite = new_sprite
         cocos_sprite.position = old_position
         self.node.remove( old_sprite )
         self.cocos_sprites.remove( old_sprite )

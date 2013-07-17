@@ -132,13 +132,17 @@ class PolygonBlock (Block):
     def __repr__(self):
         return "<PolygonBlock {0}>".format( "-".join( [ repr(round_vector((x,y),d=1)) for x,y in self.vertices] ) )
 
-    def create_image(self):
-        return self.image_name
+    def create_sprite(self):
+        rv = graphics.cocos.sprite.Sprite( self.image_name )
+        rv.color = self.colour
+        print "creating with colour", self.colour, self.image_name
+        return rv
 
 class QuadBlock (PolygonBlock):
     def __init__(self, side_length):
         super( QuadBlock, self ).__init__( generate_square_vertices( side_length ) )
-        self.image_name = "element_red_square.png"
+        self.image_name = "myblockgray.png"
+        self.colour = 255,255,255
 
     def __repr__(self):
         return "<QuadBlock {0}>".format( "-".join( [ repr((x,y)) for x,y in self.vertices] ) )
@@ -322,7 +326,7 @@ class BlockStructure (object):
         self.sprite_structure = s = graphics.SpriteStructure( thing, layer )
         c = self.centroid()
         for block in self.blocks:
-            block.sprite = s.add_sprite( block.create_image(), block.translation - c )
+            block.sprite = s.add_sprite( block.create_sprite(), block.translation - c )
 
     def clear_sprite_structure(self, thing):
         self.sprite_structure.kill()
