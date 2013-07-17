@@ -103,6 +103,10 @@ class Sprite (object):
         self.cocos_sprite.position = self.thing.position
         self.cocos_sprite.rotation = 180.0 - self.thing.angle_degrees
 
+        
+        
+
+
 class SpriteStructure (object):
     def __init__(self, thing = None, layer = None):
         self.layer = layer
@@ -155,7 +159,7 @@ class SpriteStructure (object):
             r = - self.thing.angle_degrees
             self.node.position  = p
             self.node.rotation = r
-        
+
 
 class Camera (object):
     def __init__(self, window, focus = (0,0)):
@@ -177,6 +181,34 @@ class Camera (object):
             ox, oy = self.focus
             p = self.tracking_inertia**dt
             self.focus = (p*ox + (1-p)*tx, p * oy + (1-p) * ty)
+
+class VerticalBar (cocos.cocosnode.CocosNode):
+    def __init__(self, width, height, on_colour, off_colour):
+        super( VerticalBar, self ).__init__()
+        self.on_colour = on_colour
+        self.off_colour = off_colour
+        self.width = width
+        self.height = height
+        self.fill = 0.75
+    def draw(self):
+        glPushMatrix()
+        self.transform()
+        glBegin( GL_QUADS )
+        hh = self.fill * self.height
+        w, h = float(self.width), float(self.height)
+        glColor3ub( *self.off_colour )
+        glVertex2f( 0.0, 0.0 )
+        glVertex2f( w, 0.0 )
+        glVertex2f( w, h )
+        glVertex2f( 0.0, h )
+        glColor3ub( *self.on_colour )
+        glVertex2f( 0.0, 0.0 )
+        glVertex2f( w, 0.0 )
+        glVertex2f( w, hh )
+        glVertex2f( 0.0, hh )
+        glEnd()
+        glPopMatrix()
+
 
 
 class BackgroundCocosLayer (cocos.layer.Layer):
