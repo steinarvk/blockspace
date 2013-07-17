@@ -317,9 +317,17 @@ class MainWorld (World):
             create_hp_display()
         bar = graphics.VerticalBar( 8, 256, (0,64,0), (128,0,0) )
         bar.position = (self.window.width - self.hud_width + 16), (self.window.height - self.hud_width - bar.height)
+        position_label = cocos.text.Label( "", font_name = "Bitstream Vera Sans Mono", font_size = 16, anchor_x = "left", anchor_y = "bottom" )
+        position_label.position = (self.window.width - self.hud_width + 16), (self.window.height - self.hud_width - bar.height - 32)
+        position_label.element.text = "(133,400)"
+        self.hud_cocos_layer.add( position_label )
+        def update_position_display():
+            x, y = self.player.position
+            position_label.element.text = "({0},{1})".format( int(x*0.1), int(y*0.1) )
         def update_power_display():
             bar.fill = self.player.psu.charge_rate()
         def update_hud():
+            update_position_display()
             update_hp_display()
             update_power_display()
         self.hud_cocos_layer.add( bar )

@@ -267,3 +267,23 @@ def draw_thing_shapes( thing ):
             glVertex2f( x + rdx * cost - rdy * sint, y + rdx * sint + rdy * cost )
     glEnd()
     glPopMatrix()
+
+def update_visible_objects( space, center_xy, size, all_objects, batch_node, sprite_key ):
+    # TODO, be more consistent, make everything Things
+    x, y = center_xy
+    ww, wh = size
+    hw, hh = 0.5 * ww, 0.5 * wh
+    screen_slack = 100.0
+    screen_bb = pymunk.BB(x-hw-screen_slack,y-hh-screen_slack,x+hw+screen_slack,y+hh+screen_slack)
+    onscreen = set(space.bb_query( screen_bb ))
+    for shape in onscreen:
+        sprite_key(shape).update()
+    prech = set(batch_node.get_children())
+    for thing in all_things:
+        if all((shape not in onscreen for shape in thing.shapes)):
+            if spr.cocos_sprite in prech:
+                batch_node.remove( spr.cocos_sprite )
+        else:
+            thing.update()
+            if spr.cocos_sprite not in prech:
+                batch_node.add( spr.cocos_sprite )
