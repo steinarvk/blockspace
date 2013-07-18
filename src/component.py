@@ -90,11 +90,10 @@ class PointComponent (Component):
 
     @property
     def position(self):
-        return self.block.position + self.relative_position.rotated( self.block.thing.angle_radians ) # correct?
+        return self.block.position + self.relative_position.rotated_degrees( self.block.angle_degrees )
 
     @property
     def angle_degrees(self):
-        print "I am at a relativee angle", self.relative_angle_degrees, "absolute", self.block.angle_degrees
         return (self.block.angle_degrees + self.relative_angle_degrees) % 360.0
 
     def __repr__(self):

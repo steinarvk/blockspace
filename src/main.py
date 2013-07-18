@@ -66,7 +66,12 @@ class Ship (physics.Thing):
             print "lost unknown power", key
     def on_fire_key(self, symbol, modifiers, state):
         pass
+    def sanity_check(self):
+        for block in self.block_structure.blocks:
+            for component in block.components:
+                assert component.block == block
     def on_controls_state(self, symbol, modifiers, state):
+        self.sanity_check()
         self._spin = (1 if state[key.RIGHT] else 0) - (1 if state[key.LEFT] else 0)
         self._thrusting = state[key.UP]
         self._braking = state[key.DOWN]
@@ -115,6 +120,30 @@ class Ship (physics.Thing):
             else:
                 forces.append( stopforce )
         self.body.apply_force( reduce( lambda x,y: x+y, forces, Vec2d(0,0) ) )
+
+def ai_flee_target( dt, actor, target):
+    actor._ai_time += dt
+    if actor._ai_time > 0.01:
+        actor._ai_time = 0.0
+        delta = (target.position - actor.position)
+        distance = delta.get_length()
+        correctness = delta.normalized().dot( -actor.direction )
+        angle = radians_to_degrees( math.acos( correctness ) )
+        sangle = (radians_to_degrees( math.atan2( delta.y, delta.x ) ) - actor.angle_degrees) % 360.0 - 180.0
+        actor._turbo = False
+        if distance < 500.0:
+            forwards = angle < 90.0
+        else:
+            forwards = angle < 20.0
+        last_spin = actor._spin
+        new_spin = -sign(sangle)
+        actor._spin = 0 if abs(sangle) < 15.0 else new_spin
+        if forwards:
+            actor._thrusting = True
+            actor._braking = False
+        else:
+            actor._thrusting = False
+            actor._braking = True
 
 def ai_seek_target( dt, actor, target, fire):
     actor._ai_time += dt
@@ -176,6 +205,8 @@ def with_gun( block, edge_index = 1 ):
         pass
     angle = block.edge( edge_index ).angle_degrees
     pos = Vec2d( polar_degrees( angle, 16.0 ) )
+    pos = Vec2d(0,0)
+    pos = block.edge( edge_index ).midpoint()
     gun = component.PointComponent( block, pos, angle, required_edges = (edge_index,), category = "gun" )
     gun.cooldown = 0.2
     gun.power_usage = (1000 * gun.cooldown) * 2.0/3.0
@@ -206,7 +237,10 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
     elif shape == "octa":
         s = blocks.BlockStructure( with_guns( blocks.OctaBlock(32) ) )
         for i in range(7):
-            s.attach((0,i), with_gun(blocks.QuadBlock(32), 1), 3)
+            a = s.attach((0,i), blocks.QuadBlock(32), 0)
+            b = s.attach((a,2), blocks.QuadBlock(32), 0)
+            c = s.attach((b,2), blocks.QuadBlock(32), 0)
+            d = s.attach((c,1), with_gun(blocks.QuadBlock(32), 1), 3)
     elif shape == "wide":
         s = blocks.BlockStructure( blocks.QuadBlock(32) )
         s.attach((0,1), with_guns(blocks.QuadBlock(32)), 3)
@@ -259,6 +293,7 @@ def create_bullet_thing(world, image, shooter, gun):
     layer = None
     rv = Debris( world, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet, group = group_bulletgroup )
     speed = 1400
+#    speed = 0
     base_velocity = gun.velocity
     base_velocity = shooter.velocity # unrealistic but possibly better
     rv.velocity = base_velocity + gun.direction * speed
@@ -286,9 +321,11 @@ class MainWorld (World):
         self.pre_physics.add_anonymous_hook( self.update_camera )
         self.display.add_anonymous_hook( self.scene.update )
         self.pre_physics.add_hook( self.player, self.player.update )
-        self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
+#        self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
+        self.pre_physics.add_hook( self.enemy, lambda dt : ai_flee_target( dt, self.enemy, self.player ) )
         self.pre_physics.add_hook( self.enemy, self.enemy.update )
-        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
+#        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
+        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_flee_target( dt, self.enemy2, self.player ) )
         self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
         for x in (self.player, self.enemy, self.enemy2):
             self.post_physics.add_hook( x, x.tick )
@@ -405,7 +442,6 @@ class MainWorld (World):
         input_layer.cocos_layer.set_key_release_hook( key.SPACE, lambda *args, **kwargs: self.player.on_controls_state(*args,**kwargs) )
     def shoot_bullet(self, shooter):
         guns = shooter.ready_guns()
-        print len(guns), "guns ready", "power", shooter.psu.power
         index = 0
         for gun in guns:
             if not gun.may_activate():

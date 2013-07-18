@@ -35,6 +35,9 @@ class Edge (object):
     def matches(self, edge):
         return almost_equal( self.length, edge.length )
 
+    def midpoint(self):
+        return (self.a+self.b)*0.5
+
     def overlaps(self, edge):
         if vectors_almost_equal(self.a,edge.a) and vectors_almost_equal(self.b,edge.b):
             return True
@@ -70,7 +73,6 @@ class Block (object):
 
     @property
     def angle_degrees(self):
-        print "block is rotated", self.rotation_degrees, "from", self.thing.angle_degrees
         return self.thing.angle_degrees + self.rotation_degrees
 
     @property
@@ -136,7 +138,6 @@ class PolygonBlock (Block):
     def create_sprite(self):
         rv = graphics.cocos.sprite.Sprite( self.image_name )
         rv.color = self.colour
-        print "creating with colour", self.colour, self.image_name
         return rv
 
 class QuadBlock (PolygonBlock):
@@ -267,7 +268,7 @@ class BlockStructure (object):
         block_index, edge_index = index
         local_edge = self.edge( index )
         delta_deg = - (180.0 + block.edges[ block_edge_index ].angle_degrees - local_edge.angle_degrees)
-        block = block.clone()
+#        block = block.clone()
         block.rotate_degrees( delta_deg )
         local_edge = self.edge( index )
         block.translate( - ( block.edges[ block_edge_index ].a - local_edge.b ) )
