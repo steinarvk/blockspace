@@ -94,6 +94,7 @@ class PointComponent (Component):
 
     @property
     def angle_degrees(self):
+        print "I am at a relativee angle", self.relative_angle_degrees, "absolute", self.block.angle_degrees
         return (self.block.angle_degrees + self.relative_angle_degrees) % 360.0
 
     def __repr__(self):

@@ -70,6 +70,7 @@ class Block (object):
 
     @property
     def angle_degrees(self):
+        print "block is rotated", self.rotation_degrees, "from", self.thing.angle_degrees
         return self.thing.angle_degrees + self.rotation_degrees
 
     @property
@@ -335,7 +336,7 @@ class BlockStructure (object):
         s = graphics.SpriteStructure( **kwargs )
         c = self.centroid()
         for block in self.blocks:
-            s.add_sprite( block.create_sprite(), block.translation - c, key = block )
+            s.add_sprite( block.create_sprite(), block.translation - c, rotation = block.rotation_degrees, key = block )
         return s
 
 def filter_connections( connections, block_indices ):

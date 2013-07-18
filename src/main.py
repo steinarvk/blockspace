@@ -206,7 +206,7 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
     elif shape == "octa":
         s = blocks.BlockStructure( with_guns( blocks.OctaBlock(32) ) )
         for i in range(7):
-            s.attach((0,i), with_guns(blocks.QuadBlock(32)), 3)
+            s.attach((0,i), with_gun(blocks.QuadBlock(32), 1), 3)
     elif shape == "wide":
         s = blocks.BlockStructure( blocks.QuadBlock(32) )
         s.attach((0,1), with_guns(blocks.QuadBlock(32)), 3)
