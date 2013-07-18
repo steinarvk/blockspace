@@ -51,6 +51,19 @@ class Ship (physics.Thing):
         self.minimap_symbol_sprite = None
 #        f = self.sprite.cocos_sprite.draw
 #        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
+        self.psu.consumption_fails_hook = lambda key : self.lose_power( key )
+
+    def lose_power(self, key):
+        if key == "engine":
+            self._thrusting = False
+        elif key == "brakes":
+            self._braking  = False
+        elif key == "turning":
+            self._spin = 0
+        elif key == "turbo":
+            self._turbo = False
+        else:
+            print "lost unknown power", key
     def on_fire_key(self, symbol, modifiers, state):
         pass
     def on_controls_state(self, symbol, modifiers, state):
@@ -59,6 +72,10 @@ class Ship (physics.Thing):
         self._braking = state[key.DOWN]
         self._turbo = state[key.LSHIFT]
         self._shooting = state[key.SPACE]
+        self.psu.set_consumption( "engine", 600 if self._thrusting else 0 )
+        self.psu.set_consumption( "brakes", 500 if self._braking else 0 )
+        self.psu.set_consumption( "turning", 600 if self._spin != 0 else 0 )
+        self.psu.set_consumption( "turbo", 1500 if self._turbo else 0 )
     def ready_guns(self):
         rv = self.block_structure.get_components( lambda x : "gun" in x.categories and x.may_activate() )
         rv.sort( key = lambda x : x.last_usage )
