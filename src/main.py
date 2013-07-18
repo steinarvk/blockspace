@@ -48,8 +48,14 @@ class Ship (physics.Thing):
         self._brake_power = 2500
         self._ai_time = 0.0
         self._shooting = False
+        self.minimap_symbol_sprite = None
 #        f = self.sprite.cocos_sprite.draw
 #        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
+    def add_to_minimap(self, minimap, symbol):
+        self.minimap_symbol_sprite = cocos.sprite.Sprite( symbol )
+        self.minimap_symbol_sprite.scale = 0.1
+        self.kill_hooks.append( lambda self : minimap.remove_sprite( self ) )
+        minimap.add_sprite( self, self.minimap_symbol_sprite )
     def on_fire_key(self, symbol, modifiers, state):
         pass
     def on_controls_state(self, symbol, modifiers, state):
@@ -66,6 +72,8 @@ class Ship (physics.Thing):
         return bool( self.ready_guns() )
     def update(self, dt):
         super( Ship, self ).update()
+        if self.minimap_symbol_sprite:
+            self.minimap_symbol_sprite.position = self.position
         if self._shooting:
             self.world.shoot_bullet( self )
         self.body.reset_forces()
@@ -268,6 +276,7 @@ class MainWorld (World):
         self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
         for x in (self.player, self.enemy, self.enemy2):
             self.post_physics.add_hook( x, x.tick )
+            x.add_to_minimap( self.minimap, "element_{0}_square.png".format( "green" if x == self.player else "red" ) )
         self.physics.add_anonymous_hook( self.sim.tick )
         self.scene.schedule( self.update_everything )
     def update_everything(self, dt):
@@ -326,11 +335,15 @@ class MainWorld (World):
             position_label.element.text = "({0},{1})".format( int(x*0.1), int(y*0.1) )
         def update_power_display():
             bar.fill = self.player.psu.charge_rate()
+        self.hud_cocos_layer.add( bar )
+        self.minimap = graphics.Minimap( self.hud_width - 32, self.hud_width - 32, 5000, 5000, self.player )
+        self.minimap.position = (self.window.width - self.hud_width + 16), (self.window.height - self.hud_width - bar.height - self.hud_width - 16)
+        self.hud_cocos_layer.add( self.minimap )
         def update_hud():
             update_position_display()
             update_hp_display()
             update_power_display()
-        self.hud_cocos_layer.add( bar )
+            self.minimap.update()
         create_hp_display()
         self.post_physics.add_anonymous_hook( ignore_arguments( update_hud ) )
         self.player.reshape_hooks.add_anonymous_hook( recreate_hp_display )

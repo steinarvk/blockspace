@@ -182,6 +182,10 @@ class Camera (object):
             p = self.tracking_inertia**dt
             self.focus = (p*ox + (1-p)*tx, p * oy + (1-p) * ty)
 
+    @property
+    def position(self):
+        return self.focus
+
 class VerticalBar (cocos.cocosnode.CocosNode):
     def __init__(self, width, height, on_colour, off_colour):
         super( VerticalBar, self ).__init__()
@@ -209,6 +213,52 @@ class VerticalBar (cocos.cocosnode.CocosNode):
         glEnd()
         glPopMatrix()
 
+class Minimap (cocos.cocosnode.CocosNode):
+    def __init__(self, width, height, world_width, world_height, cam):
+        super( Minimap, self ).__init__()
+        import test_component
+        self.width = width
+        self.height = height
+        self.world_width = world_width
+        self.world_height = world_height
+        self.batch = cocos.batch.BatchNode()
+        self.batch.position = (self.width*0.5, self.height*0.5)
+        self.batch.scale = 1
+        self.add( self.batch )
+        self.sprites = {}
+        self.minimap_xscale = width / float(world_width)
+        self.minimap_yscale = height / float(world_height)
+        self.following = cam
+    def add_sprite(self, thing, sprite):
+        self.sprites[ thing ] = sprite
+        self.batch.add( sprite )
+    def remove_sprite(self, thing):
+        sprite = self.sprites[ thing ]
+        del self.sprites[ thing ]
+        self.batch.remove( sprite )
+    def update(self):
+        cx, cy = self.following.position
+        for thing, sprite in self.sprites.items():
+            x, y = thing.position
+            dx, dy = (x-cx)*self.minimap_xscale, (y-cy)*self.minimap_yscale
+            sprite.position = dx, dy
+    def visit(self):
+        glEnable( GL_SCISSOR_TEST )
+        x, y = self.position
+        glScissor( x, y, self.width, self.height )
+        super(Minimap, self).visit()
+        glDisable( GL_SCISSOR_TEST )
+    def draw(self):
+        glPushMatrix()
+        self.transform()
+        glColor4ub( 0, 32, 0, 255 )
+        glBegin( GL_QUADS )
+        glVertex2i(0,0)
+        glVertex2i(self.width,0)
+        glVertex2i(self.width,self.height)
+        glVertex2i(0,self.height)
+        glEnd()
+        glPopMatrix()
 
 
 class BackgroundCocosLayer (cocos.layer.Layer):
