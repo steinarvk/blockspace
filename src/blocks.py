@@ -147,6 +147,15 @@ class QuadBlock (PolygonBlock):
     def __repr__(self):
         return "<QuadBlock {0}>".format( "-".join( [ repr((x,y)) for x,y in self.vertices] ) )
 
+class OctaBlock (PolygonBlock):
+    def __init__(self, side_length):
+        super( OctaBlock, self ).__init__( generate_regular_polygon_vertices( 8, radius_for_side_length( 8, side_length ) ) )
+        self.image_name = "myoctagray.png"
+        self.colour = 255,255,255
+
+    def __repr__(self):
+        return "<OctaBlock {0}>".format( "-".join( [ repr((x,y)) for x,y in self.vertices] ) )
+
 class IntegerMap (object):
     def __init__(self):
         self.d = OrderedDict()

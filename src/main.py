@@ -174,7 +174,7 @@ def with_gun( block, edge_index = 1 ):
         return rv
     except TypeError:
         pass
-    angle = [ -90.0, 0.0, 90.0, 180.0 ][ edge_index ]
+    angle = block.edge( edge_index ).angle_degrees
     pos = Vec2d( polar_degrees( angle, 16.0 ) )
     gun = component.PointComponent( block, pos, angle, required_edges = (edge_index,), category = "gun" )
     gun.cooldown = 0.2
@@ -182,7 +182,7 @@ def with_gun( block, edge_index = 1 ):
     return block
 
 def with_guns( block ):
-    return with_gun( block, range(4) )
+    return with_gun( block, range(len(block.edges)) )
         
 def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour = True):
     # 2
@@ -203,6 +203,10 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
         s.attach((3,1), with_gun(blocks.QuadBlock(32), 1), 3)
     elif shape == "single":
         s = blocks.BlockStructure( with_guns( blocks.QuadBlock(32) ) )
+    elif shape == "octa":
+        s = blocks.BlockStructure( with_guns( blocks.OctaBlock(32) ) )
+        for i in range(7):
+            s.attach((0,i), with_guns(blocks.QuadBlock(32)), 3)
     elif shape == "wide":
         s = blocks.BlockStructure( blocks.QuadBlock(32) )
         s.attach((0,1), with_guns(blocks.QuadBlock(32)), 3)
@@ -363,7 +367,7 @@ class MainWorld (World):
         self.player.reshape_hooks.add_anonymous_hook( recreate_hp_display )
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "small", hp = 4 )
+        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "octa", hp = 400 )
         self.player.invulnerable = False
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "big" )
         self.enemy.invulnerable = False
