@@ -54,6 +54,14 @@ class Block (object):
         self.collision_shapes = []
         self.components = []
 
+    def attach_components(self, thing):
+        for component in self.components:
+            component.attach( thing )
+    
+    def detach_components(self, thing):
+        for component in self.components:
+            component.detach( thing )
+
     def area(self):
         return self.create_collision_shape().area()
 
@@ -344,8 +352,7 @@ class BlockStructure (object):
                     component.position
                 except AttributeError:
                     continue
-                print "Foo adding", block
-                s.add_sprite( component.sprite, block_pos + component.relative_position, z = 1 )
+                s.add_sprite( component.sprite, block_pos + component.relative_position, z = -1 )
         return s
 
 def filter_connections( connections, block_indices ):

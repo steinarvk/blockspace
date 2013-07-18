@@ -52,6 +52,8 @@ class Ship (physics.Thing):
 #        f = self.sprite.cocos_sprite.draw
 #        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
         self.psu.consumption_fails_hook = lambda key : self.lose_power( key )
+        for block in self.block_structure.blocks:
+            block.attach_components( self )
 
     def lose_power(self, key):
         if key == "engine":
@@ -71,6 +73,7 @@ class Ship (physics.Thing):
             for component in block.components:
                 assert component.block == block
     def on_controls_state(self, symbol, modifiers, state):
+        print "power max", self.psu.max_storage, "power prod", self.psu.production.values()
         self.sanity_check()
         self._spin = (1 if state[key.RIGHT] else 0) - (1 if state[key.LEFT] else 0)
         self._thrusting = state[key.UP]
@@ -195,12 +198,6 @@ collision_type_main = 1
 collision_type_bullet = 2
 group_bulletgroup = 1
 
-def with_cockpit( block, sprite = None ):
-    spr = cocos.sprite.Sprite( sprite )
-    spr.scale = 0.2
-    cockpit = component.PointComponent( block, Vec2d(0,0), 0.0, category = "cockpit", sprite = spr )
-    return block
-
 def with_gun( block, edge_index = 1, sprite = None ):
     try:
         rv = block
@@ -224,34 +221,21 @@ def with_guns( block, sprite = None ):
     return with_gun( block, range(len(block.edges)), sprite = sprite )
         
 def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour = True):
-    cockpit_img = world.gem_images[15]
     gun_img = world.gem_images[14]
-    generator_img = world.gem_images[13]
-    battery_img = world.gem_images[12]
     def w_cockpit( b ):
-        return with_cockpit( b, sprite = cockpit_img )
+        return b
     def w_gun( b, edge_index = 1 ):
         return with_gun( b, edge_index = edge_index, sprite = gun_img )
     def w_guns( b ):
         return with_guns( b, sprite = gun_img )
-    def w_generator( b ):
-        spr = cocos.sprite.Sprite( generator_img )
-        spr.scale = 0.15
-        generator = component.PointComponent( b, Vec2d(0,0), 0.0, category = "generator", sprite = spr )
-        return b
-    def w_battery( b ):
-        spr = cocos.sprite.Sprite( battery_img )
-        spr.scale = 0.15
-        battery = component.PointComponent( b, Vec2d(0,0), 0.0, category = "battery", sprite = spr )
-        return b
     # 2
     #3 1
     # 0
     if shape == "small":
         s = blocks.BlockStructure( w_gun(w_cockpit(blocks.QuadBlock(32))) )
-        s.attach((0,2), w_battery(w_gun(blocks.QuadBlock(32))), 0)
-        s.attach((0,0), w_generator(w_gun(blocks.QuadBlock(32))), 2)
-        s.attach((0,1), w_battery(w_gun(blocks.QuadBlock(32), 1)), 3)
+        s.attach((0,2), w_gun(blocks.QuadBlock(32)), 0)
+        s.attach((0,0), w_gun(blocks.QuadBlock(32)), 2)
+        s.attach((0,1), w_gun(blocks.QuadBlock(32), 1), 3)
     elif shape == "big":
         s = blocks.BlockStructure( w_cockpit(blocks.QuadBlock(32)) )
         s.attach((0,2), blocks.QuadBlock(32), 0)
@@ -290,17 +274,36 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
     if recolour:
         colours = { "blue": (0,0,255),
                     "purple": (255,0,255),
+                    "white": (255,255,255),
                     "green": (0,255,0),
                     "yellow": (255,255,0),
+                    "dark-gray": (64,64,64),
                     "red": (255,0,0) }
-        for block, col in zip(s.blocks,cycle(("blue","purple","red","yellow"))):
-    #        block.image_name = "element_{0}_square.png".format( col )
-            block.colour = colours[col]
+        def make_cockpit( block ):
+            cockpit = component.Component( block, categories = ("generator","battery") )
+            cockpit.power_capacity = int(0.5 * block.area())
+            cockpit.power_production = int(0.25 * block.area())
+            block.max_hp = block.hp = hp * 3
+            block.colour = colours["green"]
+            block.cockpit = True
+        def make_battery( block ):
+            battery = component.Component( block, categories = ("battery") )
+            battery.power_capacity = int(block.area())
+            block.colour = colours["yellow"]
+        def make_generator( block ):
+            generator = component.Component( block, categories = ("generator") )
+            generator.power_production = int(0.5 * block.area())
+            block.colour = colours["red"]
+        def make_armour( block ):
+            block.max_hp = block.hp = hp * 5
+            block.colour = colours["dark-gray"]
+        gens = make_battery, make_generator, make_armour
+        for block in s.blocks:
             block.max_hp = block.hp = hp
             block.cockpit = False
-    #    s.blocks[0].image_name = "element_red_square.png"
-        s.blocks[0].colour = colours["green"]
-        s.blocks[0].cockpit = True
+        for block in list(s.blocks)[1:]:
+            random.choice(gens)( block )
+        make_cockpit( s.blocks[0] )
     rv = Ship( world, s, layer, position, mass = len(s.blocks), moment = 20000.0, collision_type = collision_type_main )
     rv._gun_distance = 65
     return rv
@@ -433,12 +436,12 @@ class MainWorld (World):
         self.player.reshape_hooks.add_anonymous_hook( recreate_hp_display )
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "small", hp = 400 )
+        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "small", hp = 2 )
         self.player.invulnerable = False
-        self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "big" )
+        self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "big", hp = 2 )
         self.enemy.invulnerable = False
         self.enemy.body.angular_velocity_limit = degrees_to_radians(144*2)
-        self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "big" )
+        self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "big", hp = 2 )
         self.enemy2.invulnerable = False
         self.enemy2.body.angular_velocity_limit = degrees_to_radians(144*2)
         self.enemy.angle_degrees = random.random() * 360.0
@@ -539,6 +542,7 @@ class MainWorld (World):
             block.hp = hp - 1
             if block.hp <= 0:
                 detached_block = thing.block_structure.remove_block( index )
+                detached_block.detach_components( thing )
                 detachable_blocks = []
                 detached_parts = []
                 if index == 0:
@@ -574,6 +578,7 @@ class MainWorld (World):
                     # this must be amended to reconstruct the connections
                     for index in detached_part:
                         db = thing.block_structure.remove_block( index )
+                        db.detach_components( thing )
                         on_detached_single_block( db )
                 if survivor != None:
                     remaining_block = thing.block_structure.blocks[survivor]

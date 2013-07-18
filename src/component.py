@@ -12,8 +12,22 @@ class Component (object):
         self.power_usage = None
         self.last_usage = None
         self.categories = list(categories)
+        self.power_production = None
+        self.power_capacity = None
         if category:
             self.categories.append( category )
+
+    def attach(self, thing):
+        if self.power_production:
+            thing.psu.set_production( self, self.power_production )
+        if self.power_capacity:
+            thing.psu.increase_capacity( self.power_capacity )
+
+    def detach(self, thing):
+        if self.power_production:
+            thing.psu.remove_production( self )
+        if self.power_capacity:
+            thing.psu.decrease_capacity( self.power_capacity )
 
     @property
     def world(self):
@@ -57,6 +71,11 @@ class PowerSupply (object):
         self.consumption = {}
         self.power = 0.0
         self.consumption_fails_hook = lambda x : x.lose_power()
+    def increase_capacity(self, amount):
+        self.max_storage += amount
+    def decrease_capacity(self, amount):
+        self.max_storage -= amount
+        self.power = max(0, min( self.max_storage, self.power ) )
     def set_production(self, key, amount):
         self.production[key] = amount
     def set_consumption(self, key, amount):
