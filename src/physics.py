@@ -284,6 +284,13 @@ class Thing (object):
         for hook in self.update_hooks:
             hook( self )
 
+    def add_to_minimap(self, minimap, symbol, tint):
+        import cocos
+        self.minimap_symbol_sprite = cocos.sprite.Sprite( symbol )
+        self.minimap_symbol_sprite.color = tint
+        self.kill_hooks.append( lambda self : minimap.remove_sprite( self ) )
+        minimap.add_sprite( self, self.minimap_symbol_sprite )
+
     def kill(self):
         if self.killed:
             return

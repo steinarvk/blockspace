@@ -51,11 +51,6 @@ class Ship (physics.Thing):
         self.minimap_symbol_sprite = None
 #        f = self.sprite.cocos_sprite.draw
 #        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
-    def add_to_minimap(self, minimap, symbol, tint):
-        self.minimap_symbol_sprite = cocos.sprite.Sprite( symbol )
-        self.minimap_symbol_sprite.color = tint
-        self.kill_hooks.append( lambda self : minimap.remove_sprite( self ) )
-        minimap.add_sprite( self, self.minimap_symbol_sprite )
     def on_fire_key(self, symbol, modifiers, state):
         pass
     def on_controls_state(self, symbol, modifiers, state):
@@ -277,6 +272,8 @@ class MainWorld (World):
         for x in (self.player, self.enemy, self.enemy2):
             self.post_physics.add_hook( x, x.tick )
             x.add_to_minimap( self.minimap, "solid_white_5x5.png", (0,255,0) if x == self.player else (255,0,0) )
+#        for x in self.things:
+#            x.add_to_minimap( self.minimap, "solid_white_5x5.png", (128,128,128) )
         self.physics.add_anonymous_hook( self.sim.tick )
         self.scene.schedule( self.update_everything )
     def update_everything(self, dt):
@@ -365,6 +362,7 @@ class MainWorld (World):
         self.main_layer.cocos_layer.add( self.batch )
         self.display_objects = []
         self.physics_objects = []
+        self.things = []
         for i in range(200):
             cols = "red", "purple", "grey", "blue", "green", "yellow"
             sq = create_square_thing( self, None, (100,0), self.img_square )
@@ -374,6 +372,7 @@ class MainWorld (World):
             sq.velocity = (300,10)
             self.batch.add( sq.sprite.cocos_sprite )
             self.display_objects.append( sq.sprite )
+            self.things.append( sq )
         self.sim.space.add_collision_handler( collision_type_main, collision_type_bullet, self.collide_general_with_bullet )
     def setup_input(self):
         input_layer = graphics.Layer( self.scene, gameinput.CocosInputLayer() )
