@@ -253,9 +253,9 @@ class Thing (object):
         self.update_hooks = []
         self.alive = True
         self.killed = False
-        self.psu = component.PowerSupply( 10000.0 )
-        self.psu.power = 10000.0
-        self.psu.set_production( "generator", 10000.0 )
+        self.psu = component.PowerSupply( 1000.0 )
+        self.psu.power = 1000.0
+        self.psu.set_production( "generator", 1000.0 )
         self.sim.space.add( self.body )
 
     def reshape(self, shape):
