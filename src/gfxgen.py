@@ -136,6 +136,7 @@ def generate_fancy_polygon(n = 3, size = 256, side_length = 0.3, subpixel_resolu
         for polygon, shade in polygons:
             if inside_convex_polygon( p, polygon ):
                 return (shade*255,shade*255,shade*255,255)
+        return (None,None,None,0) # transparent
         return (0,0,0,255) # solid black (not transparent -- that's None, None, None, 0)
     img, ar = create_new_image( size, size )
     print "generating fancy {0}-gon".format(n)
