@@ -337,7 +337,15 @@ class BlockStructure (object):
         s = graphics.SpriteStructure( **kwargs )
         c = self.centroid()
         for block in self.blocks:
-            s.add_sprite( block.create_sprite(), block.translation - c, rotation = block.rotation_degrees, key = block )
+            block_pos = block.translation - c 
+            s.add_sprite( block.create_sprite(), block_pos, rotation = block.rotation_degrees, key = block )
+            for component in block.components:
+                try:
+                    component.position
+                except AttributeError:
+                    continue
+                print "Foo adding", block
+                s.add_sprite( component.sprite, block_pos + component.relative_position, z = 1 )
         return s
 
 def filter_connections( connections, block_indices ):

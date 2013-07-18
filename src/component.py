@@ -83,10 +83,11 @@ class PowerSupply (object):
         return self.power >= value
 
 class PointComponent (Component):
-    def __init__(self, block, position, angle_degrees, **kwargs):
+    def __init__(self, block, position, angle_degrees, sprite = None, **kwargs):
         super( PointComponent, self ).__init__( block, **kwargs )
         self.relative_position = Vec2d(position) # to block
         self.relative_angle_degrees = angle_degrees # relative to block
+        self.sprite = sprite
 
     @property
     def position(self):

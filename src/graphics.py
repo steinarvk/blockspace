@@ -125,13 +125,13 @@ class SpriteStructure (object):
         self.thing = thing
         self.thing.kill_hooks.append( self.kill_hook )
         self.thing.update_hooks.append( self.update_hook )
-    def add_sprite(self, sprite, offset = (0,0), key = None, rotation = 0.0):
+    def add_sprite(self, sprite, offset = (0,0), key = None, rotation = 0.0, z = 0):
         cocos_sprite = sprite
         w, h = cocos_sprite.width, cocos_sprite.height
         cocos_sprite.position = offset
         cocos_sprite.rotation = rotation
         self.cocos_sprites.append( cocos_sprite )
-        self.node.add( cocos_sprite )
+        self.node.add( cocos_sprite, z = z )
         if key:
             self.subcomponent[key] = cocos_sprite
         return cocos_sprite
