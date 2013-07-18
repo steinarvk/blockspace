@@ -404,7 +404,7 @@ class MainWorld (World):
         self.player.reshape_hooks.add_anonymous_hook( recreate_hp_display )
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "octa", hp = 400 )
+        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "small", hp = 400 )
         self.player.invulnerable = False
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "big" )
         self.enemy.invulnerable = False
