@@ -51,9 +51,9 @@ class Ship (physics.Thing):
         self.minimap_symbol_sprite = None
 #        f = self.sprite.cocos_sprite.draw
 #        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
-    def add_to_minimap(self, minimap, symbol):
+    def add_to_minimap(self, minimap, symbol, tint):
         self.minimap_symbol_sprite = cocos.sprite.Sprite( symbol )
-        self.minimap_symbol_sprite.scale = 0.1
+        self.minimap_symbol_sprite.color = tint
         self.kill_hooks.append( lambda self : minimap.remove_sprite( self ) )
         minimap.add_sprite( self, self.minimap_symbol_sprite )
     def on_fire_key(self, symbol, modifiers, state):
@@ -276,7 +276,7 @@ class MainWorld (World):
         self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
         for x in (self.player, self.enemy, self.enemy2):
             self.post_physics.add_hook( x, x.tick )
-            x.add_to_minimap( self.minimap, "element_{0}_square.png".format( "green" if x == self.player else "red" ) )
+            x.add_to_minimap( self.minimap, "solid_white_5x5.png", (0,255,0) if x == self.player else (255,0,0) )
         self.physics.add_anonymous_hook( self.sim.tick )
         self.scene.schedule( self.update_everything )
     def update_everything(self, dt):
