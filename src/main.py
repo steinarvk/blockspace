@@ -293,8 +293,8 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
                     "red": (255,0,0) }
         def make_cockpit( block ):
             cockpit = component.Component( block, categories = ("generator","battery") )
-            cockpit.power_capacity = int(0.5 * block.area())
-            cockpit.power_production = int(0.5 * block.area())
+            cockpit.power_capacity = int(0.5 + 0.5 * block.area())
+            cockpit.power_production = int(0.5 + 0.5 * block.area())
             block.max_hp = block.hp = hp * 3
             block.colour = colours["green"]
             block.cockpit = True
@@ -304,7 +304,7 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
             block.colour = colours["yellow"]
         def make_generator( block ):
             generator = component.Component( block, categories = ("generator") )
-            generator.power_production = int(0.5 * block.area())
+            generator.power_production = int(0.5 + 0.5 * block.area())
             block.colour = colours["red"]
         def make_armour( block ):
             block.max_hp = block.hp = hp * 5
