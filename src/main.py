@@ -54,6 +54,7 @@ class Ship (physics.Thing):
         self.psu.consumption_fails_hook = lambda key : self.lose_power( key )
         for block in self.block_structure.blocks:
             block.attach_components( self )
+        self.psu.power = self.psu.max_storage
 
     def lose_power(self, key):
         if key == "engine":
@@ -80,10 +81,10 @@ class Ship (physics.Thing):
         self._braking = state[key.DOWN]
         self._turbo = state[key.LSHIFT]
         self._shooting = state[key.SPACE]
-        self.psu.set_consumption( "engine", 600 if self._thrusting else 0 )
-        self.psu.set_consumption( "brakes", 500 if self._braking else 0 )
-        self.psu.set_consumption( "turning", 600 if self._spin != 0 else 0 )
-        self.psu.set_consumption( "turbo", 1500 if self._turbo and self._thrusting else 0 )
+        self.psu.set_consumption( "engine", 250 if self._thrusting else 0 )
+        self.psu.set_consumption( "brakes", 250 if self._braking else 0 )
+        self.psu.set_consumption( "turning", 250 if self._spin != 0 else 0 )
+        self.psu.set_consumption( "turbo", 500 if self._turbo and self._thrusting else 0 )
     def ready_guns(self):
         rv = self.block_structure.get_components( lambda x : "gun" in x.categories and x.may_activate() )
         rv.sort( key = lambda x : x.last_usage )
@@ -214,7 +215,7 @@ def with_gun( block, edge_index = 1, sprite = None ):
     spr.scale = 0.15
     gun = component.PointComponent( block, pos, angle, required_edges = (edge_index,), category = "gun", sprite = spr )
     gun.cooldown = 0.2
-    gun.power_usage = (1000 * gun.cooldown) * 2.0/3.0
+    gun.power_usage = (500 * gun.cooldown) * 2.0/3.0
     return block
 
 def with_guns( block, sprite = None ):
@@ -244,6 +245,17 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
         s.attach((3,2), blocks.QuadBlock(32), 0)
         s.attach((3,0), blocks.QuadBlock(32), 2)
         s.attach((3,1), w_gun(blocks.QuadBlock(32), 1), 3)
+    elif shape == "bigger":
+        s = blocks.BlockStructure( w_cockpit(blocks.QuadBlock(32)) )
+        s.attach((0,2), w_gun(blocks.QuadBlock(32)), 0)
+        s.attach((0,0), w_gun(blocks.QuadBlock(32)), 2)
+        s.attach((0,1), w_gun(blocks.QuadBlock(32)), 3)
+        s.attach((3,2), w_gun(blocks.QuadBlock(32)), 0)
+        s.attach((3,0), w_gun(blocks.QuadBlock(32)), 2)
+        s.attach((3,1), w_gun(blocks.QuadBlock(32), 1), 3)
+        s.attach((6,2), w_gun(blocks.QuadBlock(32)), 0)
+        s.attach((6,0), w_gun(blocks.QuadBlock(32)), 2)
+        s.attach((6,1), w_gun(blocks.QuadBlock(32), 1), 3)
     elif shape == "single":
         s = blocks.BlockStructure( w_guns( w_cockpit( blocks.QuadBlock(32) ) ) )
     elif shape == "octa":
@@ -282,7 +294,7 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
         def make_cockpit( block ):
             cockpit = component.Component( block, categories = ("generator","battery") )
             cockpit.power_capacity = int(0.5 * block.area())
-            cockpit.power_production = int(0.25 * block.area())
+            cockpit.power_production = int(0.5 * block.area())
             block.max_hp = block.hp = hp * 3
             block.colour = colours["green"]
             block.cockpit = True
@@ -436,12 +448,12 @@ class MainWorld (World):
         self.player.reshape_hooks.add_anonymous_hook( recreate_hp_display )
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "small", hp = 2 )
+        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "bigger", hp = 5 )
         self.player.invulnerable = False
-        self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "big", hp = 2 )
+        self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "big", hp = 5 )
         self.enemy.invulnerable = False
         self.enemy.body.angular_velocity_limit = degrees_to_radians(144*2)
-        self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "big", hp = 2 )
+        self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "big", hp = 5 )
         self.enemy2.invulnerable = False
         self.enemy2.body.angular_velocity_limit = degrees_to_radians(144*2)
         self.enemy.angle_degrees = random.random() * 360.0

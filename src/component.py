@@ -93,6 +93,8 @@ class PowerSupply (object):
                 self.consumption_fails_hook( key )
         self.power = min( self.power, self.max_storage )
     def charge_rate(self):
+        if self.max_storage == 0:
+            return 0.0
         return self.power / self.max_storage
     def consume(self, value):
         if self.power < value:
