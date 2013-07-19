@@ -75,7 +75,6 @@ class Ship (physics.Thing):
             for component in block.components:
                 assert component.block == block
     def on_controls_state(self, symbol, modifiers, state):
-        print "power max", self.psu.max_storage, "power prod", self.psu.production.values()
         self.sanity_check()
         self._spin = (1 if state[key.RIGHT] else 0) - (1 if state[key.LEFT] else 0)
         self._thrusting = state[key.UP]
