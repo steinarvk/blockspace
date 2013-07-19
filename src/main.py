@@ -428,17 +428,17 @@ class MainWorld (World):
         bar = graphics.VerticalBar( 8, 256, (0,64,0), (128,0,0) )
         bar.position = (self.window.width - self.hud_width + 16), (self.window.height - self.hud_width - bar.height)
         x, y = self.window.width - self.hud_width + 32, self.window.height - self.hud_width
-        speed_label = last_element = graphics.create_label( x, y, "Speed", layer = self.hud_cocos_layer )
+        speed_label = last_element = graphics.create_label( x, y, layer = self.hud_cocos_layer )
         y -= last_element.height + 8
-        power_supply_size_label = last_element = graphics.create_label( x, y, "World", layer = self.hud_cocos_layer )
+        power_supply_size_label = last_element = graphics.create_label( x, y, layer = self.hud_cocos_layer )
         y -= last_element.height + 8
-        power_production_label = last_element = graphics.create_label( x, y, "Miaow", layer = self.hud_cocos_layer )
+        power_production_label = last_element = graphics.create_label( x, y, layer = self.hud_cocos_layer )
         y -= last_element.height + 8
-        thrust_power_label = last_element = graphics.create_label( x, y, "Miaow", layer = self.hud_cocos_layer )
+        thrust_power_label = last_element = graphics.create_label( x, y, layer = self.hud_cocos_layer )
         y -= last_element.height + 8
-        turn_power_label = last_element = graphics.create_label( x, y, "Miaow", layer = self.hud_cocos_layer )
+        turn_power_label = last_element = graphics.create_label( x, y, layer = self.hud_cocos_layer )
         y -= last_element.height + 8
-        brake_power_label = last_element = graphics.create_label( x, y, "Miaow", layer = self.hud_cocos_layer )
+        brake_power_label = last_element = graphics.create_label( x, y, layer = self.hud_cocos_layer )
         y -= last_element.height + 8
         x, y = self.window.width - self.hud_width + 16, self.window.height - self.hud_width - bar.height - 16
         position_label = graphics.create_label( x, y, layer = self.hud_cocos_layer )
