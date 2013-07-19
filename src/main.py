@@ -199,6 +199,24 @@ collision_type_main = 1
 collision_type_bullet = 2
 group_bulletgroup = 1
 
+def with_engine( block, edge_index = 3, sprite = None ):
+    try:
+        rv = block
+        for index in edge_index:
+            rv = with_engine( rv, index, sprite = sprite )
+        return rv
+    except TypeError:
+        pass
+    angle = block.edge( edge_index ).angle_degrees
+    pos = Vec2d( polar_degrees( angle, 16.0 ) )
+    pos = Vec2d(0,0)
+    pos = block.edge( edge_index ).midpoint()
+    spr = cocos.sprite.Sprite( sprite )
+    spr.scale = 0.15
+    engine = component.PointComponent( block, pos, angle, required_edges = (edge_index,), category = "engine", sprite = spr )
+    engine.power_usage = 200
+    return block
+
 def with_gun( block, edge_index = 1, sprite = None ):
     try:
         rv = block
@@ -222,7 +240,10 @@ def with_guns( block, sprite = None ):
     return with_gun( block, range(len(block.edges)), sprite = sprite )
         
 def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour = True):
-    gun_img = world.gem_images[14]
+    gun_img = world.gem_images[10]
+    engine_img = world.gem_images[14]
+    def w_engine( b, edge_index = 3):
+        return with_engine( b, edge_index = edge_index, sprite = engine_img )
     def w_cockpit( b ):
         return b
     def w_gun( b, edge_index = 1 ):
@@ -246,16 +267,16 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
         s.attach((3,0), blocks.QuadBlock(32), 2)
         s.attach((3,1), w_gun(blocks.QuadBlock(32), 1), 3)
     elif shape == "bigger":
-        s = blocks.BlockStructure( w_gun(blocks.QuadBlock(32)) )
-        s.attach((0,2), w_gun(blocks.QuadBlock(32)), 0)
-        s.attach((0,0), w_gun(blocks.QuadBlock(32)), 2)
-        s.attach((0,1), w_gun(blocks.QuadBlock(32)), 3)
-        s.attach((3,2), w_gun(blocks.QuadBlock(32)), 0)
-        s.attach((3,0), w_gun(blocks.QuadBlock(32)), 2)
-        s.attach((3,1), w_gun(blocks.QuadBlock(32), 1), 3)
-        s.attach((6,2), w_gun(blocks.QuadBlock(32)), 0)
-        s.attach((6,0), w_gun(blocks.QuadBlock(32)), 2)
-        s.attach((6,1), w_gun(blocks.QuadBlock(32), 1), 3)
+        s = blocks.BlockStructure( w_gun(w_engine(blocks.QuadBlock(32))) )
+        s.attach((0,2), w_gun(w_engine(blocks.QuadBlock(32))), 0)
+        s.attach((0,0), w_gun(w_engine(blocks.QuadBlock(32))), 2)
+        s.attach((0,1), w_gun(w_engine(blocks.QuadBlock(32))), 3)
+        s.attach((3,2), w_gun(w_engine(blocks.QuadBlock(32))), 0)
+        s.attach((3,0), w_gun(w_engine(blocks.QuadBlock(32))), 2)
+        s.attach((3,1), w_gun(w_engine(blocks.QuadBlock(32))), 3)
+        s.attach((6,2), w_gun(w_engine(blocks.QuadBlock(32))), 0)
+        s.attach((6,0), w_gun(w_engine(blocks.QuadBlock(32))), 2)
+        s.attach((6,1), w_gun(w_engine(blocks.QuadBlock(32))), 3)
     elif shape == "single":
         s = blocks.BlockStructure( w_guns( w_cockpit( blocks.QuadBlock(32) ) ) )
     elif shape == "octa":
@@ -401,7 +422,7 @@ class MainWorld (World):
         self.hud_cocos_layer.clear_rect = ((self.window.width-self.hud_width,0),(self.window.width,0),(self.window.width,self.window.height),(self.window.width-self.hud_width,self.window.height))
         self.hud_layer = graphics.Layer( self.scene, cocos_layer = self.hud_cocos_layer )
         self.hud_layer.cocos_layer.position = 0,0
-        self.gem_images = pyglet.image.ImageGrid( pyglet.image.load("gems2.png"), 4, 4 )
+        self.gem_images = pyglet.image.ImageGrid( pyglet.image.load("gems3.png"), 4, 4 )
     def setup_hud(self):
         def update_hp_display():
             undamaged = 255,255,255
