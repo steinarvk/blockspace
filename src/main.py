@@ -246,7 +246,7 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
         s.attach((3,0), blocks.QuadBlock(32), 2)
         s.attach((3,1), w_gun(blocks.QuadBlock(32), 1), 3)
     elif shape == "bigger":
-        s = blocks.BlockStructure( w_cockpit(blocks.QuadBlock(32)) )
+        s = blocks.BlockStructure( w_gun(blocks.QuadBlock(32)) )
         s.attach((0,2), w_gun(blocks.QuadBlock(32)), 0)
         s.attach((0,0), w_gun(blocks.QuadBlock(32)), 2)
         s.attach((0,1), w_gun(blocks.QuadBlock(32)), 3)
@@ -450,10 +450,10 @@ class MainWorld (World):
         self.sim = physics.PhysicsSimulator( timestep = None )
         self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "bigger", hp = 5 )
         self.player.invulnerable = False
-        self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "big", hp = 5 )
+        self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 5 )
         self.enemy.invulnerable = False
         self.enemy.body.angular_velocity_limit = degrees_to_radians(144*2)
-        self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "big", hp = 5 )
+        self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "small", hp = 5 )
         self.enemy2.invulnerable = False
         self.enemy2.body.angular_velocity_limit = degrees_to_radians(144*2)
         self.enemy.angle_degrees = random.random() * 360.0
