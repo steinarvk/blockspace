@@ -5,6 +5,15 @@ from util import ignore_arguments
 from operator import attrgetter
 from pyglet.gl import *
 
+def create_label( x, y, text = "", size = 16, font_name = "Bitstream Vera Sans Mono", layer = None ):
+    rv = cocos.text.Label( "", font_name = font_name, font_size = size, anchor_x = "left", anchor_y = "top" ) 
+    rv.height = size
+    rv.position = (x,y)
+    rv.element.text = text
+    if layer:
+        layer.add( rv )
+    return rv
+
 def update_sprite( thing ):
     thing.sprite.update()
 

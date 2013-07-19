@@ -44,8 +44,9 @@ class Ship (physics.Thing):
         self._thrusting = False
         self._braking = False
         self._turbo_multiplier = 2
-        self._thrust_power = 3500
-        self._brake_power = 2500
+        self.thrust_power = 3500
+        self.brake_power = 2500
+        self.turn_power = 10000
         self._ai_time = 0.0
         self._shooting = False
         self.minimap_symbol_sprite = None
@@ -107,17 +108,17 @@ class Ship (physics.Thing):
                 spin = -1
             else:
                 self.body.angular_velocity = 0
-        rotation_force = Vec2d(10000,0) * spin
+        rotation_force = Vec2d(self.turn_power,0) * spin
         rotation_offset = Vec2d(0,100)
         self.body.apply_force( rotation_force, rotation_offset )
         self.body.apply_force( -rotation_force, -rotation_offset )
         forces = []
         if self._thrusting:
-            force = (self._turbo_multiplier if self._turbo else 1) * self._thrust_power
+            force = (self._turbo_multiplier if self._turbo else 1) * self.thrust_power
             dx, dy = polar_degrees( self.angle_degrees, force )
             forces.append( Vec2d( dx, dy ) )
         if self._braking:
-            stopforce = self.body.velocity.normalized() * -1 * self._brake_power
+            stopforce = self.body.velocity.normalized() * -1 * self.brake_power
             if self.velocity.get_length() < stopforce.get_length() * 0.01:
                 forces = []
                 self.body.velocity = Vec2d(0,0)
@@ -364,11 +365,11 @@ class MainWorld (World):
         self.pre_physics.add_anonymous_hook( self.update_camera )
         self.display.add_anonymous_hook( self.scene.update )
         self.pre_physics.add_hook( self.player, self.player.update )
-        self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
-#        self.pre_physics.add_hook( self.enemy, lambda dt : ai_flee_target( dt, self.enemy, self.player ) )
+#        self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
+        self.pre_physics.add_hook( self.enemy, lambda dt : ai_flee_target( dt, self.enemy, self.player ) )
         self.pre_physics.add_hook( self.enemy, self.enemy.update )
-        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
-#        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_flee_target( dt, self.enemy2, self.player ) )
+#        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
+        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_flee_target( dt, self.enemy2, self.player ) )
         self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
         for x in (self.player, self.enemy, self.enemy2):
             self.post_physics.add_hook( x, x.tick )
@@ -423,15 +424,33 @@ class MainWorld (World):
         def recreate_hp_display():
             self.hud_sprite.kill()
             create_hp_display()
+        
         bar = graphics.VerticalBar( 8, 256, (0,64,0), (128,0,0) )
         bar.position = (self.window.width - self.hud_width + 16), (self.window.height - self.hud_width - bar.height)
-        position_label = cocos.text.Label( "", font_name = "Bitstream Vera Sans Mono", font_size = 16, anchor_x = "left", anchor_y = "bottom" )
-        position_label.position = (self.window.width - self.hud_width + 16), (self.window.height - self.hud_width - bar.height - 32)
-        position_label.element.text = "(133,400)"
-        self.hud_cocos_layer.add( position_label )
-        def update_position_display():
+        x, y = self.window.width - self.hud_width + 32, self.window.height - self.hud_width
+        speed_label = last_element = graphics.create_label( x, y, "Speed", layer = self.hud_cocos_layer )
+        y -= last_element.height + 8
+        power_supply_size_label = last_element = graphics.create_label( x, y, "World", layer = self.hud_cocos_layer )
+        y -= last_element.height + 8
+        power_production_label = last_element = graphics.create_label( x, y, "Miaow", layer = self.hud_cocos_layer )
+        y -= last_element.height + 8
+        thrust_power_label = last_element = graphics.create_label( x, y, "Miaow", layer = self.hud_cocos_layer )
+        y -= last_element.height + 8
+        turn_power_label = last_element = graphics.create_label( x, y, "Miaow", layer = self.hud_cocos_layer )
+        y -= last_element.height + 8
+        brake_power_label = last_element = graphics.create_label( x, y, "Miaow", layer = self.hud_cocos_layer )
+        y -= last_element.height + 8
+        x, y = self.window.width - self.hud_width + 16, self.window.height - self.hud_width - bar.height - 16
+        position_label = graphics.create_label( x, y, layer = self.hud_cocos_layer )
+        def update_labels():
             x, y = self.player.position
             position_label.element.text = "({0},{1})".format( int(x*0.1), int(y*0.1) )
+            speed_label.element.text = "S: {0:.1f}".format( self.player.speed )
+            power_production_label.element.text = "PP: {0}".format( int(sum( self.player.psu.production.values() ) ) )
+            power_supply_size_label.element.text = "MP: {0}".format( int(self.player.psu.max_storage) )
+            thrust_power_label.element.text = "T: {0}".format( self.player.thrust_power )
+            turn_power_label.element.text = "R: {0}".format( self.player.turn_power )
+            brake_power_label.element.text = "B: {0}".format( self.player.brake_power )
         def update_power_display():
             bar.fill = self.player.psu.charge_rate()
         self.hud_cocos_layer.add( bar )
@@ -439,7 +458,7 @@ class MainWorld (World):
         self.minimap.position = (self.window.width - self.hud_width + 16), (self.window.height - self.hud_width - bar.height - self.hud_width - 16)
         self.hud_cocos_layer.add( self.minimap )
         def update_hud():
-            update_position_display()
+            update_labels()
             update_hp_display()
             update_power_display()
             self.minimap.update()
