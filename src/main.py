@@ -57,11 +57,13 @@ class Ship (physics.Thing):
         self.psu.power = self.psu.max_storage
 
     def refresh_engines(self):
+        print self.block_structure.free_edge_indices
         self.thrust_power = 0
         self.brake_power = 0
         self.turn_power = 0
         self.engine_power_drain = 0
         for engine in self.block_structure.get_components( lambda c : "engine" in c.categories and c.active ):
+            print "engine requires", engine.required_edges
             print "engine has", engine.power_thrusting(), engine.power_turning(), engine.power_braking()
             self.thrust_power += engine.power_thrusting()
             self.turn_power += engine.power_turning()
@@ -98,6 +100,14 @@ class Ship (physics.Thing):
         self.psu.set_consumption( "brakes", self.engine_power_drain if self._braking else 0 )
         self.psu.set_consumption( "turning", self.engine_power_drain if self._spin != 0 else 0 )
         self.psu.set_consumption( "turbo", self.engine_power_drain if self._turbo and self._thrusting else 0 )
+    def all_engines(self):
+        rv = self.block_structure.get_components( lambda x : "engine" in x.categories and x.active )
+        rv.sort( key = lambda x : x.last_usage )
+        return rv
+    def all_guns(self):
+        rv = self.block_structure.get_components( lambda x : "gun" in x.categories and x.active )
+        rv.sort( key = lambda x : x.last_usage )
+        return rv
     def ready_guns(self):
         rv = self.block_structure.get_components( lambda x : "gun" in x.categories and x.may_activate() )
         rv.sort( key = lambda x : x.last_usage )
@@ -479,6 +489,10 @@ class MainWorld (World):
         y -= last_element.height + 8
         brake_power_label = last_element = graphics.create_label( x, y, layer = self.hud_cocos_layer )
         y -= last_element.height + 8
+        number_of_engines_label = last_element = graphics.create_label( x, y, layer = self.hud_cocos_layer )
+        y -= last_element.height + 8
+        number_of_guns_label = last_element = graphics.create_label( x, y, layer = self.hud_cocos_layer )
+        y -= last_element.height + 8
         x, y = self.window.width - self.hud_width + 16, self.window.height - self.hud_width - bar.height - 16
         position_label = graphics.create_label( x, y, layer = self.hud_cocos_layer )
         def update_labels():
@@ -490,6 +504,8 @@ class MainWorld (World):
             thrust_power_label.element.text = "T: {0}".format( self.player.thrust_power )
             turn_power_label.element.text = "R: {0}".format( self.player.turn_power )
             brake_power_label.element.text = "B: {0}".format( self.player.brake_power )
+            number_of_engines_label.element.text = "#E: {}".format( len( self.player.all_engines() ) )
+            number_of_guns_label.element.text = "#E: {0}/{1}".format( len( self.player.ready_guns() ), len( self.player.all_guns() ) )
         def update_power_display():
             bar.fill = self.player.psu.charge_rate()
         self.hud_cocos_layer.add( bar )
