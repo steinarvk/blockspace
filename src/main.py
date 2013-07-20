@@ -47,6 +47,7 @@ class Ship (physics.Thing):
         self.thrust_power = 3500
         self.brake_power = 2500
         self.turn_power = 10000
+        self.engine_power_drain = 0
         self._ai_time = 0.0
         self._shooting = False
         self.minimap_symbol_sprite = None
@@ -81,10 +82,10 @@ class Ship (physics.Thing):
         self._braking = state[key.DOWN]
         self._turbo = state[key.LSHIFT]
         self._shooting = state[key.SPACE]
-        self.psu.set_consumption( "engine", 250 if self._thrusting else 0 )
-        self.psu.set_consumption( "brakes", 250 if self._braking else 0 )
-        self.psu.set_consumption( "turning", 250 if self._spin != 0 else 0 )
-        self.psu.set_consumption( "turbo", 500 if self._turbo and self._thrusting else 0 )
+        self.psu.set_consumption( "engine", self.engine_power_drain if self._thrusting else 0 )
+        self.psu.set_consumption( "brakes", self.engine_power_drain if self._braking else 0 )
+        self.psu.set_consumption( "turning", self.engine_power_drain if self._spin != 0 else 0 )
+        self.psu.set_consumption( "turbo", self.engine_power_drain if self._turbo and self._thrusting else 0 )
     def ready_guns(self):
         rv = self.block_structure.get_components( lambda x : "gun" in x.categories and x.may_activate() )
         rv.sort( key = lambda x : x.last_usage )
@@ -213,7 +214,7 @@ def with_engine( block, edge_index = 3, sprite = None ):
     pos = block.edge( edge_index ).midpoint()
     spr = cocos.sprite.Sprite( sprite )
     spr.scale = 0.15
-    engine = component.PointComponent( block, pos, angle, required_edges = (edge_index,), category = "engine", sprite = spr )
+    engine = component.EngineComponent( 500, block, pos, angle, required_edges = (edge_index,), category = "engine", sprite = spr )
     engine.power_usage = 200
     return block
 

@@ -137,4 +137,21 @@ class PointComponent (Component):
         lv = self.block.thing.velocity
         return lv + rv
 
+class EngineComponent (PointComponent):
+    def __init__(self, engine_power, *args, **kwargs ):
+        super( EngineComponent, self ).__init__( *args, **kwargs )
+        self.engine_power = engine_power
+        
+    def attach(self, thing):
+        super(EngineComponent, self).attach(thing)
+        thing.thrust_power += self.engine_power
+        thing.brake_power += self.engine_power
+        thing.turn_power += self.engine_power
+        thing.engine_power_drain += self.power_usage
 
+    def detach(self, thing):
+        super(EngineComponent, self).detach(thing)
+        thing.thrust_power -= self.engine_power
+        thing.brake_power -= self.engine_power
+        thing.turn_power -= self.engine_power
+        thing.engine_power_drain -= self.power_usage
