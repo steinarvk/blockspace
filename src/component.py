@@ -53,10 +53,13 @@ class Component (object):
             self.thing.psu.consume( self.power_usage )
         self.last_usage = (self.world.t, activation_sequence_no )
 
-    @property
-    def active(self):
+    def required_edges_free(self):
         xs = self.block.free_edge_indices
         return all( [ (index in xs) for index in self.required_edges ] )
+
+    @property
+    def active(self):
+        return self.required_edges_free()
 
     def __repr__(self):
         return "<Component {1} attached to {0}>".format( repr(self.block), self.name )

@@ -352,7 +352,8 @@ class BlockStructure (object):
                     component.position
                 except AttributeError:
                     continue
-                s.add_sprite( component.sprite, block_pos + component.relative_position, z = -1 )
+                if component.required_edges_free():
+                    s.add_sprite( component.sprite, block_pos + component.relative_position, z = -1 )
         return s
 
 def filter_connections( connections, block_indices ):
