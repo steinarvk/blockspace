@@ -233,7 +233,8 @@ def with_gun( block, edge_index = 1, sprite = None ):
     spr.scale = 0.15
     gun = component.PointComponent( block, pos, angle, required_edges = (edge_index,), category = "gun", sprite = spr )
     gun.cooldown = 0.2
-    gun.power_usage = (500 * gun.cooldown) * 2.0/3.0
+#    gun.cooldown = 0.1 # a LOT more powerful with lower cooldown
+    gun.power_usage = (750 * gun.cooldown) * 2.0/3.0 # more reasonable power usage
     return block
 
 def with_guns( block, sprite = None ):
@@ -384,6 +385,7 @@ class MainWorld (World):
         self.pre_display.add_anonymous_hook( self.update_display_objects )
         self.pre_physics.add_anonymous_hook( self.update_camera )
         self.display.add_anonymous_hook( self.scene.update )
+        self.player.body.velocity_limit = 800.0 # experiment with this for actually chasing fleeing ships
         self.pre_physics.add_hook( self.player, self.player.update )
 #        self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
         self.pre_physics.add_hook( self.enemy, lambda dt : ai_flee_target( dt, self.enemy, self.player ) )
