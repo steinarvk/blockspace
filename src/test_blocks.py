@@ -243,3 +243,51 @@ def test_reshape_early():
     thing.reshape( BlockStructure(b).create_collision_shape() )
     assert thing.abstract_shape.area() == b.area()
     w.sim.perform_removals_and_additions()
+
+def test_regression_bigger_block_structure():
+    #  2
+    # 3 1
+    #  0
+
+    # 147
+    # 0369
+    # 258
+    s = BlockStructure( QuadBlock(32) )
+    s.attach((0,2), QuadBlock(32), 0)
+
+    assert len( s.blocks ) == 2
+    for blockno, n in zip( range(10), (3,3) ):
+        assert len( filter( lambda (a,_): a == blockno, s.free_edge_indices ) ) == n
+
+    s.attach((0,0), QuadBlock(32), 2)
+    s.attach((0,1), QuadBlock(32), 3)
+
+    assert len( s.blocks ) == 4
+    for blockno, n in zip( range(10), (1,3,3,3) ):
+        assert len( filter( lambda (a,_): a == blockno, s.free_edge_indices ) ) == n
+
+    s.attach((3,2), QuadBlock(32), 0)
+    s.attach((3,0), QuadBlock(32), 2)
+    s.attach((3,1), QuadBlock(32), 3)
+
+    assert len( s.blocks ) == 7
+    for blockno, n in zip( range(10), (1,2,2,0,2,2,3) ):
+        assert len( filter( lambda (a,_): a == blockno, s.free_edge_indices ) ) == n
+
+    s.attach((6,2), QuadBlock(32), 0)
+
+    assert len( s.blocks ) == 8
+    for blockno, n in zip( range(10), (1,2,2,0,1,2,2,2) ):
+        assert len( filter( lambda (a,_): a == blockno, s.free_edge_indices ) ) == n
+
+    s.attach((6,0), QuadBlock(32), 2)
+
+    assert len( s.blocks ) == 9
+    for blockno, n in zip( range(10), (1,2,2,0,1,1,2,2,2) ):
+        assert len( filter( lambda (a,_): a == blockno, s.free_edge_indices ) ) == n
+
+    s.attach((6,1), QuadBlock(32), 3)
+    assert len( s.blocks ) == 10
+    for blockno, n in zip( range(10), (1,2,2,0,1,1,0,2,2,3) ):
+        assert len( filter( lambda (a,_): a == blockno, s.free_edge_indices ) ) == n
+    assert len( s.free_edge_indices ) == 14

@@ -318,6 +318,7 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
     else:
         s = shape
     s.zero_centroid()
+    print "ship with", len(s.blocks), "blocks has", len(s.free_edge_indices)
     if recolour:
         colours = { "blue": (0,0,255),
                     "purple": (255,0,255),
