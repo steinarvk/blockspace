@@ -288,6 +288,7 @@ class BlockStructure (object):
         local_edge = self.edges[ edge_index ]
         foreign_edge = block.edges[ block_edge_index ]
         self.add_block( block )
+        tbr = []
         for local_block_index, local_edge_index in self.free_edge_indices:
             local_edge = self.edge( (local_block_index,local_edge_index) )
             if local_block_index == foreign_block_index:
@@ -297,8 +298,10 @@ class BlockStructure (object):
                     self.blocks[ local_block_index ].free_edge_indices.remove( local_edge_index )
                     block.connections[ foreign_edge_index ] = (local_block_index, local_edge_index)
                     self.blocks[ local_block_index ].connections[ local_edge_index ] = (foreign_block_index, foreign_edge_index)
-                    self.free_edge_indices.remove( (local_block_index,local_edge_index) )
-                    self.free_edge_indices.remove( (foreign_block_index,foreign_edge_index) )
+                    tbr.append( (local_block_index,local_edge_index) )
+                    tbr.append( (foreign_block_index,foreign_edge_index) )
+        for x in tbr:
+            self.free_edge_indices.remove( x )
         return foreign_block_index
     
     def remove_block(self, index):

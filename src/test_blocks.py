@@ -253,39 +253,58 @@ def test_regression_bigger_block_structure():
     # 0369
     # 258
     s = BlockStructure( QuadBlock(32) )
+    assert (0,2) in s.free_edge_indices
     s.attach((0,2), QuadBlock(32), 0)
+    assert (0,2) not in s.free_edge_indices
 
     assert len( s.blocks ) == 2
     for blockno, n in zip( range(10), (3,3) ):
         assert len( filter( lambda (a,_): a == blockno, s.free_edge_indices ) ) == n
 
+    assert (0,0) in s.free_edge_indices
     s.attach((0,0), QuadBlock(32), 2)
+    assert (0,0) not in s.free_edge_indices
+    assert (0,1) in s.free_edge_indices
     s.attach((0,1), QuadBlock(32), 3)
+    assert (0,1) not in s.free_edge_indices
 
     assert len( s.blocks ) == 4
     for blockno, n in zip( range(10), (1,3,3,3) ):
         assert len( filter( lambda (a,_): a == blockno, s.free_edge_indices ) ) == n
 
+    assert (3,2) in s.free_edge_indices
     s.attach((3,2), QuadBlock(32), 0)
+    assert (3,2) not in s.free_edge_indices
+    assert (3,0) in s.free_edge_indices
     s.attach((3,0), QuadBlock(32), 2)
+    assert (3,0) not in s.free_edge_indices
+    assert (3,1) in s.free_edge_indices
     s.attach((3,1), QuadBlock(32), 3)
+    assert (3,1) not in s.free_edge_indices
 
     assert len( s.blocks ) == 7
     for blockno, n in zip( range(10), (1,2,2,0,2,2,3) ):
         assert len( filter( lambda (a,_): a == blockno, s.free_edge_indices ) ) == n
 
+    assert (6,2) in s.free_edge_indices
     s.attach((6,2), QuadBlock(32), 0)
+    assert (6,2) not in s.free_edge_indices
 
     assert len( s.blocks ) == 8
     for blockno, n in zip( range(10), (1,2,2,0,1,2,2,2) ):
         assert len( filter( lambda (a,_): a == blockno, s.free_edge_indices ) ) == n
 
+    assert (6,0) in s.free_edge_indices
+
     s.attach((6,0), QuadBlock(32), 2)
 
+    assert (6,0) not in s.free_edge_indices
+
     assert len( s.blocks ) == 9
-    for blockno, n in zip( range(10), (1,2,2,0,1,1,2,2,2) ):
+    for blockno, n in zip( range(10), (1,2,2,0,1,1,1,2,2) ):
         assert len( filter( lambda (a,_): a == blockno, s.free_edge_indices ) ) == n
 
+    assert (6,1) in s.free_edge_indices
     s.attach((6,1), QuadBlock(32), 3)
     assert len( s.blocks ) == 10
     for blockno, n in zip( range(10), (1,2,2,0,1,1,0,2,2,3) ):
