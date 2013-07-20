@@ -254,10 +254,10 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
     #3 1
     # 0
     if shape == "small":
-        s = blocks.BlockStructure( w_gun(w_cockpit(blocks.QuadBlock(32))) )
-        s.attach((0,2), w_gun(blocks.QuadBlock(32)), 0)
-        s.attach((0,0), w_gun(blocks.QuadBlock(32)), 2)
-        s.attach((0,1), w_gun(blocks.QuadBlock(32), 1), 3)
+        s = blocks.BlockStructure( w_engine(w_gun(w_cockpit(blocks.QuadBlock(32)))) )
+        s.attach((0,2), w_engine(w_gun(blocks.QuadBlock(32))), 0)
+        s.attach((0,0), w_engine(w_gun(blocks.QuadBlock(32))), 2)
+        s.attach((0,1), w_engine(w_gun(blocks.QuadBlock(32))), 3)
     elif shape == "big":
         s = blocks.BlockStructure( w_engine(w_cockpit(blocks.QuadBlock(32))) )
         s.attach((0,2), w_engine(blocks.QuadBlock(32)), 0)
@@ -487,7 +487,7 @@ class MainWorld (World):
         self.player.reshape_hooks.add_anonymous_hook( recreate_hp_display )
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "bigger", hp = 5 )
+        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "small", hp = 5 )
         self.player.invulnerable = False
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 5 )
         self.enemy.invulnerable = False
