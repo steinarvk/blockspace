@@ -1,6 +1,8 @@
 from pymunk import Vec2d
 import math
 
+from util import *
+
 class Component (object):
     def __init__(self, block, required_edges = (), categories = (), category = None, name = None):
         self.name = name or "unnamed"
@@ -114,6 +116,10 @@ class PointComponent (Component):
         self.sprite = sprite
 
     @property
+    def angle_from_thing_degrees(self):
+        return degrees_sub( self.angle_degrees, self.thing.angle_degrees )
+
+    @property
     def position(self):
         return self.block.position + self.relative_position.rotated_degrees( self.block.angle_degrees )
 
@@ -141,17 +147,26 @@ class EngineComponent (PointComponent):
     def __init__(self, engine_power, *args, **kwargs ):
         super( EngineComponent, self ).__init__( *args, **kwargs )
         self.engine_power = engine_power
-        
-    def attach(self, thing):
-        super(EngineComponent, self).attach(thing)
-        thing.thrust_power += self.engine_power
-        thing.brake_power += self.engine_power
-        thing.turn_power += self.engine_power
-        thing.engine_power_drain += self.power_usage
 
-    def detach(self, thing):
-        super(EngineComponent, self).detach(thing)
-        thing.thrust_power -= self.engine_power
-        thing.brake_power -= self.engine_power
-        thing.turn_power -= self.engine_power
-        thing.engine_power_drain -= self.power_usage
+    def efficiency_at_angle( self, deg ):
+        deg_from_ideal = degrees_sub( self.angle_from_thing_degrees, deg + 180 )
+        x = math.cos( degrees_to_radians( deg_from_ideal ) )
+        return 0.1 + 0.9 * 0.5 * (1+x)
+
+    def efficiency_forwards( self ):
+        return self.efficiency_at_angle(0)
+
+    def efficiency_backwards( self ):
+        return self.efficiency_at_angle( 180 )
+
+    def efficiency_sideways( self ):
+        return max( self.efficiency_at_angle( 90 ), self.efficiency_at_angle( 270 ) )
+
+    def power_thrusting(self):
+        return self.efficiency_forwards() * self.engine_power
+
+    def power_turning(self):
+        return self.efficiency_sideways() * self.engine_power
+
+    def power_braking(self):
+        return self.efficiency_backwards() * self.engine_power

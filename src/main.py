@@ -44,10 +44,6 @@ class Ship (physics.Thing):
         self._thrusting = False
         self._braking = False
         self._turbo_multiplier = 2
-        self.thrust_power = 3500
-        self.brake_power = 2500
-        self.turn_power = 10000
-        self.engine_power_drain = 0
         self._ai_time = 0.0
         self._shooting = False
         self.minimap_symbol_sprite = None
@@ -56,7 +52,22 @@ class Ship (physics.Thing):
         self.psu.consumption_fails_hook = lambda key : self.lose_power( key )
         for block in self.block_structure.blocks:
             block.attach_components( self )
+        self.refresh_engines()
+                
         self.psu.power = self.psu.max_storage
+
+    def refresh_engines(self):
+        self.thrust_power = 0
+        self.brake_power = 0
+        self.turn_power = 0
+        self.engine_power_drain = 0
+        for engine in self.block_structure.get_components( lambda c : "engine" in c.categories and c.active ):
+            print "engine has", engine.power_thrusting(), engine.power_turning(), engine.power_braking()
+            self.thrust_power += engine.power_thrusting()
+            self.turn_power += engine.power_turning()
+            self.brake_power += engine.power_braking()
+            self.engine_power_drain += engine.power_usage
+        print "="
 
     def lose_power(self, key):
         if key == "engine":
@@ -72,6 +83,7 @@ class Ship (physics.Thing):
     def on_fire_key(self, symbol, modifiers, state):
         pass
     def sanity_check(self):
+        self.refresh_engines()
         for block in self.block_structure.blocks:
             for component in block.components:
                 assert component.block == block
@@ -215,7 +227,7 @@ def with_engine( block, edge_index = 3, sprite = None ):
     spr = cocos.sprite.Sprite( sprite )
     spr.scale = 0.15
     engine = component.EngineComponent( 500, block, pos, angle, required_edges = (edge_index,), category = "engine", sprite = spr )
-    engine.power_usage = 200
+    engine.power_usage = 150
     return block
 
 def with_gun( block, edge_index = 1, sprite = None ):
@@ -289,14 +301,14 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
             c = s.attach((b,2), blocks.QuadBlock(32), 0)
             d = s.attach((c,1), w_gun(blocks.QuadBlock(32), 1), 3)
     elif shape == "wide":
-        s = blocks.BlockStructure( w_cockpit( blocks.QuadBlock(32) ) )
-        s.attach((0,1), w_guns(blocks.QuadBlock(32)), 3)
+        s = blocks.BlockStructure( w_guns(w_engine( blocks.QuadBlock(32) )) )
+        s.attach((0,1), w_engine(w_guns(blocks.QuadBlock(32))), 3)
         l, r = 0, 0
         for i in range(6):
-            l = s.attach((l,2), w_guns(blocks.QuadBlock(32)), 0)
-            r = s.attach((r,0), w_guns(blocks.QuadBlock(32)), 2)
-        l = s.attach((l,2), w_guns(blocks.QuadBlock(32)), 0)
-        r = s.attach((r,0), w_guns(blocks.QuadBlock(32)), 2)
+            l = s.attach((l,2), w_guns(w_engine(blocks.QuadBlock(32))), 0)
+            r = s.attach((r,0), w_guns(w_engine(blocks.QuadBlock(32))), 2)
+        l = s.attach((l,2), w_guns(w_engine(blocks.QuadBlock(32))), 0)
+        r = s.attach((r,0), w_guns(w_engine(blocks.QuadBlock(32))), 2)
     elif shape == "long":
         s = blocks.BlockStructure( w_cockpit( blocks.QuadBlock(32) ) )
         l, r = 0, 0
@@ -333,6 +345,7 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
             block.max_hp = block.hp = hp * 5
             block.colour = colours["dark-gray"]
         gens = make_battery, make_generator, make_armour
+        gens = (make_armour,)
         for block in s.blocks:
             block.max_hp = block.hp = hp
             block.cockpit = False
@@ -388,12 +401,14 @@ class MainWorld (World):
         self.display.add_anonymous_hook( self.scene.update )
         self.player.body.velocity_limit = 800.0 # experiment with this for actually chasing fleeing ships
         self.pre_physics.add_hook( self.player, self.player.update )
-#        self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
-        self.pre_physics.add_hook( self.enemy, lambda dt : ai_flee_target( dt, self.enemy, self.player ) )
+        self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
+#        self.pre_physics.add_hook( self.enemy, lambda dt : ai_flee_target( dt, self.enemy, self.player ) )
         self.pre_physics.add_hook( self.enemy, self.enemy.update )
-#        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
-        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_flee_target( dt, self.enemy2, self.player ) )
+        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
+#        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_flee_target( dt, self.enemy2, self.player ) )
         self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
+        for gun in self.player.block_structure.get_components( lambda x : "gun" in x.categories ):
+            gun.cooldown /= 2.0
         for x in (self.player, self.enemy, self.enemy2):
             self.post_physics.add_hook( x, x.tick )
             x.add_to_minimap( self.minimap, "solid_white_5x5.png", (0,255,0) if x == self.player else (255,0,0) )
@@ -490,7 +505,7 @@ class MainWorld (World):
         self.player.reshape_hooks.add_anonymous_hook( recreate_hp_display )
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "small", hp = 5 )
+        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "bigger", hp = 5 )
         self.player.invulnerable = False
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 5 )
         self.enemy.invulnerable = False

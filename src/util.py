@@ -132,3 +132,5 @@ class Hookable (object):
             for hook in hooks:
                 hook(*args, **kwargs)
 
+def degrees_sub( a, b ):
+    return (a - b) % 360.0
