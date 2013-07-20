@@ -57,19 +57,15 @@ class Ship (physics.Thing):
         self.psu.power = self.psu.max_storage
 
     def refresh_engines(self):
-        print self.block_structure.free_edge_indices
         self.thrust_power = 0
         self.brake_power = 0
         self.turn_power = 0
         self.engine_power_drain = 0
         for engine in self.block_structure.get_components( lambda c : "engine" in c.categories and c.active ):
-            print "engine requires", engine.required_edges
-            print "engine has", engine.power_thrusting(), engine.power_turning(), engine.power_braking()
             self.thrust_power += engine.power_thrusting()
             self.turn_power += engine.power_turning()
             self.brake_power += engine.power_braking()
             self.engine_power_drain += engine.power_usage
-        print "="
 
     def lose_power(self, key):
         if key == "engine":
@@ -237,7 +233,7 @@ def with_engine( block, edge_index = 3, sprite = None ):
     spr = cocos.sprite.Sprite( sprite )
     spr.scale = 0.15
     engine = component.EngineComponent( 500, block, pos, angle, required_edges = (edge_index,), category = "engine", sprite = spr )
-    engine.power_usage = 150
+    engine.power_usage = 50
     return block
 
 def with_gun( block, edge_index = 1, sprite = None ):
@@ -266,7 +262,7 @@ def with_guns( block, sprite = None ):
 def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour = True):
     gun_img = world.gem_images[10]
     engine_img = world.gem_images[14]
-    def w_engine( b, edge_index = 3):
+    def w_engine( b, edge_index = (3)):
         return with_engine( b, edge_index = edge_index, sprite = engine_img )
     def w_cockpit( b ):
         return b
