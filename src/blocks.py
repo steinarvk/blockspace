@@ -44,6 +44,13 @@ class Edge (object):
         if vectors_almost_equal(self.a,edge.b) and vectors_almost_equal(self.b,edge.a):
             return True
         return False
+
+    def almost_overlaps(self, edge, max_distance = 1.0):
+        if vectors_almost_equal(self.a,edge.a,k=max_distance) and vectors_almost_equal(self.b,edge.b,k=max_distance):
+            return True
+        if vectors_almost_equal(self.a,edge.b,k=max_distance) and vectors_almost_equal(self.b,edge.a,k=max_distance):
+            return True
+        return False
     
     @property
     def angle_degrees(self):

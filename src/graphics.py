@@ -163,6 +163,8 @@ class SpriteStructure (object):
         if self.thing:
             self.thing.kill_hooks.remove( self.kill_hook )
             self.thing.update_hooks.remove( self.update_hook )
+        if self.cocos_parent:
+            self.cocos_parent.remove( self.node )
         if self.layer:
             self.layer.remove_sprite( self )
             self.layer.cocos_layer.remove( self.node )
