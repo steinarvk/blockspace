@@ -117,8 +117,9 @@ class Sprite (object):
 
 
 class SpriteStructure (object):
-    def __init__(self, thing = None, layer = None):
+    def __init__(self, thing = None, layer = None, cocos_parent = None):
         self.layer = layer
+        self.cocos_parent = cocos_parent
         self.cocos_sprites = []
         self.kill_hook = ignore_arguments( self.kill )
         self.update_hook = ignore_arguments( self.update )
@@ -128,6 +129,8 @@ class SpriteStructure (object):
         if self.layer:
             self.layer.add_sprite( self )
             self.layer.cocos_layer.add( self.node )
+        if self.cocos_parent:
+            self.cocos_parent.add( self.node )
         if thing:
             self.follow_thing( thing )
     def follow_thing(self, thing):
