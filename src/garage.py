@@ -2,6 +2,7 @@ import graphics
 import blocks
 import cocos
 import gameinput
+import physics
 
 from world import World
 from gameinput import key
@@ -9,11 +10,14 @@ from game import create_ship_thing
 
 from util import *
 
+from ship import Ship
+
 class GarageWorld (World):
     def __init__(self, resolution = (1000,800), **kwargs):
         super( GarageWorld, self ).__init__( **kwargs )
         self.window = graphics.Window( (1000,800) )
         self.scene = graphics.Scene( self.window )
+        self.sim = physics.PhysicsSimulator( timestep = None )
         self.input_layer = gameinput.CocosInputLayer()
         graphics.Layer( self.scene, self.input_layer )
         self.input_layer.mouse_motion_hooks.append( self.on_mouse_motion )
@@ -31,7 +35,8 @@ class GarageWorld (World):
 #            c = s.attach((b,2), blocks.QuadBlock(32), 0)
 #            d = s.attach((c,1), blocks.QuadBlock(32), 3)
         self.block_structure = s
-        self.sprite_structure = None
+#        self.sprite_structure = None
+        self.garage_ship = None
         self.mouse_sprite = blocks.QuadBlock(32).create_sprite()
         self.mouse_layer.cocos_layer.add( self.mouse_sprite )
         self.input_layer.mouse_scroll_hooks.add_anonymous_hook( self.on_mouse_scroll )
@@ -41,12 +46,37 @@ class GarageWorld (World):
         self.block_shapes = [ blocks.QuadBlock, blocks.OctaBlock ]
         self.current_block_shape = blocks.QuadBlock
         self.refresh_garage_ship()
+        self.physics.add_anonymous_hook( self.sim.tick )
+        self.idle_time = 0.0
+        self.currently_idle = False
     def refresh_garage_ship(self):
         self.block_structure.zero_centroid()
-        if self.sprite_structure:
-            self.sprite_structure.kill()
-        self.sprite_structure = self.block_structure.create_sprite_structure( cocos_parent = self.root_node )
+        if self.garage_ship:
+            self.garage_ship.kill()
+        self.garage_ship = Ship( self, self.block_structure, (0,0), cocos_parent = self.root_node )
+        self.pre_physics.add_hook( self.garage_ship, self.garage_ship.update )
+        self.scene.schedule( self.update_everything )
+    def start_idle_animation(self):
+        self.currently_idle = True
+        self.garage_ship.body.angular_velocity = 1.1
+        # how come angular velocity below 1 radian fails?
+    def stop_idle_animation(self):
+        self.garage_ship.body.angular_velocity = 0
+        self.garage_ship.body.angle = 0
+        self.currently_idle = False
+    def update_everything(self, dt):
+        self.tick( dt )
+        self.display_update()
+        if not self.currently_idle:
+            self.idle_time += dt
+            if self.idle_time > 5.0:
+                self.start_idle_animation()
+    def reset_idle_time(self):
+        self.idle_time = 0.0
+        if self.currently_idle:
+            self.stop_idle_animation()
     def on_place_block(self, *args):
+        self.reset_idle_time()
         args = self.check_borders()
         if args:
             self.attach_current_block( *args )
@@ -78,8 +108,10 @@ class GarageWorld (World):
         self.current_rotation = (self.current_rotation + taps * 10) % 360.0
         self.mouse_sprite.rotation = self.current_rotation
     def on_mouse_scroll(self, x, y, sx, sy):
+        self.reset_idle_time()
         self.rotate_sprite( sy )
     def on_mouse_motion(self, x, y, dx, dy):
+        self.reset_idle_time()
         self.current_position = self.root_node.point_to_local( (x,y) )
         self.mouse_sprite.position = self.current_position
     def run(self):

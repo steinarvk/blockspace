@@ -26,14 +26,15 @@ import component
 from operator import attrgetter
 
 class Ship (physics.Thing):
-    def __init__(self, world, block_structure, layer, position, sprite_name = "player.png", mass = 1.0, moment = 1.0, **kwargs):
+    def __init__(self, world, block_structure, position, sprite_name = "player.png", mass = 1.0, moment = 1.0, layer = None, cocos_parent = None, **kwargs):
         super( Ship, self ).__init__( world, block_structure.create_collision_shape(), mass, moment, **kwargs )
         self.block_structure = block_structure
         self.layer = layer
-        self.sprite = self.main_sprite_structure = self.block_structure.create_sprite_structure( layer = self.layer, thing = self )
+        self.cocos_parent = cocos_parent
+        self.sprite = self.main_sprite_structure = self.block_structure.create_sprite_structure( layer = self.layer, cocos_parent = self.cocos_parent, thing = self )
         def recreate_sprite_structure():
             self.main_sprite_structure.kill()
-            self.sprite = self.main_sprite_structure = self.block_structure.create_sprite_structure( layer = self.layer, thing = self )
+            self.sprite = self.main_sprite_structure = self.block_structure.create_sprite_structure( layer = self.layer, cocos_parent = self.cocos_parent, thing = self )
         self.reshape_hooks.add_anonymous_hook( recreate_sprite_structure )
         self.body.velocity_limit = min( self.body.velocity_limit, 700.0 )
         self.body.angular_velocity_limit = degrees_to_radians( 360.0 )

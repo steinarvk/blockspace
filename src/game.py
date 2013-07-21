@@ -175,7 +175,7 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
         for block in list(s.blocks)[1:]:
             random.choice(gens)( block )
         make_cockpit( s.blocks[0] )
-    rv = Ship( world, s, layer, position, mass = len(s.blocks), moment = 20000.0, collision_type = collision_type_main )
+    rv = Ship( world, s, position, layer = layer, mass = len(s.blocks), moment = 20000.0, collision_type = collision_type_main )
     rv._gun_distance = 65
     return rv
 
