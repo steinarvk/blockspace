@@ -29,27 +29,38 @@ class GarageWorld (World):
         self.mouse_layer = graphics.Layer( self.scene )
         root = PolygonBlock.load_file( "blocks/poly5.yaml" )
         self.root_node.scale = 1
-        s = blocks.BlockStructure( root )
 #        for i in range(7):
 #            a = s.attach((0,i), blocks.QuadBlock(32), 0)
 #            b = s.attach((a,2), blocks.QuadBlock(32), 0)
 #            c = s.attach((b,2), blocks.QuadBlock(32), 0)
 #            d = s.attach((c,1), blocks.QuadBlock(32), 3)
-        self.block_structure = s
 #        self.sprite_structure = None
         self.garage_ship = None
-        self.current_block_shape = lambda : PolygonBlock.load_file( "blocks/poly3.yaml" )
+        self.block_shapes = map( lambda n : (lambda : PolygonBlock.load_file( "blocks/poly{}.yaml".format(n) )), (3,4,5,6,8) )
+        self.current_block_shape = self.block_shapes[0]
+        self.restart_block_structure()
         self.mouse_sprite = self.current_block_shape().create_sprite()
         self.mouse_layer.cocos_layer.add( self.mouse_sprite )
         self.input_layer.mouse_scroll_hooks.add_anonymous_hook( self.on_mouse_scroll )
         self.input_layer.set_key_press_hook( key.SPACE, self.on_place_block )
+        self.input_layer.set_key_press_hook( key.UP, self.on_next_shape )
+        self.input_layer.set_key_press_hook( key.DOWN, self.on_previous_shape )
+        self.input_layer.set_key_press_hook( key.R, self.on_restart_with_current )
         self.current_rotation = 0.0
         self.current_position = (0,0)
-        self.block_shapes = [ blocks.QuadBlock, blocks.OctaBlock ]
         self.refresh_garage_ship()
         self.physics.add_anonymous_hook( self.sim.tick )
         self.idle_time = 0.0
         self.currently_idle = False
+    def on_restart_with_current(self, *args):
+        self.reset_idle_time()
+        self.restart_block_structure()
+    def restart_block_structure(self, root = None):
+        if not root:
+            root = self.current_block_shape()
+        self.block_structure = blocks.BlockStructure( root )
+        self.refresh_garage_ship()
+        
     def refresh_garage_ship(self):
         self.block_structure.zero_centroid()
         if self.garage_ship:
@@ -103,13 +114,21 @@ class GarageWorld (World):
         self.refresh_garage_ship()
     def set_block_shape(self, shape):
         self.current_block_shape = shape
+        p = self.mouse_sprite.position
         if self.mouse_sprite:
             self.mouse_sprite.kill()
         self.mouse_sprite = self.current_block_shape().create_sprite()
         self.mouse_sprite.rotation = self.current_rotation
+        self.mouse_sprite.position = p
         self.mouse_layer.cocos_layer.add( self.mouse_sprite )
-    def change_block_shape(self):
-        self.set_block_shape(self.block_shapes[ (self.block_shapes.index( self.current_block_shape ) + 1) % len( self.block_shapes )])
+    def change_block_shape(self, delta = 1):
+        self.set_block_shape(self.block_shapes[ (self.block_shapes.index( self.current_block_shape ) + delta) % len( self.block_shapes )])
+    def on_next_shape(self, *args):
+        self.reset_idle_time()
+        self.change_block_shape( 1 )
+    def on_previous_shape(self, *args):
+        self.reset_idle_time()
+        self.change_block_shape( -1 )
     def rotate_sprite(self, taps = 1):
         self.current_rotation = (self.current_rotation + taps * 10) % 360.0
         self.mouse_sprite.rotation = self.current_rotation
