@@ -100,15 +100,12 @@ class GarageWorld (World):
         block.translate( self.current_position )
         for index in self.block_structure.free_edge_indices:
             edge = self.block_structure.edge( index )
-            print ",", edge
         for local_edge_index in block.free_edge_indices:
             local_edge = block.edge( local_edge_index )
-            print local_edge
             for index in self.block_structure.free_edge_indices:
                 edge = self.block_structure.edge( index )
                 if local_edge.almost_overlaps( edge, max_distance = 5 ):
                     return (local_edge_index, index)
-        print "!"
         return None
     def attach_current_block(self, current_block_edge_index, structure_edge_index ):
         block = self.current_block_shape()
