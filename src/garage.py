@@ -4,6 +4,8 @@ import cocos
 import gameinput
 import physics
 
+from blocks import PolygonBlock
+
 from world import World
 from gameinput import key
 from game import create_ship_thing
@@ -25,8 +27,7 @@ class GarageWorld (World):
         self.root_node = cocos.cocosnode.CocosNode()
         self.main_layer.cocos_layer.add( self.root_node )
         self.mouse_layer = graphics.Layer( self.scene )
-        root = blocks.OctaBlock(32)
-        root.rotate_degrees(90)
+        root = PolygonBlock.load_file( "blocks/poly5.yaml" )
         self.root_node.scale = 1
         s = blocks.BlockStructure( root )
 #        for i in range(7):
@@ -37,14 +38,14 @@ class GarageWorld (World):
         self.block_structure = s
 #        self.sprite_structure = None
         self.garage_ship = None
-        self.mouse_sprite = blocks.QuadBlock(32).create_sprite()
+        self.current_block_shape = lambda : PolygonBlock.load_file( "blocks/poly3.yaml" )
+        self.mouse_sprite = self.current_block_shape().create_sprite()
         self.mouse_layer.cocos_layer.add( self.mouse_sprite )
         self.input_layer.mouse_scroll_hooks.add_anonymous_hook( self.on_mouse_scroll )
         self.input_layer.set_key_press_hook( key.SPACE, self.on_place_block )
         self.current_rotation = 0.0
         self.current_position = (0,0)
         self.block_shapes = [ blocks.QuadBlock, blocks.OctaBlock ]
-        self.current_block_shape = blocks.QuadBlock
         self.refresh_garage_ship()
         self.physics.add_anonymous_hook( self.sim.tick )
         self.idle_time = 0.0
@@ -81,25 +82,30 @@ class GarageWorld (World):
         if args:
             self.attach_current_block( *args )
     def check_borders(self):
-        block = self.current_block_shape(32)
-        block.rotate_degrees( self.current_rotation )
+        block = self.current_block_shape()
+        block.rotate_degrees( -self.current_rotation )
         block.translate( self.current_position )
+        for index in self.block_structure.free_edge_indices:
+            edge = self.block_structure.edge( index )
+            print ",", edge
         for local_edge_index in block.free_edge_indices:
             local_edge = block.edge( local_edge_index )
+            print local_edge
             for index in self.block_structure.free_edge_indices:
                 edge = self.block_structure.edge( index )
                 if local_edge.almost_overlaps( edge, max_distance = 5 ):
                     return (local_edge_index, index)
+        print "!"
         return None
     def attach_current_block(self, current_block_edge_index, structure_edge_index ):
-        block = self.current_block_shape(32)
+        block = self.current_block_shape()
         self.block_structure.attach( structure_edge_index, block, current_block_edge_index )
         self.refresh_garage_ship()
     def set_block_shape(self, shape):
         self.current_block_shape = shape
         if self.mouse_sprite:
             self.mouse_sprite.kill()
-        self.mouse_sprite = self.current_block_shape(32).create_sprite()
+        self.mouse_sprite = self.current_block_shape().create_sprite()
         self.mouse_sprite.rotation = self.current_rotation
         self.mouse_layer.cocos_layer.add( self.mouse_sprite )
     def change_block_shape(self):

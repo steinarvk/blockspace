@@ -118,6 +118,8 @@ class PolygonBlock (Block):
         self.connections = {}
         self.rotation_degrees = 0.0
         self.translation = Vec2d(0,0)
+        self.sprite_scale = 1.0
+        self.sprite_flipy = False
 
     @property
     def edges(self):
@@ -153,7 +155,42 @@ class PolygonBlock (Block):
     def create_sprite(self):
         rv = graphics.cocos.sprite.Sprite( self.image_name )
         rv.color = self.colour
+        rv.scale = self.sprite_scale
         return rv
+
+    @staticmethod
+    def load_data( data ):
+        rv = PolygonBlock( data["vertices"] )
+        rv.colour = data["colour"]
+        rv.image_name = data["image-name"]
+        rv.sprite_scale = data["side-length"] / data["pixel-side-length"]
+        return rv
+
+    def dump_data(self):
+        rv = {}
+        rv["vertices"] = [ [x,y] for (x,y) in self.vertices ]
+        rv["colour"] = list(self.colour)
+        rv["image-name"] = self.image_name
+        return rv
+
+    def dump_string(self):
+        import yaml
+        return yaml.dump( self.dump_data() )
+
+    @staticmethod
+    def load_string( s ):
+        import yaml
+        return PolygonBlock.load_data( yaml.safe_load( s ) )
+
+    @staticmethod
+    def load_file( fn ):
+        with open( fn, "r" ) as f:
+            return PolygonBlock.load_string( f.read() )
+
+    def dump_file( fn ):
+        with open( fn, "w" ) as f:
+            f.write( self.dump_string() )
+        
 
 class QuadBlock (PolygonBlock):
     def __init__(self, side_length):
@@ -356,7 +393,7 @@ class BlockStructure (object):
         c = self.centroid()
         for block in self.blocks:
             block_pos = block.translation - c 
-            s.add_sprite( block.create_sprite(), block_pos, rotation = block.rotation_degrees, key = block )
+            s.add_sprite( block.create_sprite(), block_pos, rotation = -block.rotation_degrees, key = block )
             for component in block.components:
                 try:
                     component.position
@@ -365,6 +402,26 @@ class BlockStructure (object):
                 if component.required_edges_free():
                     s.add_sprite( component.sprite, block_pos + component.relative_position, z = -1 )
         return s
+
+def generate_polygon_yaml( filename, n, image_name, side_length = 32.0, colour = (255,255,255), pixel_side_length = None):
+    import yaml, sys
+    if not pixel_side_length:
+        pixel_side_length = side_length
+    vertices = generate_regular_polygon_vertices( n, radius_for_side_length( n, side_length ) )
+    inner_vertices = generate_regular_polygon_vertices( n, 0.99 * radius_for_side_length( n, side_length ) )
+    print >> sys.stderr, "--", filename
+    rv = {}
+    rv["n"] = n
+    rv["side-length"] = side_length
+    rv["pixel-side-length"] = pixel_side_length
+    rv["vertices"] = list(reversed([ [x,y] for (x,y) in vertices ]))
+    rv["inner-vertices"] = list(reversed( [ [x,y] for (x,y) in inner_vertices ]))
+    rv["colour"] = list(colour)
+    rv["image-name"] = image_name
+    s = yaml.dump( rv )
+    with open( filename, "w" ) as f:
+        f.write( s )
+    print >> sys.stderr, s
 
 def filter_connections( connections, block_indices ):
     def check_connection( connection ):
@@ -412,3 +469,7 @@ def partition_connections( connections ):
 
 def partition_connections_removing_blocks( connections, block_indices ):
     return partition_connections( filter_connections( connections, block_indices ) )
+
+if __name__ == '__main__':
+    for n in (3,4,5,6,8):
+        generate_polygon_yaml( "blocks/poly{}.yaml".format(n), n, "polygon_fancy.{}.generated.png".format(n), pixel_side_length = 76.8 )

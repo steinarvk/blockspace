@@ -113,6 +113,8 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
         s.attach((6,2), w_gun(w_engine(blocks.QuadBlock(32))), 0)
         s.attach((6,0), w_gun(w_engine(blocks.QuadBlock(32))), 2)
         s.attach((6,1), w_gun(w_engine(blocks.QuadBlock(32))), 3)
+    elif shape == "single_weird":
+        s = blocks.BlockStructure( w_gun(w_engine(blocks.PolygonBlock.load_file( "blocks/poly5.yaml" ) ) ) )
     elif shape == "single":
         s = blocks.BlockStructure( w_guns( w_cockpit( blocks.QuadBlock(32) ) ) )
     elif shape == "octa":
@@ -208,7 +210,7 @@ def create_bullet_thing(world, image, shooter, gun):
     return rv
 
 class MainWorld (World):
-    def __init__(self, resolution = (1000,800), use_pygame = False, **kwargs):
+    def __init__(self, resolution = (1000,800), use_pygame = True, **kwargs):
         super( MainWorld, self ).__init__( **kwargs)
         self.setup_graphics( resolution )
         self.setup_game()
@@ -334,7 +336,7 @@ class MainWorld (World):
         self.player.reshape_hooks.add_anonymous_hook( recreate_hp_display )
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "bigger", hp = 5 )
+        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "octa", hp = 500 )
         self.player.invulnerable = False
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 5 )
         self.enemy.invulnerable = False
