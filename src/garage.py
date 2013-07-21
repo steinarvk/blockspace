@@ -14,6 +14,31 @@ from util import *
 
 from ship import Ship
 
+def decorate_block_normal( block ):
+    block.role = "plain"
+    block.colour = (255,255,255)
+    return block
+
+def decorate_block_cockpit( block ):
+    block.role = "cockpit"
+    block.colour = (0,255,0)
+    return block
+
+def decorate_block_battery( block ):
+    block.role = "battery"
+    block.colour = (255,255,0)
+    return block
+
+def decorate_block_generator( block ):
+    block.role = "generator"
+    block.colour = (255,0,0)
+    return block
+
+def decorate_block_armour( block ):
+    block.role = "armour"
+    block.colour = (64,64,64)
+    return block
+
 class GarageWorld (World):
     def __init__(self, resolution = (1000,800), **kwargs):
         super( GarageWorld, self ).__init__( **kwargs )
@@ -21,6 +46,8 @@ class GarageWorld (World):
         self.scene = graphics.Scene( self.window )
         self.sim = physics.PhysicsSimulator( timestep = None )
         self.input_layer = gameinput.CocosInputLayer()
+        layer = graphics.Layer( self.scene, cocos.layer.ColorLayer(128,0,128,255) )
+        layer.cocos_layer.position = 0,0
         graphics.Layer( self.scene, self.input_layer )
         self.input_layer.mouse_motion_hooks.append( self.on_mouse_motion )
         self.main_layer = graphics.Layer( self.scene )
@@ -37,14 +64,18 @@ class GarageWorld (World):
 #        self.sprite_structure = None
         self.garage_ship = None
         self.block_shapes = map( lambda n : (lambda : PolygonBlock.load_file( "blocks/poly{}.yaml".format(n) )), (3,4,5,6,8) )
+        self.block_decorators = [ decorate_block_armour, decorate_block_battery, decorate_block_generator ]
         self.current_block_shape = self.block_shapes[0]
+        self.current_block_decorator = self.block_decorators[0]
         self.restart_block_structure()
-        self.mouse_sprite = self.current_block_shape().create_sprite()
+        self.mouse_sprite = self.current_block_decorator(self.current_block_shape()).create_sprite()
         self.mouse_layer.cocos_layer.add( self.mouse_sprite )
         self.input_layer.mouse_scroll_hooks.add_anonymous_hook( self.on_mouse_scroll )
         self.input_layer.set_key_press_hook( key.SPACE, self.on_place_block )
         self.input_layer.set_key_press_hook( key.UP, self.on_next_shape )
         self.input_layer.set_key_press_hook( key.DOWN, self.on_previous_shape )
+        self.input_layer.set_key_press_hook( key.RIGHT, self.on_next_decorator )
+        self.input_layer.set_key_press_hook( key.LEFT, self.on_previous_decorator )
         self.input_layer.set_key_press_hook( key.R, self.on_restart_with_current )
         self.input_layer.mouse_press_hooks[ mouse.RIGHT ] = self.on_next_shape
         self.input_layer.mouse_press_hooks[ mouse.LEFT ] = self.on_place_block
@@ -60,9 +91,9 @@ class GarageWorld (World):
     def restart_block_structure(self, root = None):
         if not root:
             root = self.current_block_shape()
+        root = decorate_block_cockpit( root )
         self.block_structure = blocks.BlockStructure( root )
         self.refresh_garage_ship()
-        
     def refresh_garage_ship(self):
         self.block_structure.zero_centroid()
         if self.garage_ship:
@@ -96,6 +127,7 @@ class GarageWorld (World):
             self.attach_current_block( *args )
     def check_borders(self):
         block = self.current_block_shape()
+        block = self.current_block_decorator( block )
         block.rotate_degrees( -self.current_rotation )
         block.translate( self.current_position )
         for index in self.block_structure.free_edge_indices:
@@ -109,19 +141,31 @@ class GarageWorld (World):
         return None
     def attach_current_block(self, current_block_edge_index, structure_edge_index ):
         block = self.current_block_shape()
+        block = self.current_block_decorator( block )
         self.block_structure.attach( structure_edge_index, block, current_block_edge_index )
         self.refresh_garage_ship()
-    def set_block_shape(self, shape):
-        self.current_block_shape = shape
+    def set_current_block(self, shape = None, decorator = None):
+        if shape:
+            self.current_block_shape = shape
+        if decorator:
+            self.current_block_decorator = decorator
         p = self.mouse_sprite.position
         if self.mouse_sprite:
             self.mouse_sprite.kill()
-        self.mouse_sprite = self.current_block_shape().create_sprite()
+        self.mouse_sprite = self.current_block_decorator(self.current_block_shape()).create_sprite()
         self.mouse_sprite.rotation = self.current_rotation
         self.mouse_sprite.position = p
         self.mouse_layer.cocos_layer.add( self.mouse_sprite )
     def change_block_shape(self, delta = 1):
-        self.set_block_shape(self.block_shapes[ (self.block_shapes.index( self.current_block_shape ) + delta) % len( self.block_shapes )])
+        self.set_current_block(shape = self.block_shapes[ (self.block_shapes.index( self.current_block_shape ) + delta) % len( self.block_shapes )])
+    def change_block_decorator(self, delta = 1):
+        self.set_current_block(decorator = self.block_decorators[ (self.block_decorators.index( self.current_block_decorator ) + delta) % len( self.block_decorators )])
+    def on_next_decorator(self, *args):
+        self.reset_idle_time()
+        self.change_block_decorator( 1 )
+    def on_previous_decorator(self, *args):
+        self.reset_idle_time()
+        self.change_block_decorator( -1 )
     def on_next_shape(self, *args):
         self.reset_idle_time()
         self.change_block_shape( 1 )
