@@ -3,6 +3,7 @@ import cocos
 from util import Hookable
 
 from pyglet.window import key
+from pyglet.window import mouse
 
 class CocosInputLayer ( cocos.layer.Layer ):
     is_event_handler = True
@@ -14,10 +15,18 @@ class CocosInputLayer ( cocos.layer.Layer ):
         self.key_release_hooks = {}
         self.mouse_motion_hooks = []
         self.mouse_scroll_hooks = Hookable()
+        self.mouse_press_hooks = {}
 
     def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
         self.mouse_scroll_hooks( x, y, scroll_x, scroll_y )
-        
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        try:
+            f = self.mouse_press_hooks[button]
+        except:
+            f = None
+        if f:
+            f( x, y, button, modifiers)
 
     def on_key_press(self, symbol, modifiers):
         self.keyboard_state.on_key_press( symbol, modifiers )

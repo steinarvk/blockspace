@@ -7,7 +7,7 @@ import physics
 from blocks import PolygonBlock
 
 from world import World
-from gameinput import key
+from gameinput import key, mouse
 from game import create_ship_thing
 
 from util import *
@@ -46,6 +46,8 @@ class GarageWorld (World):
         self.input_layer.set_key_press_hook( key.UP, self.on_next_shape )
         self.input_layer.set_key_press_hook( key.DOWN, self.on_previous_shape )
         self.input_layer.set_key_press_hook( key.R, self.on_restart_with_current )
+        self.input_layer.mouse_press_hooks[ mouse.RIGHT ] = self.on_next_shape
+        self.input_layer.mouse_press_hooks[ mouse.LEFT ] = self.on_place_block
         self.current_rotation = 0.0
         self.current_position = (0,0)
         self.refresh_garage_ship()
