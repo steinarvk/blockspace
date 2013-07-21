@@ -1,6 +1,7 @@
 import graphics
 import blocks
 import cocos
+import gameinput
 
 from world import World
 from game import create_ship_thing
@@ -10,6 +11,9 @@ class GarageWorld (World):
         super( GarageWorld, self ).__init__( **kwargs )
         self.window = graphics.Window( (1000,800) )
         self.scene = graphics.Scene( self.window )
+        self.input_layer = gameinput.CocosInputLayer()
+        graphics.Layer( self.scene, self.input_layer )
+        self.input_layer.mouse_motion_hooks.append( self.on_mouse_motion )
         self.main_layer = graphics.Layer( self.scene )
         self.root_node = cocos.cocosnode.CocosNode()
         self.main_layer.cocos_layer.add( self.root_node )
@@ -24,6 +28,9 @@ class GarageWorld (World):
             d = s.attach((c,1), blocks.QuadBlock(32), 3)
         self.block_structure = s
         self.sprite_structure = s.create_sprite_structure( cocos_parent = self.root_node )
+    def on_mouse_motion(self, x, y, dx, dy):
+        print x, y
+        print self.root_node.point_to_local( (x,y) )
     def run(self):
         self.window.run( self.scene )
 
