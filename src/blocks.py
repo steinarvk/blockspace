@@ -236,7 +236,7 @@ class IntegerMap (object):
             yield (k,v)
     def __setitem__(self, index, value):
         self.d[ index ] = value
-        if index >= (self.next_index+1):
+        if index >= self.next_index:
             self.next_index = index + 1
     def __getitem__(self, index):
         return self.d[ index ]
