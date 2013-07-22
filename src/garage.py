@@ -144,10 +144,13 @@ class GarageWorld (World):
                     return (local_edge_index, index)
         return None
     def attach_current_block(self, current_block_edge_index, structure_edge_index ):
-        block = self.current_block_shape()
-        block = self.current_block_decorator( block )
-        self.block_structure.attach( structure_edge_index, block, current_block_edge_index )
-        self.refresh_garage_ship()
+        try:
+            block = self.current_block_shape()
+            block = self.current_block_decorator( block )
+            self.block_structure.attach( structure_edge_index, block, current_block_edge_index )
+            self.refresh_garage_ship()
+        except blocks.IllegalOverlapException:
+            print "overlap"
     def set_current_block(self, shape = None, decorator = None):
         if shape:
             self.current_block_shape = shape

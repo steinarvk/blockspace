@@ -15,6 +15,8 @@ import copy
 
 from collections import OrderedDict
 
+from geometry import convex_polygons_overlap
+
 import sys
 
 class IllegalOverlapException (Exception):
@@ -131,6 +133,13 @@ class PolygonBlock (Block):
         self.sprite_scale = 1.0
         self.sprite_flipy = False
 
+    def transformed_inner_vertices(self):
+        xs = map( Vec2d, self.inner_vertices )
+        for v in xs:
+            v.rotate_degrees( self.rotation_degrees )
+        xs = map( lambda x : x + self.translation, xs )
+        return xs
+
     @property
     def edges(self):
         return list(starmap( Edge, closed_circle_pairs( self.vertices ) ))
@@ -143,6 +152,14 @@ class PolygonBlock (Block):
         for v in self.vertices:
             v.rotate( delta_radians )
         return self
+
+    def interiors_overlap(self, other):
+        for x in (self,other):
+            print "mine", x.vertices
+            print "my inner", x.transformed_inner_vertices()
+            print "dists", [ (a-b).get_length() for a,b in zip(x.vertices, x.transformed_inner_vertices()) ]
+        print "="
+        return convex_polygons_overlap( self.transformed_inner_vertices(), other.transformed_inner_vertices() )
 
     def rotate_degrees(self, delta_degrees):
         self.rotation_degrees += delta_degrees
@@ -171,6 +188,7 @@ class PolygonBlock (Block):
     @staticmethod
     def load_data( data ):
         rv = PolygonBlock( data["vertices"] )
+        rv.inner_vertices = data["inner-vertices"]
         rv.colour = data["colour"]
         rv.image_name = data["image-name"]
         for f in (lambda : data["sprite-scale"], lambda : data["side-length"] / data["pixel-side-length"], lambda : 1):
@@ -185,6 +203,7 @@ class PolygonBlock (Block):
         rv = {}
         rv["vertices"] = [ [x,y] for (x,y) in self.original_vertices ]
         rv["colour"] = list(self.colour)
+        rv[ "inner-vertices"] = self.inner_vertices
         rv["image-name"] = self.image_name
         rv["sprite-scale"] = self.sprite_scale
         return rv
@@ -366,7 +385,9 @@ class BlockStructure (object):
         return self.blocks[ block_index ].edge( edge_index )
 
     def overlaps(self, block):
-        # TODO nondegenerate overlap check
+        for local_block in self.blocks:
+            if local_block.interiors_overlap( block ):
+                return True
         return False
     
     def connectivity_set_of(self, index):
