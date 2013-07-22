@@ -235,27 +235,28 @@ class StaticObstacle (object):
 class Thing (object):
     def __init__(self, world, shape, mass, moment, group = False, name = "anonymous", collision_type = None ):
         self.world = world
-        self.sim = self.world.sim
+        if self.world:
+            self.sim = self.world.sim
+        else:
+            self.sim = None
         self.name = name
         self.body = pymunk.Body( mass, moment )
-        self.body.velocity_limit = self.sim.speed_limit
+        if self.sim:
+            self.body.velocity_limit = self.sim.speed_limit
         self.shapes = []
         self.invulnerable = True
         self.group = group
         self.collision_type = collision_type
         self.reshape_hooks = Hookable()
         self.reshape( shape )
-        for shape in self.shapes:
-            bb = shape.cache_bb()
-            assert min( abs(bb.right-bb.left), abs(bb.top-bb.bottom) ) >= self.sim.object_size_lower_limit
-            shape.thing = self
         self.kill_hooks = []
         self.update_hooks = []
         self.alive = True
         self.killed = False
         self.psu = component.PowerSupply( 0.0 )
         self.psu.power = self.psu.max_storage
-        self.sim.space.add( self.body )
+        if self.sim:
+            self.sim.space.add( self.body )
 
     def reshape(self, shape):
         if self.shapes:
@@ -265,7 +266,8 @@ class Thing (object):
         self.shapes = list( shape.generate_shapes( self.body ) )
         for shape in self.shapes:
             bb = shape.cache_bb()
-            assert min( abs(bb.right-bb.left), abs(bb.top-bb.bottom) ) >= self.sim.object_size_lower_limit
+            if self.sim:
+                assert min( abs(bb.right-bb.left), abs(bb.top-bb.bottom) ) >= self.sim.object_size_lower_limit
             shape.thing = self
         if self.collision_type:
             for shape in self.shapes:
@@ -273,7 +275,8 @@ class Thing (object):
         if self.group:
             for shape in self.shapes:
                 shape.group = self.group
-        self.sim.add( *self.shapes )
+        if self.sim:
+            self.sim.add( *self.shapes )
         self.reshape_hooks()
 
     def tick(self, dt):

@@ -188,9 +188,11 @@ class GarageWorld (World):
         self.mouse_sprite.position = self.current_position
     def on_load_ship(self, *args):
         self.reset_idle_time()
+        self.garage_ship.kill()
         ship = Ship.load_file( "current_garage_ship.yaml", self, cocos_parent = self.root_node )
         self.block_structure = ship.block_structure
         self.refresh_garage_ship()
+        ship.kill()
     def on_save_ship(self, *args):
         self.reset_idle_time()
         s = self.garage_ship.dump_string()

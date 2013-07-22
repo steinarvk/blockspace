@@ -123,6 +123,7 @@ class PolygonBlock (Block):
     def __init__(self, vertices):
         super( PolygonBlock, self ).__init__()
         self.vertices = map( Vec2d, vertices )
+        self.original_vertices = map( Vec2d, vertices )
         self.free_edge_indices = range(len(self.edges))
         self.connections = {}
         self.rotation_degrees = 0.0
@@ -172,14 +173,20 @@ class PolygonBlock (Block):
         rv = PolygonBlock( data["vertices"] )
         rv.colour = data["colour"]
         rv.image_name = data["image-name"]
-        rv.sprite_scale = data["side-length"] / data["pixel-side-length"]
+        for f in (lambda : data["sprite-scale"], lambda : data["side-length"] / data["pixel-side-length"], lambda : 1):
+            try:
+                rv.sprite_scale = f()
+                break
+            except:
+                pass
         return rv
 
     def dump_data(self):
         rv = {}
-        rv["vertices"] = [ [x,y] for (x,y) in self.vertices ]
+        rv["vertices"] = [ [x,y] for (x,y) in self.original_vertices ]
         rv["colour"] = list(self.colour)
         rv["image-name"] = self.image_name
+        rv["sprite-scale"] = self.sprite_scale
         return rv
 
     def dump_string(self):
@@ -271,26 +278,40 @@ class BlockStructure (object):
         connections_map = {}
         def add_to_map(x,y,x_e,y_e):
             element = y, ((x,x_e), (y,y_e))
+            print element
             try:
                 connections_map[x].append( element )
             except KeyError:
                 connections_map[x] = [ element ]
         for [[a,b],[c,d]] in connections_goal:
+            print "adding to map", (a,b), (c,d)
             add_to_map(a,c,b,d)
             add_to_map(c,a,d,b)
         for index, block_data in data["blocks"].items():
-            rv.add_block( Block.load_data( block_data ), index = index )
+            block = Block.load_data( block_data )
+            print "block #", index, "is an", len( block.vertices ), "-gon"
+            rv.add_block( block, index = index )
         root_block_index = min( rv.blocks.keys() )
         neighbours = {}
         def add_neighbours_from( x ):
             for neighbour, connection in connections_map[x]:
                 neighbours[ neighbour ] = connection
+        add_neighbours_from(root_block_index)
+        connected_set = set( [root_block_index] )
         while neighbours:
+            print neighbours
             key = neighbours.keys()[0]
-            neighbour, connection = neighbours[ key ]
+            connection = neighbours[ key ]
+            print connection
             del neighbours[key]
             (x,x_e), (y,y_e) = connection
-            rv.attach( y_e, x, x_e, existing_index = y )
+            if y in connected_set:
+                continue
+            print "attaching", connection
+            print "attaching an", len(rv.blocks[x].vertices), "to an", len(rv.blocks[y].vertices)
+            rv.attach( (x,x_e), rv.blocks[y], y_e, existing_index = y )
+            connected_set.add( y )
+            add_neighbours_from( y )
         print connections_goal
         print rv.extract_connections()
         return rv
@@ -311,6 +332,7 @@ class BlockStructure (object):
             index = self.blocks.next_index
         self.free_edge_indices.extend(list(map( lambda edge_index : (index,edge_index), range(len(block.edges)))))
         self.blocks[index] = block
+        print "free indices now", self.free_edge_indices
 
     def any_block(self):
         try:
@@ -381,21 +403,19 @@ class BlockStructure (object):
 #        block = block.clone()
         block.rotate_degrees( delta_deg )
         local_edge = self.edge( index )
-        block.translate( - ( block.edges[ block_edge_index ].a - local_edge.b ) )
+        tv = - ( block.edges[ block_edge_index ].a - local_edge.b )
+        block.translate( tv )
+        print "translation by", tv
         local_edge = self.edge( index )
         if self.overlaps( block ):
             raise IllegalOverlapException()
-        foreign_block_index = self.blocks.next_index
         local_edge = self.edges[ edge_index ]
         foreign_edge = block.edges[ block_edge_index ]
-        self.add_block( block )
-#        local_edge = self.edges[ edge_index ]
-#        foreign_edge = block.edges[ block_edge_index ]
-#        if not existing_index:
-#            foreign_block_index = self.blocks.next_index
-#            self.add_block( block )
-#        else:
-#            foreign_block_index = existing_index
+        if not existing_index:
+            foreign_block_index = self.blocks.next_index
+            self.add_block( block )
+        else:
+            foreign_block_index = existing_index
         tbr = []
         for local_block_index, local_edge_index in self.free_edge_indices:
             local_edge = self.edge( (local_block_index,local_edge_index) )
@@ -403,6 +423,7 @@ class BlockStructure (object):
                 continue
             for foreign_edge_index, foreign_edge in indexed_zip(block.edges):
                 if local_edge.overlaps( foreign_edge ):
+                    print "trying to remove", local_block_index, local_edge_index, foreign_block_index, foreign_edge_index
                     self.blocks[ local_block_index ].free_edge_indices.remove( local_edge_index )
                     self.blocks[ foreign_block_index ].free_edge_indices.remove( foreign_edge_index )
                     block.connections[ foreign_edge_index ] = (local_block_index, local_edge_index)
