@@ -306,11 +306,13 @@ class BlockStructure (object):
             print "adding to map", (a,b), (c,d)
             add_to_map(a,c,b,d)
             add_to_map(c,a,d,b)
+        blocks = {}
         for index, block_data in data["blocks"].items():
             block = Block.load_data( block_data )
             print "block #", index, "is an", len( block.vertices ), "-gon"
-            rv.add_block( block, index = index )
-        root_block_index = min( rv.blocks.keys() )
+            blocks[index] = block
+        root_block_index = min( blocks.keys() )
+        rv.add_block( blocks[root_block_index], index = root_block_index )
         neighbours = {}
         def add_neighbours_from( x ):
             for neighbour, connection in connections_map[x]:
@@ -327,8 +329,7 @@ class BlockStructure (object):
             if y in connected_set:
                 continue
             print "attaching", connection
-            print "attaching an", len(rv.blocks[x].vertices), "to an", len(rv.blocks[y].vertices)
-            rv.attach( (x,x_e), rv.blocks[y], y_e, existing_index = y )
+            rv.attach( (x,x_e), blocks[y], y_e, existing_index = y )
             connected_set.add( y )
             add_neighbours_from( y )
         print connections_goal
@@ -434,9 +435,9 @@ class BlockStructure (object):
         foreign_edge = block.edges[ block_edge_index ]
         if not existing_index:
             foreign_block_index = self.blocks.next_index
-            self.add_block( block )
         else:
             foreign_block_index = existing_index
+        self.add_block( block, index = foreign_block_index )
         tbr = []
         for local_block_index, local_edge_index in self.free_edge_indices:
             local_edge = self.edge( (local_block_index,local_edge_index) )
