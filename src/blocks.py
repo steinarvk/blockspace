@@ -154,11 +154,6 @@ class PolygonBlock (Block):
         return self
 
     def interiors_overlap(self, other):
-        for x in (self,other):
-            print "mine", x.vertices
-            print "my inner", x.transformed_inner_vertices()
-            print "dists", [ (a-b).get_length() for a,b in zip(x.vertices, x.transformed_inner_vertices()) ]
-        print "="
         return convex_polygons_overlap( self.transformed_inner_vertices(), other.transformed_inner_vertices() )
 
     def rotate_degrees(self, delta_degrees):
@@ -287,7 +282,6 @@ class BlockStructure (object):
             blocks[ index ] = block.dump_data()
         rv["blocks"] = blocks
         rv["connections"] = recursively_untuple( self.extract_connections() )
-        print rv["connections"]
         return rv
 
     @staticmethod
@@ -297,19 +291,16 @@ class BlockStructure (object):
         connections_map = {}
         def add_to_map(x,y,x_e,y_e):
             element = y, ((x,x_e), (y,y_e))
-            print element
             try:
                 connections_map[x].append( element )
             except KeyError:
                 connections_map[x] = [ element ]
         for [[a,b],[c,d]] in connections_goal:
-            print "adding to map", (a,b), (c,d)
             add_to_map(a,c,b,d)
             add_to_map(c,a,d,b)
         blocks = {}
         for index, block_data in data["blocks"].items():
             block = Block.load_data( block_data )
-            print "block #", index, "is an", len( block.vertices ), "-gon"
             blocks[index] = block
         root_block_index = min( blocks.keys() )
         rv.add_block( blocks[root_block_index], index = root_block_index )
@@ -320,20 +311,16 @@ class BlockStructure (object):
         add_neighbours_from(root_block_index)
         connected_set = set( [root_block_index] )
         while neighbours:
-            print neighbours
             key = neighbours.keys()[0]
             connection = neighbours[ key ]
-            print connection
             del neighbours[key]
             (x,x_e), (y,y_e) = connection
             if y in connected_set:
                 continue
-            print "attaching", connection
             rv.attach( (x,x_e), blocks[y], y_e, existing_index = y )
             connected_set.add( y )
             add_neighbours_from( y )
-        print connections_goal
-        print rv.extract_connections()
+        assert recursively_untuple( sorted(connections_goal) ) == recursively_untuple(sorted(rv.extract_connections()))
         return rv
 
     def area(self):
@@ -352,7 +339,6 @@ class BlockStructure (object):
             index = self.blocks.next_index
         self.free_edge_indices.extend(list(map( lambda edge_index : (index,edge_index), range(len(block.edges)))))
         self.blocks[index] = block
-        print "free indices now", self.free_edge_indices
 
     def any_block(self):
         try:
@@ -427,7 +413,6 @@ class BlockStructure (object):
         local_edge = self.edge( index )
         tv = - ( block.edges[ block_edge_index ].a - local_edge.b )
         block.translate( tv )
-        print "translation by", tv
         local_edge = self.edge( index )
         if self.overlaps( block ):
             raise IllegalOverlapException()
@@ -445,7 +430,6 @@ class BlockStructure (object):
                 continue
             for foreign_edge_index, foreign_edge in indexed_zip(block.edges):
                 if local_edge.overlaps( foreign_edge ):
-                    print "trying to remove", local_block_index, local_edge_index, foreign_block_index, foreign_edge_index
                     self.blocks[ local_block_index ].free_edge_indices.remove( local_edge_index )
                     self.blocks[ foreign_block_index ].free_edge_indices.remove( foreign_edge_index )
                     block.connections[ foreign_edge_index ] = (local_block_index, local_edge_index)
