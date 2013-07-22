@@ -23,10 +23,12 @@ import pymunk
 import blocks
 import component
 
+from blocks import BlockStructure
+
 from operator import attrgetter
 
 class Ship (physics.Thing):
-    def __init__(self, world, block_structure, position, sprite_name = "player.png", mass = 1.0, moment = 1.0, layer = None, cocos_parent = None, **kwargs):
+    def __init__(self, world, block_structure, position, mass = 1.0, moment = 1.0, layer = None, cocos_parent = None, **kwargs):
         super( Ship, self ).__init__( world, block_structure.create_collision_shape(), mass, moment, **kwargs )
         self.block_structure = block_structure
         self.layer = layer
@@ -65,6 +67,47 @@ class Ship (physics.Thing):
             self.turn_power += engine.power_turning()
             self.brake_power += engine.power_braking()
             self.engine_power_drain += engine.power_usage
+
+    @property
+    def mass(self):
+        return self.body.mass
+
+    @property
+    def moment(self):
+        return self.body.moment
+
+    @staticmethod
+    def load_data(data, world, **kwargs):
+        s = BlockStructure.load_data( data["block-structure"] )
+        mass = data["mass"]
+        moment = data["moment"]
+        rv = Ship( world, s, (0,0), mass = mass, moment = moment, **kwargs )
+        return rv
+
+    @staticmethod
+    def load_string( s, *args, **kwargs ):
+        import yaml
+        return Ship.load_data( yaml.safe_load( s ), *args, **kwargs )
+
+    @staticmethod
+    def load_file( fn, *args, **kwargs ):
+        with open( fn, "r" ) as f:
+            return Ship.load_string( f.read(), *args, **kwargs )
+        
+    def dump_data(self):
+        rv = {}
+        rv[ "block-structure" ] = self.block_structure.dump_data()
+        rv[ "mass" ] = self.mass
+        rv[ "moment" ] = self.moment
+        return rv
+
+    def dump_string(self):
+        import yaml
+        return yaml.dump( self.dump_data() )
+
+    def dump_file( self, fn ):
+        with open( fn, "w" ) as f:
+            f.write( self.dump_string() )
 
     def lose_power(self, key):
         if key == "engine":

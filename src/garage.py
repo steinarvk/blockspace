@@ -14,6 +14,8 @@ from util import *
 
 from ship import Ship
 
+import sys
+
 def decorate_block_normal( block ):
     block.role = "plain"
     block.colour = (255,255,255)
@@ -77,6 +79,8 @@ class GarageWorld (World):
         self.input_layer.set_key_press_hook( key.RIGHT, self.on_next_decorator )
         self.input_layer.set_key_press_hook( key.LEFT, self.on_previous_decorator )
         self.input_layer.set_key_press_hook( key.R, self.on_restart_with_current )
+        self.input_layer.set_key_press_hook( key.P, self.on_save_ship )
+        self.input_layer.set_key_press_hook( key.L, self.on_load_ship )
         self.input_layer.mouse_press_hooks[ mouse.RIGHT ] = self.on_next_shape
         self.input_layer.mouse_press_hooks[ mouse.LEFT ] = self.on_place_block
         self.current_rotation = 0.0
@@ -182,6 +186,16 @@ class GarageWorld (World):
         self.reset_idle_time()
         self.current_position = self.root_node.point_to_local( (x,y) )
         self.mouse_sprite.position = self.current_position
+    def on_load_ship(self, *args):
+        self.reset_idle_time()
+        ship = Ship.load_file( "current_garage_ship.yaml", self, cocos_parent = self.root_node )
+        self.block_structure = ship.block_structure
+        self.refresh_garage_ship()
+    def on_save_ship(self, *args):
+        self.reset_idle_time()
+        s = self.garage_ship.dump_string()
+        print >> sys.stderr, s
+        self.garage_ship.dump_file( "current_garage_ship.yaml" )
     def run(self):
         self.window.run( self.scene )
 

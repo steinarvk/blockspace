@@ -38,6 +38,10 @@ class Edge (object):
     def midpoint(self):
         return (self.a+self.b)*0.5
 
+    def point(self, x):
+        assert 0 <= x <= 1
+        return (self.a+self.b)*x
+
     def overlaps(self, edge):
         if vectors_almost_equal(self.a,edge.a) and vectors_almost_equal(self.b,edge.b):
             return True
@@ -60,6 +64,11 @@ class Block (object):
     def __init__(self):
         self.collision_shapes = []
         self.components = []
+
+    @staticmethod
+    def load_data( data ):
+        # will we ever need anything other than PolygonBlocks?
+        return PolygonBlock.load_data( data )
 
     def attach_components(self, thing):
         for component in self.components:
@@ -187,7 +196,7 @@ class PolygonBlock (Block):
         with open( fn, "r" ) as f:
             return PolygonBlock.load_string( f.read() )
 
-    def dump_file( fn ):
+    def dump_file( self, fn ):
         with open( fn, "w" ) as f:
             f.write( self.dump_string() )
         
@@ -220,9 +229,15 @@ class IntegerMap (object):
     def __iter__(self):
         for v in self.d.values():
             yield v
+    def keys(self):
+        return self.d.keys()
     def indexed(self):
         for k, v in self.d.items():
             yield (k,v)
+    def __setitem__(self, index, value):
+        self.d[ index ] = value
+        if index >= (self.next_index+1):
+            self.next_index = index + 1
     def __getitem__(self, index):
         return self.d[ index ]
     def __repr__(self):
@@ -233,10 +248,52 @@ class IntegerMap (object):
         return len(self.d)
 
 class BlockStructure (object):
-    def __init__(self, block):
+    def __init__(self, block = None):
         self.blocks = IntegerMap()
         self.free_edge_indices = []
-        self.add_block( block )
+        if block:
+            self.add_block( block )
+
+    def dump_data(self):
+        rv = {}
+        blocks = {}
+        for index, block in self.blocks.indexed():
+            blocks[ index ] = block.dump_data()
+        rv["blocks"] = blocks
+        rv["connections"] = recursively_untuple( self.extract_connections() )
+        print rv["connections"]
+        return rv
+
+    @staticmethod
+    def load_data( data ):
+        rv = BlockStructure()
+        connections_goal = data["connections"]
+        connections_map = {}
+        def add_to_map(x,y,x_e,y_e):
+            element = y, ((x,x_e), (y,y_e))
+            try:
+                connections_map[x].append( element )
+            except KeyError:
+                connections_map[x] = [ element ]
+        for [[a,b],[c,d]] in connections_goal:
+            add_to_map(a,c,b,d)
+            add_to_map(c,a,d,b)
+        for index, block_data in data["blocks"].items():
+            rv.add_block( Block.load_data( block_data ), index = index )
+        root_block_index = min( rv.blocks.keys() )
+        neighbours = {}
+        def add_neighbours_from( x ):
+            for neighbour, connection in connections_map[x]:
+                neighbours[ neighbour ] = connection
+        while neighbours:
+            key = neighbours.keys()[0]
+            neighbour, connection = neighbours[ key ]
+            del neighbours[key]
+            (x,x_e), (y,y_e) = connection
+            rv.attach( y_e, x, x_e, existing_index = y )
+        print connections_goal
+        print rv.extract_connections()
+        return rv
 
     def area(self):
         return sum( [ block.area() for block in self.blocks ] )
@@ -249,10 +306,11 @@ class BlockStructure (object):
         self.translate( -self.centroid() )
         
 
-    def add_block(self, block):
-        index = self.blocks.next_index
+    def add_block(self, block, index = None):
+        if not index:
+            index = self.blocks.next_index
         self.free_edge_indices.extend(list(map( lambda edge_index : (index,edge_index), range(len(block.edges)))))
-        self.blocks.append( block )
+        self.blocks[index] = block
 
     def any_block(self):
         try:
@@ -316,7 +374,7 @@ class BlockStructure (object):
                     rv.append( (a,connected) )
         return rv
 
-    def attach(self, index, block, block_edge_index ):
+    def attach(self, index, block, block_edge_index, existing_index = None ):
         block_index, edge_index = index
         local_edge = self.edge( index )
         delta_deg = - (180.0 + block.edges[ block_edge_index ].angle_degrees - local_edge.angle_degrees)
@@ -331,6 +389,13 @@ class BlockStructure (object):
         local_edge = self.edges[ edge_index ]
         foreign_edge = block.edges[ block_edge_index ]
         self.add_block( block )
+#        local_edge = self.edges[ edge_index ]
+#        foreign_edge = block.edges[ block_edge_index ]
+#        if not existing_index:
+#            foreign_block_index = self.blocks.next_index
+#            self.add_block( block )
+#        else:
+#            foreign_block_index = existing_index
         tbr = []
         for local_block_index, local_edge_index in self.free_edge_indices:
             local_edge = self.edge( (local_block_index,local_edge_index) )
