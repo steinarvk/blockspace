@@ -86,59 +86,63 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
         return with_gun( b, edge_index = edge_index, sprite = gun_img )
     def w_guns( b ):
         return with_guns( b, sprite = gun_img )
+    def quad_block():
+        return blocks.PolygonBlock.load_file( "blocks/poly4.yaml" )
+    def octa_block():
+        return blocks.PolygonBlock.load_file( "blocks/poly8.yaml" )
     # 2
     #3 1
     # 0
     if shape == "small":
-        s = blocks.BlockStructure( w_engine(w_gun(w_cockpit(blocks.QuadBlock(32)))) )
-        s.attach((0,2), w_engine(w_gun(blocks.QuadBlock(32))), 0)
-        s.attach((0,0), w_engine(w_gun(blocks.QuadBlock(32))), 2)
-        s.attach((0,1), w_engine(w_gun(blocks.QuadBlock(32))), 3)
+        s = blocks.BlockStructure( w_engine(w_gun(w_cockpit(quad_block()))) )
+        s.attach((0,2), w_engine(w_gun(quad_block())), 0)
+        s.attach((0,0), w_engine(w_gun(quad_block())), 2)
+        s.attach((0,1), w_engine(w_gun(quad_block())), 3)
     elif shape == "big":
-        s = blocks.BlockStructure( w_engine(w_cockpit(blocks.QuadBlock(32))) )
-        s.attach((0,2), w_engine(blocks.QuadBlock(32)), 0)
-        s.attach((0,0), w_engine(blocks.QuadBlock(32)), 2)
-        s.attach((0,1), w_engine(blocks.QuadBlock(32)), 3)
-        s.attach((3,2), w_engine(blocks.QuadBlock(32)), 0)
-        s.attach((3,0), w_engine(blocks.QuadBlock(32)), 2)
-        s.attach((3,1), w_engine(w_gun(blocks.QuadBlock(32), 1)), 3)
+        s = blocks.BlockStructure( w_engine(w_cockpit(quad_block())) )
+        s.attach((0,2), w_engine(quad_block()), 0)
+        s.attach((0,0), w_engine(quad_block()), 2)
+        s.attach((0,1), w_engine(quad_block()), 3)
+        s.attach((3,2), w_engine(quad_block()), 0)
+        s.attach((3,0), w_engine(quad_block()), 2)
+        s.attach((3,1), w_engine(w_gun(quad_block(), 1)), 3)
     elif shape == "bigger":
-        s = blocks.BlockStructure( w_gun(w_engine(blocks.QuadBlock(32))) )
-        s.attach((0,2), w_gun(w_engine(blocks.QuadBlock(32))), 0)
-        s.attach((0,0), w_gun(w_engine(blocks.QuadBlock(32))), 2)
-        s.attach((0,1), w_gun(w_engine(blocks.QuadBlock(32))), 3)
-        s.attach((3,2), w_gun(w_engine(blocks.QuadBlock(32))), 0)
-        s.attach((3,0), w_gun(w_engine(blocks.QuadBlock(32))), 2)
-        s.attach((3,1), w_gun(w_engine(blocks.QuadBlock(32))), 3)
-        s.attach((6,2), w_gun(w_engine(blocks.QuadBlock(32))), 0)
-        s.attach((6,0), w_gun(w_engine(blocks.QuadBlock(32))), 2)
-        s.attach((6,1), w_gun(w_engine(blocks.QuadBlock(32))), 3)
+        s = blocks.BlockStructure( w_gun(w_engine(quad_block())) )
+        s.attach((0,2), w_gun(w_engine(quad_block())), 0)
+        s.attach((0,0), w_gun(w_engine(quad_block())), 2)
+        s.attach((0,1), w_gun(w_engine(quad_block())), 3)
+        s.attach((3,2), w_gun(w_engine(quad_block())), 0)
+        s.attach((3,0), w_gun(w_engine(quad_block())), 2)
+        s.attach((3,1), w_gun(w_engine(quad_block())), 3)
+        s.attach((6,2), w_gun(w_engine(quad_block())), 0)
+        s.attach((6,0), w_gun(w_engine(quad_block())), 2)
+        s.attach((6,1), w_gun(w_engine(quad_block())), 3)
     elif shape == "single_weird":
         s = blocks.BlockStructure( w_gun(w_engine(blocks.PolygonBlock.load_file( "blocks/poly5.yaml" ) ) ) )
     elif shape == "single":
-        s = blocks.BlockStructure( w_guns( w_cockpit( blocks.QuadBlock(32) ) ) )
+        s = blocks.BlockStructure( w_guns( w_cockpit( quad_block() ) ) )
     elif shape == "octa":
-        s = blocks.BlockStructure( w_guns( w_cockpit( blocks.OctaBlock(32) ) ) )
+        s = blocks.BlockStructure( w_guns( w_cockpit( octa_block() ) ) )
         for i in range(7):
-            a = s.attach((0,i), blocks.QuadBlock(32), 0)
-            b = s.attach((a,2), blocks.QuadBlock(32), 0)
-            c = s.attach((b,2), blocks.QuadBlock(32), 0)
-            d = s.attach((c,1), w_gun(blocks.QuadBlock(32), 1), 3)
+            a = s.attach((0,i), quad_block(), 0)
+            b = s.attach((a,2), quad_block(), 0)
+            c = s.attach((b,2), quad_block(), 0)
+            d = s.attach((c,1), w_gun(quad_block(), 1), 3)
     elif shape == "wide":
-        s = blocks.BlockStructure( w_guns(w_engine( blocks.QuadBlock(32) )) )
-        s.attach((0,1), w_engine(w_guns(blocks.QuadBlock(32))), 3)
+        s = blocks.BlockStructure( w_guns(w_engine( quad_block() )) )
+        s.attach((0,1), w_engine(w_guns(quad_block())), 3)
         l, r = 0, 0
         for i in range(6):
-            l = s.attach((l,2), w_guns(w_engine(blocks.QuadBlock(32))), 0)
-            r = s.attach((r,0), w_guns(w_engine(blocks.QuadBlock(32))), 2)
-        l = s.attach((l,2), w_guns(w_engine(blocks.QuadBlock(32))), 0)
-        r = s.attach((r,0), w_guns(w_engine(blocks.QuadBlock(32))), 2)
+            l = s.attach((l,2), w_guns(w_engine(quad_block())), 0)
+            r = s.attach((r,0), w_guns(w_engine(quad_block())), 2)
+        l = s.attach((l,2), w_guns(w_engine(quad_block())), 0)
+        r = s.attach((r,0), w_guns(w_engine(quad_block())), 2)
     elif shape == "long":
-        s = blocks.BlockStructure( w_cockpit( blocks.QuadBlock(32) ) )
+        s = blocks.BlockStructure( w_cockpit( quad_block() ) )
         l, r = 0, 0
         for i in range(6):
-            l = s.attach((l,3), w_guns(blocks.QuadBlock(32)), 1)
-            r = s.attach((r,1), w_guns(blocks.QuadBlock(32)), 3)
+            l = s.attach((l,3), w_guns(quad_block()), 1)
+            r = s.attach((r,1), w_guns(quad_block()), 3)
     else:
         s = shape
     s.zero_centroid()
@@ -210,7 +214,7 @@ def create_bullet_thing(world, image, shooter, gun):
     return rv
 
 class MainWorld (World):
-    def __init__(self, resolution = (1000,800), use_pygame = True, **kwargs):
+    def __init__(self, resolution = (1000,800), use_pygame = False, **kwargs):
         super( MainWorld, self ).__init__( **kwargs)
         self.setup_graphics( resolution )
         self.setup_game()
@@ -336,7 +340,8 @@ class MainWorld (World):
         self.player.reshape_hooks.add_anonymous_hook( recreate_hp_display )
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "octa", hp = 500 )
+        self.player = Ship.load_file( "current_garage_ship.yaml", self, layer = self.main_layer )
+        self.player.position = (300,300)
         self.player.invulnerable = False
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 5 )
         self.enemy.invulnerable = False

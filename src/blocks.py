@@ -66,6 +66,8 @@ class Block (object):
     def __init__(self):
         self.collision_shapes = []
         self.components = []
+        self.hp = self.max_hp = 10
+        self.cockpit = False
 
     @staticmethod
     def load_data( data ):
@@ -183,6 +185,9 @@ class PolygonBlock (Block):
     @staticmethod
     def load_data( data ):
         rv = PolygonBlock( data["vertices"] )
+        rv.hp = data["hp"]
+        rv.max_hp = data["max-hp"]
+        rv.cockpit = data["cockpit"]
         rv.inner_vertices = data["inner-vertices"]
         rv.colour = data["colour"]
         rv.image_name = data["image-name"]
@@ -196,6 +201,9 @@ class PolygonBlock (Block):
 
     def dump_data(self):
         rv = {}
+        rv["hp"] = self.hp
+        rv["max-hp"] = self.max_hp
+        rv["cockpit"] = self.cockpit
         rv["vertices"] = [ [x,y] for (x,y) in self.original_vertices ]
         rv["colour"] = list(self.colour)
         rv[ "inner-vertices"] = self.inner_vertices
@@ -504,6 +512,8 @@ def generate_polygon_yaml( filename, n, image_name, side_length = 32.0, colour =
     print >> sys.stderr, "--", filename
     rv = {}
     rv["n"] = n
+    rv["hp"] = rv["max-hp"] = 10
+    rv["cockpit"] = False
     rv["side-length"] = side_length
     rv["pixel-side-length"] = pixel_side_length
     rv["vertices"] = list(reversed([ [x,y] for (x,y) in vertices ]))

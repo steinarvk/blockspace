@@ -24,6 +24,7 @@ def decorate_block_normal( block ):
 def decorate_block_cockpit( block ):
     block.role = "cockpit"
     block.colour = (0,255,0)
+    block.cockpit = True
     return block
 
 def decorate_block_battery( block ):

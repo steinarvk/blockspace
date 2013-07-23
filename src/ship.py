@@ -123,6 +123,7 @@ class Ship (physics.Thing):
     def on_fire_key(self, symbol, modifiers, state):
         pass
     def sanity_check(self):
+        print "foo", self.psu.power, self.psu.max_storage
         self.refresh_engines()
         for block in self.block_structure.blocks:
             for component in block.components:
