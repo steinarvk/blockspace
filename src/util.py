@@ -83,6 +83,8 @@ def closed_circle_pairs( l ):
 
 def generate_regular_polygon_vertices(n, r = 1.0, start_angle = None):
     step = math.pi * 2.0 / float(n)
+    if not start_angle:
+        start_angle = - 0.5 * step
     if start_angle == None:
         start_angle = 0.5 * step
     for i in range(n):

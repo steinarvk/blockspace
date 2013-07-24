@@ -70,26 +70,25 @@ def with_guns( block, sprite = None ):
     return with_gun( block, range(len(block.edges)) )
         
 def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour = True):
-    def w_engine( b, edge_index = (3)):
+    def w_engine( b, edge_index = 2):
         return with_engine( b, edge_index = edge_index )
     def w_cockpit( b ):
         return b
-    def w_gun( b, edge_index = 1 ):
+    def w_gun( b, edge_index = 0 ):
         return with_gun( b, edge_index = edge_index )
     def w_guns( b ):
         return with_guns( b )
     def quad_block():
-        good_block = blocks.QuadBlock(32)
-        bad_block = blocks.PolygonBlock.load_file( "blocks/poly4.yaml" )
         return blocks.PolygonBlock.load_file( "blocks/poly4.yaml" )
     def octa_block():
         return blocks.PolygonBlock.load_file( "blocks/poly8.yaml" )
-    # 2
-    #3 1
-    # 0
+    # default orientation changed:
+    #  1
+    # 2 0
+    #  3
     if shape == "small":
         s = blocks.BlockStructure( w_engine(w_gun(w_cockpit(quad_block()))) )
-        s.attach((0,2), w_engine(w_gun(quad_block())), 0)
+        s.attach((0,3), w_engine(w_gun(quad_block())), 0)
         s.attach((0,0), w_engine(w_gun(quad_block())), 2)
         s.attach((0,1), w_engine(w_gun(quad_block())), 3)
     elif shape == "big":
@@ -226,20 +225,17 @@ class MainWorld (World):
         self.pre_physics.add_hook( self.enemy, lambda dt : ai.ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
 #        self.pre_physics.add_hook( self.enemy, lambda dt : ai.ai_flee_target( dt, self.enemy, self.player ) )
         self.pre_physics.add_hook( self.enemy, self.enemy.update )
-#        self.pre_physics.add_hook( self.enemy2, lambda dt : ai.ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
+        self.pre_physics.add_hook( self.enemy2, lambda dt : ai.ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
 #        self.pre_physics.add_hook( self.enemy2, lambda dt : ai.ai_flee_target( dt, self.enemy2, self.player ) )
-#        self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
+        self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
         for gun in self.player.block_structure.get_components( lambda x : "gun" in x.categories ):
             gun.cooldown /= 2.0
-        for x in (self.player, self.enemy):#, self.enemy2):
+        for x in (self.player, self.enemy, self.enemy2):
             self.post_physics.add_hook( x, x.tick )
             x.add_to_minimap( self.minimap, "solid_white_5x5.png", (0,255,0) if x == self.player else (255,0,0) )
 #        for x in self.things:
 #            x.add_to_minimap( self.minimap, "solid_white_5x5.png", (128,128,128) )
         self.physics.add_anonymous_hook( self.sim.tick )
-        def reset_angle(*args):
-            self.enemy.body.angle = 0
-        self.post_physics.add_anonymous_hook( reset_angle )
         self.scene.schedule( self.update_everything )
     def update_everything(self, dt):
         self.tick( dt )
@@ -343,11 +339,11 @@ class MainWorld (World):
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 0 )
         self.enemy.invulnerable = False
         self.enemy.body.angular_velocity_limit = degrees_to_radians(144*2)
-  #      self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "small", hp = 0 )
-  #      self.enemy2.invulnerable = False
-  #      self.enemy2.body.angular_velocity_limit = degrees_to_radians(144*2)
+        self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "small", hp = 0 )
+        self.enemy2.invulnerable = False
+        self.enemy2.body.angular_velocity_limit = degrees_to_radians(144*2)
         self.enemy.angle_degrees = random.random() * 360.0
- #       self.enemy2.angle_degrees = random.random() * 360.0
+        self.enemy2.angle_degrees = random.random() * 360.0
         self.img_square = pyglet.image.load( "myblockgray.png" )
         self.img_bullet = pyglet.image.load( "laserGreen.png" )
         self.batch = cocos.batch.BatchNode()
@@ -467,9 +463,9 @@ class MainWorld (World):
                     vel = detached_block.velocity
                     deg = detached_block.angle_degrees
                     pos = detached_block.position
-                    r, g, b = detached_block.colour
+                    r, g, b = detached_block.sprite_info["colour"]
                     tr,tg,tb = 0.5,0.5,0.75
-                    detached_block.colour = int(r*tr),int(g*tg),int(b*tb)
+                    detached_block.sprite_info["colour"] = int(r*tr),int(g*tg),int(b*tb)
                     def create_later():
                         debris = create_ship_thing( self, self.main_layer, pos, shape = blocks.BlockStructure( detached_block ), recolour = False )
                         debris.angle_degrees = deg

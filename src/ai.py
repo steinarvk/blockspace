@@ -33,7 +33,7 @@ def ai_seek_target( dt, actor, target, fire):
         correctness = delta.normalized().dot( actor.direction )
         angle = radians_to_degrees( math.acos( correctness ) )
         sangle = (radians_to_degrees( math.atan2( delta.y, delta.x ) ) - actor.angle_degrees + 180.0) % 360.0 - 180.0
-        print "actor-angle", actor.angle_degrees % 360.0
+#        print "actor-angle", actor.angle_degrees % 360.0
 #        print "delta", delta
 #        print "sangle", sangle
         actor._turbo = False

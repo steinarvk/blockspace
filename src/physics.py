@@ -299,10 +299,8 @@ class Thing (object):
         self.minimap_symbol_sprite = cocos.sprite.Sprite( symbol )
         self.minimap_symbol_sprite.color = tint
         def on_killed( self ):
-            print "minimapped ship was killed"
             minimap.remove_sprite( self )
         self.kill_hooks.append( on_killed )
-        print "added to minimap!"
         minimap.add_sprite( self, self.minimap_symbol_sprite )
 
     def kill(self):

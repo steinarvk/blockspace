@@ -194,7 +194,6 @@ class PolygonBlock (Block):
         rv.max_hp = data["max-hp"]
         rv.cockpit = data["cockpit"]
         rv.inner_vertices = data["inner-vertices"]
-        rv.colour = data["colour"]
         rv.sprite_info = data["sprite"]
         for f in (lambda : data["sprite-scale"], lambda : data["side-length"] / data["pixel-side-length"], lambda : 1):
             try:
