@@ -179,7 +179,7 @@ class PolygonBlock (Block):
         return self
 
     def create_collision_shape(self, extra_info = None, origin = None):
-        return physics.ConvexPolygonShape( *self.vertices, extra_info = extra_info, origin = origin )
+        return physics.ConvexPolygonShape( *self.transformed_vertices(), extra_info = extra_info, origin = origin )
 
     def __repr__(self):
         return "<PolygonBlock {0}>".format( "-".join( [ repr(round_vector((x,y),d=1)) for x,y in self.vertices] ) )
@@ -209,7 +209,6 @@ class PolygonBlock (Block):
         rv["max-hp"] = self.max_hp
         rv["cockpit"] = self.cockpit
         rv["vertices"] = [ [x,y] for (x,y) in self.original_vertices ]
-        rv["colour"] = list(self.colour)
         rv["inner-vertices"] = self.inner_vertices
         rv["sprite-scale"] = self.sprite_scale
         rv["sprite"] = self.sprite_info

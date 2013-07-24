@@ -17,12 +17,27 @@ from ship import Ship
 
 import sys
 
-def decorate_block_with_guns( block ):
+def decorate_block_with_engines_within( block, aim = 180.0, span = 120.0, align = False ):
     for index, edge in indexed_zip( block.edges ):
-        angle = edge.angle_degrees
-        point = edge.midpoint()
-        print point
-        component.PointComponent( block, point, angle, required_edges = (index,), category = "gun", sprite_info = { "grid-name": "gems3.png", "grid-columns": 4, "grid-rows": 4, "index": 10, "scale": 0.15, "rotation": angle } )
+        angle = edge.angle_degrees - block.rotation_degrees
+        angle_error = (((edge.angle_degrees - aim + 180.0) % 360.0) - 180.0) / (span * 0.5)
+        point = edge.midpoint() - block.translation
+        if abs(angle_error) < 1.001:
+            if align:
+                angle = aim - block.rotation_degrees
+            engine = component.EngineComponent( 500, block, point, angle, required_edges = (index,), category = "engine", sprite_info = { "grid-name": "gems3.png", "grid-columns": 4, "grid-rows": 4, "index": 14, "scale": 0.15 } )
+            engine.power_usage = 100
+    return block
+
+def decorate_block_with_guns_within( block, aim = 0.0, span = 120.0, align = False ):
+    for index, edge in indexed_zip( block.edges ):
+        angle = edge.angle_degrees - block.rotation_degrees
+        angle_error = (((edge.angle_degrees - aim + 180.0) % 360.0) - 180.0) / (span * 0.5)
+        point = edge.midpoint() - block.translation
+        if abs(angle_error) < 1.001:
+            if align:
+                angle = aim - block.rotation_degrees
+            component.PointComponent( block, point, angle, required_edges = (index,), category = "gun", sprite_info = { "grid-name": "gems3.png", "grid-columns": 4, "grid-rows": 4, "index": 10, "scale": 0.15 } )
     return block
 
 def decorate_block_normal( block ):
@@ -77,7 +92,8 @@ class GarageWorld (World):
         self.garage_ship = None
         self.block_shapes = map( lambda n : (lambda : PolygonBlock.load_file( "blocks/poly{}.yaml".format(n) )), (3,4,5,6,8) )
         self.block_decorators = [ decorate_block_armour, decorate_block_battery, decorate_block_generator ]
-        self.block_gun_mounter = decorate_block_with_guns
+        self.block_gun_mounter = decorate_block_with_guns_within
+        self.block_engine_mounter = decorate_block_with_engines_within
         self.current_block_shape = self.block_shapes[0]
         self.current_block_decorator = self.block_decorators[0]
         self.restart_block_structure()
@@ -107,6 +123,8 @@ class GarageWorld (World):
         if not root:
             root = self.current_block_shape()
         root = decorate_block_cockpit( root )
+        root = decorate_block_with_guns_within( root )
+        root = decorate_block_with_engines_within( root )
         self.block_structure = blocks.BlockStructure( root )
         self.refresh_garage_ship()
     def refresh_garage_ship(self):
@@ -143,8 +161,10 @@ class GarageWorld (World):
     def create_block(self):
         block = self.current_block_shape()
         block = self.current_block_decorator( block )
-        block = self.block_gun_mounter( block )
         return block
+    def decorate_attached_block(self, block):
+        self.block_gun_mounter( block )
+        self.block_engine_mounter( block )
     def check_borders(self):
         block = self.create_block()
         block.rotate_degrees( -self.current_rotation )
@@ -162,6 +182,7 @@ class GarageWorld (World):
         try:
             block = self.create_block()
             self.block_structure.attach( structure_edge_index, block, current_block_edge_index )
+            self.decorate_attached_block( block )
             self.refresh_garage_ship()
         except blocks.IllegalOverlapException:
             print "overlap"
