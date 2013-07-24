@@ -16,30 +16,35 @@ from ship import Ship
 
 import sys
 
+def decorate_block_with_guns( block ):
+    for index, edge in indexed_zip( block.edges ):
+        angle = edge.angle_degrees
+        point = edge.midpoint()
+
 def decorate_block_normal( block ):
     block.role = "plain"
-    block.colour = (255,255,255)
+    block.sprite_info["colour"] = (255,255,255)
     return block
 
 def decorate_block_cockpit( block ):
     block.role = "cockpit"
-    block.colour = (0,255,0)
+    block.sprite_info["colour"] = (0,255,0)
     block.cockpit = True
     return block
 
 def decorate_block_battery( block ):
     block.role = "battery"
-    block.colour = (255,255,0)
+    block.sprite_info["colour"] = (255,255,0)
     return block
 
 def decorate_block_generator( block ):
     block.role = "generator"
-    block.colour = (255,0,0)
+    block.sprite_info["colour"] = (255,0,0)
     return block
 
 def decorate_block_armour( block ):
     block.role = "armour"
-    block.colour = (64,64,64)
+    block.sprite_info["colour"] = (64,64,64)
     return block
 
 class GarageWorld (World):

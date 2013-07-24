@@ -30,7 +30,7 @@ from world import World
 
 from ship import Ship, Debris
 
-def with_engine( block, edge_index = 3, sprite = None ):
+def with_engine( block, edge_index = 3 ):
     try:
         rv = block
         for index in edge_index:
@@ -42,13 +42,12 @@ def with_engine( block, edge_index = 3, sprite = None ):
     pos = Vec2d( polar_degrees( angle, 16.0 ) )
     pos = Vec2d(0,0)
     pos = block.edge( edge_index ).midpoint()
-    spr = cocos.sprite.Sprite( sprite )
-    spr.scale = 0.15
-    engine = component.EngineComponent( 500, block, pos, angle, required_edges = (edge_index,), category = "engine", sprite = spr )
+    spr = { "grid-name": "gems3.png", "grid-columns": 4, "grid-rows": 4, "index": 14, "scale": 0.15 }
+    engine = component.EngineComponent( 500, block, pos, angle, required_edges = (edge_index,), category = "engine", sprite_info = spr )
     engine.power_usage = 50
     return block
 
-def with_gun( block, edge_index = 1, sprite = None ):
+def with_gun( block, edge_index = 1 ):
     try:
         rv = block
         for index in edge_index:
@@ -60,37 +59,30 @@ def with_gun( block, edge_index = 1, sprite = None ):
     pos = Vec2d( polar_degrees( angle, 16.0 ) )
     pos = Vec2d(0,0)
     pos = block.edge( edge_index ).midpoint()
-    spr = cocos.sprite.Sprite( sprite )
-    spr.scale = 0.15
-    gun = component.PointComponent( block, pos, angle, required_edges = (edge_index,), category = "gun", sprite = spr )
+    spr = { "grid-name": "gems3.png", "grid-columns": 4, "grid-rows": 4, "index": 10, "scale": 0.15 }
+    gun = component.PointComponent( block, pos, angle, required_edges = (edge_index,), category = "gun", sprite_info = spr )
     gun.cooldown = 0.2
 #    gun.cooldown = 0.1 # a LOT more powerful with lower cooldown
     gun.power_usage = (750 * gun.cooldown) * 2.0/3.0 # more reasonable power usage
     return block
 
 def with_guns( block, sprite = None ):
-    return with_gun( block, range(len(block.edges)), sprite = sprite )
+    return with_gun( block, range(len(block.edges)) )
         
 def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour = True):
-    gun_img = world.gem_images[10]
-    engine_img = world.gem_images[14]
     def w_engine( b, edge_index = (3)):
-        return with_engine( b, edge_index = edge_index, sprite = engine_img )
+        return with_engine( b, edge_index = edge_index )
     def w_cockpit( b ):
         return b
     def w_gun( b, edge_index = 1 ):
-        return with_gun( b, edge_index = edge_index, sprite = gun_img )
+        return with_gun( b, edge_index = edge_index )
     def w_guns( b ):
-        return with_guns( b, sprite = gun_img )
+        return with_guns( b )
     def quad_block():
         good_block = blocks.QuadBlock(32)
         bad_block = blocks.PolygonBlock.load_file( "blocks/poly4.yaml" )
-        print "good", good_block.dump_data()
-        print "bad", bad_block.dump_data()
-        return blocks.QuadBlock(32)
         return blocks.PolygonBlock.load_file( "blocks/poly4.yaml" )
     def octa_block():
-        return blocks.OctaBlock(32)
         return blocks.PolygonBlock.load_file( "blocks/poly8.yaml" )
     # 2
     #3 1
@@ -162,19 +154,19 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
             cockpit.power_capacity = int(0.5 + 0.5 * block.area())
             cockpit.power_production = int(0.5 + 0.5 * block.area())
             block.max_hp = block.hp = hp * 3
-            block.colour = colours["green"]
+            block.sprite_info["colour"] = colours["green"]
             block.cockpit = True
         def make_battery( block ):
             battery = component.Component( block, categories = ("battery") )
             battery.power_capacity = int(block.area())
-            block.colour = colours["yellow"]
+            block.sprite_info["colour"] = colours["yellow"]
         def make_generator( block ):
             generator = component.Component( block, categories = ("generator") )
             generator.power_production = int(0.5 + 0.5 * block.area())
-            block.colour = colours["red"]
+            block.sprite_info["colour"] = colours["red"]
         def make_armour( block ):
             block.max_hp = block.hp = hp * 5
-            block.colour = colours["dark-gray"]
+            block.sprite_info["colour"] = colours["dark-gray"]
         gens = make_battery, make_generator, make_armour
         gens = (make_armour,)
         for block in s.blocks:
@@ -216,7 +208,7 @@ def create_bullet_thing(world, image, shooter, gun):
     return rv
 
 class MainWorld (World):
-    def __init__(self, resolution = (1000,800), use_pygame = True, **kwargs):
+    def __init__(self, resolution = (1000,800), use_pygame = False, **kwargs):
         super( MainWorld, self ).__init__( **kwargs)
         self.setup_graphics( resolution )
         self.setup_game()
@@ -232,11 +224,11 @@ class MainWorld (World):
         self.display.add_anonymous_hook( self.scene.update )
         self.player.body.velocity_limit = 800.0 # experiment with this for actually chasing fleeing ships
         self.pre_physics.add_hook( self.player, self.player.update )
-#        self.pre_physics.add_hook( self.enemy, lambda dt : ai.ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
-        self.pre_physics.add_hook( self.enemy, lambda dt : ai.ai_flee_target( dt, self.enemy, self.player ) )
+        self.pre_physics.add_hook( self.enemy, lambda dt : ai.ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
+#        self.pre_physics.add_hook( self.enemy, lambda dt : ai.ai_flee_target( dt, self.enemy, self.player ) )
         self.pre_physics.add_hook( self.enemy, self.enemy.update )
-#        self.pre_physics.add_hook( self.enemy2, lambda dt : ai.ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
-        self.pre_physics.add_hook( self.enemy2, lambda dt : ai.ai_flee_target( dt, self.enemy2, self.player ) )
+        self.pre_physics.add_hook( self.enemy2, lambda dt : ai.ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
+#        self.pre_physics.add_hook( self.enemy2, lambda dt : ai.ai_flee_target( dt, self.enemy2, self.player ) )
         self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
         for gun in self.player.block_structure.get_components( lambda x : "gun" in x.categories ):
             gun.cooldown /= 2.0
@@ -325,7 +317,7 @@ class MainWorld (World):
             turn_power_label.element.text = "R: {0}".format( self.player.turn_power )
             brake_power_label.element.text = "B: {0}".format( self.player.brake_power )
             number_of_engines_label.element.text = "#E: {}".format( len( self.player.all_engines() ) )
-            number_of_guns_label.element.text = "#E: {0}/{1}".format( len( self.player.ready_guns() ), len( self.player.all_guns() ) )
+            number_of_guns_label.element.text = "#W: {0}/{1}".format( len( self.player.ready_guns() ), len( self.player.all_guns() ) )
         def update_power_display():
             bar.fill = self.player.psu.charge_rate()
         self.hud_cocos_layer.add( bar )

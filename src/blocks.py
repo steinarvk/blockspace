@@ -185,10 +185,7 @@ class PolygonBlock (Block):
         return "<PolygonBlock {0}>".format( "-".join( [ repr(round_vector((x,y),d=1)) for x,y in self.vertices] ) )
 
     def create_sprite(self):
-        rv = graphics.cocos.sprite.Sprite( self.image_name )
-        rv.color = self.colour
-        rv.scale = self.sprite_scale
-        return rv
+        return graphics.create_sprite( self.sprite_info )
 
     @staticmethod
     def load_data( data ):
@@ -198,7 +195,7 @@ class PolygonBlock (Block):
         rv.cockpit = data["cockpit"]
         rv.inner_vertices = data["inner-vertices"]
         rv.colour = data["colour"]
-        rv.image_name = data["image-name"]
+        rv.sprite_info = data["sprite"]
         for f in (lambda : data["sprite-scale"], lambda : data["side-length"] / data["pixel-side-length"], lambda : 1):
             try:
                 rv.sprite_scale = f()
@@ -214,10 +211,10 @@ class PolygonBlock (Block):
         rv["cockpit"] = self.cockpit
         rv["vertices"] = [ [x,y] for (x,y) in self.original_vertices ]
         rv["colour"] = list(self.colour)
-        rv[ "inner-vertices"] = self.inner_vertices
-        rv["image-name"] = self.image_name
+        rv["inner-vertices"] = self.inner_vertices
         rv["sprite-scale"] = self.sprite_scale
-        return rv
+        rv["sprite"] = self.sprite_info
+        return recursively_untuple( rv )
 
     def dump_string(self):
         import yaml
@@ -508,7 +505,7 @@ class BlockStructure (object):
                 except AttributeError:
                     continue
                 if component.required_edges_free():
-                    s.add_sprite( component.sprite, block_pos + component.relative_position, z = -1 )
+                    s.add_sprite( component.create_sprite(), block_pos + component.relative_position, z = -1 )
         return s
 
 def generate_polygon_yaml( filename, n, image_name, side_length = 32.0, colour = (255,255,255), pixel_side_length = None):
@@ -526,9 +523,8 @@ def generate_polygon_yaml( filename, n, image_name, side_length = 32.0, colour =
     rv["pixel-side-length"] = pixel_side_length
     rv["vertices"] = list([ [x,y] for (x,y) in vertices ])
     rv["inner-vertices"] = list( [ [x,y] for (x,y) in inner_vertices ])
-    rv["colour"] = list(colour)
-    rv["image-name"] = image_name
-    s = yaml.dump( rv )
+    rv["sprite"] = { "image-name": image_name, "colour": list(colour), "scale": float( side_length ) / float( pixel_side_length ) }
+    s = yaml.dump( recursively_untuple(rv) )
     with open( filename, "w" ) as f:
         f.write( s )
     print >> sys.stderr, s

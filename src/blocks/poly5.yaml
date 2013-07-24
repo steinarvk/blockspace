@@ -1,7 +1,6 @@
 cockpit: false
 colour: [255, 255, 255]
 hp: 10
-image-name: polygon_fancy.5.generated.png
 inner-vertices:
 - [21.801889620263385, 15.839999999999998]
 - [-8.327580815967073, 25.629658381798333]
@@ -12,6 +11,10 @@ max-hp: 10
 n: 5
 pixel-side-length: 76.8
 side-length: 32.0
+sprite:
+  colour: [255, 255, 255]
+  image-name: polygon_fancy.5.generated.png
+  scale: 0.4166666666666667
 vertices:
 - [22.022110727538774, 15.999999999999996]
 - [-8.411697793906134, 25.888543819998315]

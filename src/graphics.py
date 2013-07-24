@@ -5,6 +5,40 @@ from util import ignore_arguments
 from operator import attrgetter
 from pyglet.gl import *
 
+from weakref import WeakValueDictionary
+
+MemoizedLoad = WeakValueDictionary()
+
+def memoized_load( f, *args, **kwargs ):
+    key = f, args, frozenset(kwargs.items())
+    try:
+        rv = MemoizedLoad[ key ]()
+    except KeyError:
+        rv = None
+    if rv == None:
+        rv = MemoizedLoad[ key ] = f(*args, **kwargs)
+    return rv
+
+def load_grid( fn, cols, rows ):
+    image = pyglet.image.load( fn )
+    return pyglet.image.ImageGrid( image, cols, rows )
+
+def create_sprite( info ):
+    if info.has_key( "image-name" ):
+        image_name = info["image-name"]
+        rv = cocos.sprite.Sprite( image_name )
+    elif info.has_key( "grid-name" ):
+        grid = memoized_load( load_grid, info["grid-name"], info["grid-columns"], info["grid-rows"] )
+        image = grid[ info[ "index"] ]
+        rv = cocos.sprite.Sprite( image )
+    else:
+        assert False
+    colour = info.get( "colour", (255,255,255) )
+    scale = info.get( "scale", 1.0 )
+    rv.color = colour
+    rv.scale = scale
+    return rv
+
 def create_label( x, y, text = "", size = 16, font_name = "Bitstream Vera Sans Mono", layer = None ):
     rv = cocos.text.Label( "", font_name = font_name, font_size = size, anchor_x = "left", anchor_y = "top" ) 
     rv.height = size

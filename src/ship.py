@@ -85,6 +85,9 @@ class Ship (physics.Thing):
         rv = Ship( world, s, (0,0), mass = mass, moment = moment, **kwargs )
         return rv
 
+    def summarize(self):
+        return "Ship at {pos} with {power}/{maxpower} power movement {thrust}/{turn}/{brake} ({drain})".format( pos = self.position, power = self.psu.power, maxpower = self.psu.max_storage, thrust = self.thrust_power, turn = self.turn_power, brake = self.brake_power, drain = self.engine_power_drain )
+
     @staticmethod
     def load_string( s, *args, **kwargs ):
         import yaml
@@ -124,7 +127,6 @@ class Ship (physics.Thing):
     def on_fire_key(self, symbol, modifiers, state):
         pass
     def sanity_check(self):
-        print "foo", self.psu.power, self.psu.max_storage
         self.refresh_engines()
         for block in self.block_structure.blocks:
             for component in block.components:
