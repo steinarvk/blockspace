@@ -21,12 +21,10 @@ class Component (object):
             self.categories.append( category )
 
     def attach(self, thing):
-        print "current capacity", thing.psu.max_storage
         if self.power_production:
             thing.psu.set_production( self, self.power_production )
         if self.power_capacity:
             thing.psu.increase_capacity( self.power_capacity )
-        print "attached", self.thing.psu.max_storage
 
     def detach(self, thing):
         if self.power_production:

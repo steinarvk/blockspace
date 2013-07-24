@@ -140,7 +140,6 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
     else:
         s = shape
     s.zero_centroid()
-    print "ship with", len(s.blocks), "blocks has", len(s.free_edge_indices)
     if recolour:
         colours = { "blue": (0,0,255),
                     "purple": (255,0,255),
@@ -227,17 +226,20 @@ class MainWorld (World):
         self.pre_physics.add_hook( self.enemy, lambda dt : ai.ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
 #        self.pre_physics.add_hook( self.enemy, lambda dt : ai.ai_flee_target( dt, self.enemy, self.player ) )
         self.pre_physics.add_hook( self.enemy, self.enemy.update )
-        self.pre_physics.add_hook( self.enemy2, lambda dt : ai.ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
+#        self.pre_physics.add_hook( self.enemy2, lambda dt : ai.ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
 #        self.pre_physics.add_hook( self.enemy2, lambda dt : ai.ai_flee_target( dt, self.enemy2, self.player ) )
-        self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
+#        self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
         for gun in self.player.block_structure.get_components( lambda x : "gun" in x.categories ):
             gun.cooldown /= 2.0
-        for x in (self.player, self.enemy, self.enemy2):
+        for x in (self.player, self.enemy):#, self.enemy2):
             self.post_physics.add_hook( x, x.tick )
             x.add_to_minimap( self.minimap, "solid_white_5x5.png", (0,255,0) if x == self.player else (255,0,0) )
 #        for x in self.things:
 #            x.add_to_minimap( self.minimap, "solid_white_5x5.png", (128,128,128) )
         self.physics.add_anonymous_hook( self.sim.tick )
+        def reset_angle(*args):
+            self.enemy.body.angle = 0
+        self.post_physics.add_anonymous_hook( reset_angle )
         self.scene.schedule( self.update_everything )
     def update_everything(self, dt):
         self.tick( dt )
@@ -341,11 +343,11 @@ class MainWorld (World):
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 0 )
         self.enemy.invulnerable = False
         self.enemy.body.angular_velocity_limit = degrees_to_radians(144*2)
-        self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "small", hp = 0 )
-        self.enemy2.invulnerable = False
-        self.enemy2.body.angular_velocity_limit = degrees_to_radians(144*2)
+  #      self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "small", hp = 0 )
+  #      self.enemy2.invulnerable = False
+  #      self.enemy2.body.angular_velocity_limit = degrees_to_radians(144*2)
         self.enemy.angle_degrees = random.random() * 360.0
-        self.enemy2.angle_degrees = random.random() * 360.0
+ #       self.enemy2.angle_degrees = random.random() * 360.0
         self.img_square = pyglet.image.load( "myblockgray.png" )
         self.img_bullet = pyglet.image.load( "laserGreen.png" )
         self.batch = cocos.batch.BatchNode()
