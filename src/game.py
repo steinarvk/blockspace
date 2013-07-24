@@ -30,10 +30,6 @@ from world import World
 
 from ship import Ship, Debris
 
-collision_type_main = 1
-collision_type_bullet = 2
-group_bulletgroup = 1
-
 def with_engine( block, edge_index = 3, sprite = None ):
     try:
         rv = block
@@ -187,7 +183,7 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
         for block in list(s.blocks)[1:]:
             random.choice(gens)( block )
         make_cockpit( s.blocks[0] )
-    rv = Ship( world, s, position, layer = layer, mass = len(s.blocks), moment = 20000.0, collision_type = collision_type_main )
+    rv = Ship( world, s, position, layer = layer, mass = len(s.blocks), moment = 20000.0 )
     rv._gun_distance = 65
     return rv
 
@@ -196,7 +192,7 @@ def create_square_thing(world, layer, position, image):
     shape = ConvexPolygonShape(*points)
     shape.translate( shape.centroid() * -1)
     moment = pymunk.moment_for_poly( 1.0, shape.vertices )
-    rv = Debris( world, layer, position, shape, image, moment = moment, collision_type = collision_type_main )
+    rv = Debris( world, layer, position, shape, image, moment = moment, collision_type = physics.CollisionTypes["main"] )
     return rv
 
 def create_bullet_thing(world, image, shooter, gun):
@@ -205,7 +201,7 @@ def create_bullet_thing(world, image, shooter, gun):
     shape.translate( shape.centroid() * -1)
 #    shape = DiskShape(5) # useful for debugging with pygame to see bullet origins
     layer = None
-    rv = Debris( world, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet, group = group_bulletgroup )
+    rv = Debris( world, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity, collision_type = physics.CollisionTypes["bullet"], group = physics.CollisionGroups["bullets"] )
     speed = 1400
 #    speed = 0
     base_velocity = gun.velocity
@@ -220,7 +216,7 @@ def create_bullet_thing(world, image, shooter, gun):
     return rv
 
 class MainWorld (World):
-    def __init__(self, resolution = (1000,800), use_pygame = False, **kwargs):
+    def __init__(self, resolution = (1000,800), use_pygame = True, **kwargs):
         super( MainWorld, self ).__init__( **kwargs)
         self.setup_graphics( resolution )
         self.setup_game()
@@ -346,8 +342,8 @@ class MainWorld (World):
         self.player.reshape_hooks.add_anonymous_hook( recreate_hp_display )
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 5 )
-#        self.player = Ship.load_file( "current_garage_ship.yaml", self, layer = self.main_layer )
+ #       self.player = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 5 )
+        self.player = Ship.load_file( "current_garage_ship.yaml", self, layer = self.main_layer )
         self.player.position = (300,300)
         self.player.invulnerable = False
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 0 )
@@ -375,7 +371,7 @@ class MainWorld (World):
             self.batch.add( sq.sprite.cocos_sprite )
             self.display_objects.append( sq.sprite )
             self.things.append( sq )
-        self.sim.space.add_collision_handler( collision_type_main, collision_type_bullet, self.collide_general_with_bullet )
+        self.sim.space.add_collision_handler( physics.CollisionTypes["main"], physics.CollisionTypes["bullet"], self.collide_general_with_bullet )
     def setup_input(self):
         input_layer = graphics.Layer( self.scene, gameinput.CocosInputLayer() )
         for k in (key.LEFT, key.RIGHT, key.UP, key.DOWN):

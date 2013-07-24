@@ -7,6 +7,14 @@ import component
 from pymunk import Vec2d
 from util import *
 
+CollisionTypes = {
+    "main": 1,
+    "bullet": 2
+}
+CollisionGroups = {
+    "bullets": 1
+}
+
 infinity = infinite_moment = pymunk.inf
 
 def zero_shape_centroid( shape ):

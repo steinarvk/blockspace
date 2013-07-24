@@ -29,7 +29,7 @@ from operator import attrgetter
 
 class Ship (physics.Thing):
     def __init__(self, world, block_structure, position, mass = 1.0, moment = 1.0, layer = None, cocos_parent = None, **kwargs):
-        super( Ship, self ).__init__( world, block_structure.create_collision_shape(), mass, moment, **kwargs )
+        super( Ship, self ).__init__( world, block_structure.create_collision_shape(), mass, moment, collision_type = physics.CollisionTypes["main"], **kwargs )
         self.block_structure = block_structure
         self.layer = layer
         self.cocos_parent = cocos_parent
