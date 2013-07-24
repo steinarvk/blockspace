@@ -87,6 +87,10 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
     def w_guns( b ):
         return with_guns( b, sprite = gun_img )
     def quad_block():
+        good_block = blocks.QuadBlock(32)
+        bad_block = blocks.PolygonBlock.load_file( "blocks/poly4.yaml" )
+        print "good", good_block.dump_data()
+        print "bad", bad_block.dump_data()
         return blocks.QuadBlock(32)
         return blocks.PolygonBlock.load_file( "blocks/poly4.yaml" )
     def octa_block():

@@ -517,8 +517,8 @@ def generate_polygon_yaml( filename, n, image_name, side_length = 32.0, colour =
     rv["cockpit"] = False
     rv["side-length"] = side_length
     rv["pixel-side-length"] = pixel_side_length
-    rv["vertices"] = list(reversed([ [x,y] for (x,y) in vertices ]))
-    rv["inner-vertices"] = list(reversed( [ [x,y] for (x,y) in inner_vertices ]))
+    rv["vertices"] = list([ [x,y] for (x,y) in vertices ])
+    rv["inner-vertices"] = list( [ [x,y] for (x,y) in inner_vertices ])
     rv["colour"] = list(colour)
     rv["image-name"] = image_name
     s = yaml.dump( rv )
