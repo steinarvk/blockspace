@@ -68,14 +68,6 @@ class Ship (physics.Thing):
             self.brake_power += engine.power_braking()
             self.engine_power_drain += engine.power_usage
 
-    @property
-    def mass(self):
-        return self.body.mass
-
-    @property
-    def moment(self):
-        return self.body.moment
-
     @staticmethod
     def load_data(data, world, **kwargs):
         s = BlockStructure.load_data( data["block-structure"] )

@@ -216,7 +216,7 @@ def create_bullet_thing(world, image, shooter, gun):
     return rv
 
 class MainWorld (World):
-    def __init__(self, resolution = (1000,800), use_pygame = True, **kwargs):
+    def __init__(self, resolution = (1000,800), use_pygame = False, **kwargs):
         super( MainWorld, self ).__init__( **kwargs)
         self.setup_graphics( resolution )
         self.setup_game()
@@ -506,7 +506,11 @@ class MainWorld (World):
                     angle_after = remaining_block.angle_degrees
                     assert degrees_almost_equal( angle_after, angle_before )
                     assert vectors_almost_equal( pos_before, pos_after )
-                thing.mass = len( thing.block_structure.blocks )
+                density = 1/1024.
+                area = thing.block_structure.area()
+                mass = density * area
+                if mass > 0:
+                    thing.mass = mass
         if len(thing.block_structure.blocks) == 0:
             thing.kill()
         bullet.thing.inert = True

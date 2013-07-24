@@ -290,7 +290,11 @@ class Thing (object):
         import cocos
         self.minimap_symbol_sprite = cocos.sprite.Sprite( symbol )
         self.minimap_symbol_sprite.color = tint
-        self.kill_hooks.append( lambda self : minimap.remove_sprite( self ) )
+        def on_killed( self ):
+            print "minimapped ship was killed"
+            minimap.remove_sprite( self )
+        self.kill_hooks.append( on_killed )
+        print "added to minimap!"
         minimap.add_sprite( self, self.minimap_symbol_sprite )
 
     def kill(self):
@@ -302,6 +306,22 @@ class Thing (object):
         self.world.remove_all_hooks( self )
         for hook in self.kill_hooks:
             hook( self )
+
+    @property
+    def mass(self):
+        return self.body.mass
+
+    @mass.setter
+    def mass(self, value):
+        self.body.mass = value
+
+    @property
+    def moment(self):
+        return self.body.moment
+    
+    @moment.setter
+    def moment(self, value):
+        self.body.moment = value
 
     @property
     def position(self):
