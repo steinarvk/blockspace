@@ -346,10 +346,10 @@ class MainWorld (World):
 #        self.player = Ship.load_file( "current_garage_ship.yaml", self, layer = self.main_layer )
         self.player.position = (300,300)
         self.player.invulnerable = False
-        self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 1 )
+        self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 0 )
         self.enemy.invulnerable = False
         self.enemy.body.angular_velocity_limit = degrees_to_radians(144*2)
-        self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "small", hp = 1 )
+        self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "small", hp = 0 )
         self.enemy2.invulnerable = False
         self.enemy2.body.angular_velocity_limit = degrees_to_radians(144*2)
         self.enemy.angle_degrees = random.random() * 360.0
