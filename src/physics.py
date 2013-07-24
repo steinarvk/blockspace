@@ -60,7 +60,7 @@ class ConvexPolygonShape (CollisionShape):
         rv = 0.0
         for (xi,yi), (xip,yip) in closed_circle_pairs( self.vertices ):
             rv += xi * yip - yi * xip
-        return 0.5 * rv
+        return abs(0.5 * rv)
     def centroid_and_area(self):
         a = 0.0
         rvx, rvy = 0.0, 0.0
