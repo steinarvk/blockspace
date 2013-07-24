@@ -3,6 +3,7 @@ import blocks
 import cocos
 import gameinput
 import physics
+import component
 
 from blocks import PolygonBlock
 
@@ -20,6 +21,9 @@ def decorate_block_with_guns( block ):
     for index, edge in indexed_zip( block.edges ):
         angle = edge.angle_degrees
         point = edge.midpoint()
+        print point
+        component.PointComponent( block, point, angle, required_edges = (index,), category = "gun", sprite_info = { "grid-name": "gems3.png", "grid-columns": 4, "grid-rows": 4, "index": 10, "scale": 0.15, "rotation": angle } )
+    return block
 
 def decorate_block_normal( block ):
     block.role = "plain"
@@ -73,6 +77,7 @@ class GarageWorld (World):
         self.garage_ship = None
         self.block_shapes = map( lambda n : (lambda : PolygonBlock.load_file( "blocks/poly{}.yaml".format(n) )), (3,4,5,6,8) )
         self.block_decorators = [ decorate_block_armour, decorate_block_battery, decorate_block_generator ]
+        self.block_gun_mounter = decorate_block_with_guns
         self.current_block_shape = self.block_shapes[0]
         self.current_block_decorator = self.block_decorators[0]
         self.restart_block_structure()
@@ -135,9 +140,13 @@ class GarageWorld (World):
         args = self.check_borders()
         if args:
             self.attach_current_block( *args )
-    def check_borders(self):
+    def create_block(self):
         block = self.current_block_shape()
         block = self.current_block_decorator( block )
+        block = self.block_gun_mounter( block )
+        return block
+    def check_borders(self):
+        block = self.create_block()
         block.rotate_degrees( -self.current_rotation )
         block.translate( self.current_position )
         for index in self.block_structure.free_edge_indices:
@@ -151,8 +160,7 @@ class GarageWorld (World):
         return None
     def attach_current_block(self, current_block_edge_index, structure_edge_index ):
         try:
-            block = self.current_block_shape()
-            block = self.current_block_decorator( block )
+            block = self.create_block()
             self.block_structure.attach( structure_edge_index, block, current_block_edge_index )
             self.refresh_garage_ship()
         except blocks.IllegalOverlapException:
