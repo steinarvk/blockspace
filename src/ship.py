@@ -79,6 +79,7 @@ class Ship (physics.Thing):
     @staticmethod
     def load_data(data, world, **kwargs):
         s = BlockStructure.load_data( data["block-structure"] )
+        s.zero_centroid()
         mass = data["mass"]
         moment = data["moment"]
         rv = Ship( world, s, (0,0), mass = mass, moment = moment, **kwargs )
