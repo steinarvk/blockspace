@@ -136,6 +136,13 @@ class PolygonBlock (Block):
         self.sprite_scale = 1.0
         self.sprite_flipy = False
 
+    def transformed_vertices(self):
+        xs = map( Vec2d, self.original_vertices )
+        for v in xs:
+            v.rotate_degrees( self.rotation_degrees )
+        xs = map( lambda x : x + self.translation, xs )
+        return xs
+
     def transformed_inner_vertices(self):
         xs = map( Vec2d, self.inner_vertices )
         for v in xs:

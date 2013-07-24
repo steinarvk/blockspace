@@ -28,7 +28,15 @@ from blocks import BlockStructure
 from operator import attrgetter
 
 class Ship (physics.Thing):
-    def __init__(self, world, block_structure, position, mass = 1.0, moment = 1.0, layer = None, cocos_parent = None, **kwargs):
+    def __init__(self, world, block_structure, position, mass = None, moment = None, layer = None, cocos_parent = None, **kwargs):
+        density = 1/(32.*32.)
+        if not mass:
+            mass = block_structure.area() * density
+        if not moment:
+            moment = 0
+            for block in block_structure.blocks:
+                block_mass = block.area() * density
+                moment += pymunk.moment_for_poly( block_mass, block.transformed_vertices(), (0,0) )
         super( Ship, self ).__init__( world, block_structure.create_collision_shape(), mass, moment, collision_type = physics.CollisionTypes["main"], **kwargs )
         self.block_structure = block_structure
         self.layer = layer
