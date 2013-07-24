@@ -504,7 +504,7 @@ class BlockStructure (object):
                 except AttributeError:
                     continue
                 if component.required_edges_free():
-                    s.add_sprite( component.create_sprite(), block_pos + component.relative_position, z = -1 + 2 )
+                    s.add_sprite( component.create_sprite(), block_pos + component.relative_position, rotation = -(block.rotation_degrees + component.relative_angle_degrees), z = -1 )
         return s
 
 def generate_polygon_yaml( filename, n, image_name, side_length = 32.0, colour = (255,255,255), pixel_side_length = None):
