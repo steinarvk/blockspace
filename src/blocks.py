@@ -128,6 +128,7 @@ class PolygonBlock (Block):
         super( PolygonBlock, self ).__init__()
         self.vertices = map( Vec2d, vertices )
         self.original_vertices = map( Vec2d, vertices )
+        self.inner_vertices = map( lambda x : Vec2d(x) * 0.99, vertices )
         self.free_edge_indices = range(len(self.edges))
         self.connections = {}
         self.rotation_degrees = 0.0

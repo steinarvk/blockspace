@@ -87,8 +87,10 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
     def w_guns( b ):
         return with_guns( b, sprite = gun_img )
     def quad_block():
+        return blocks.QuadBlock(32)
         return blocks.PolygonBlock.load_file( "blocks/poly4.yaml" )
     def octa_block():
+        return blocks.OctaBlock(32)
         return blocks.PolygonBlock.load_file( "blocks/poly8.yaml" )
     # 2
     #3 1
@@ -340,14 +342,14 @@ class MainWorld (World):
         self.player.reshape_hooks.add_anonymous_hook( recreate_hp_display )
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 50 )
+        self.player = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 5 )
 #        self.player = Ship.load_file( "current_garage_ship.yaml", self, layer = self.main_layer )
         self.player.position = (300,300)
         self.player.invulnerable = False
-        self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 5 )
+        self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 1 )
         self.enemy.invulnerable = False
         self.enemy.body.angular_velocity_limit = degrees_to_radians(144*2)
-        self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "small", hp = 5 )
+        self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "small", hp = 1 )
         self.enemy2.invulnerable = False
         self.enemy2.body.angular_velocity_limit = degrees_to_radians(144*2)
         self.enemy.angle_degrees = random.random() * 360.0
