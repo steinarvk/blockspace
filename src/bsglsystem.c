@@ -48,10 +48,12 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
 
         for(int i=0;i<4;i++) {
             for(int j=0;j<2;j++) {
-                vertex_buffer_data[index++] = world_pos[j] + 0.5 * world_size[j];
+//                vertex_buffer_data[index++] = world_pos[j] + 0.5 * world_size[j];
+                vertex_buffer_data[index++] = 0;
             }
             for(int j=0;j<2;j++) {
-                vertex_buffer_data[index++] = (base_s[j][i]-0.5) * 0.5 * world_size[j];
+//                vertex_buffer_data[index++] = (base_s[j][i]-0.5) * 0.5 * world_size[j];
+                vertex_buffer_data[index++] = world_pos[j] + 0.5 * world_size[j] + (base_s[j][i]-0.5) * 0.5 * world_size[j];
             }
             for(int j=0;j<2;j++) {
                 vertex_buffer_data[index++] = texture_coordinates[j] + base_s[j][i] * texture_size[j];
