@@ -36,19 +36,19 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
 
     fprintf( stderr, "%f %f\n", texture_size[0], texture_size[1] );
 
-    double world_pos[] = { -0.2, -0.2 };
+    double world_pos[] = { 0.0, 0.0 };
     double world_size[] = { 0.4, 0.4 };
 
     int index = 0;
 
     for(int k=0;k<number_of_things;k++) {
-        world_pos[0] = 10 * 0.1 * (rand() % 20 - 10);
-        world_pos[1] = 10 * 0.5 * 0.1 * (rand() % 20 - 10);
+        world_pos[0] = 2.7 * (rand() - RAND_MAX/2) / (double)RAND_MAX;
+        world_pos[1] = 2.0 * (rand() - RAND_MAX/2) / (double)RAND_MAX;
         double angle = (rand() / (double) RAND_MAX) * 6.28;
 
         for(int i=0;i<4;i++) {
             for(int j=0;j<2;j++) {
-//                vertex_buffer_data[index++] = world_pos[j] + 0.5 * world_size[j];
+//                vertex_buffer_data[index++] = world_pos[j];
                 vertex_buffer_data[index++] = 0;
             }
             for(int j=0;j<2;j++) {
