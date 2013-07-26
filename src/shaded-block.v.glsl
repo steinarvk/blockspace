@@ -15,7 +15,7 @@ void main() {
     float a = angle + fade_factor;
     rcosa = cos(a);
     rsina = sin(a);
-    vec2 rp = com_position + vec2(position_offset.x * rcosa - position_offset.y * rsina, position_offset.x * rsina + position_offset.y * rcosa );
+    vec2 rp = com_position + vec2(fade_factor*0.05,fade_factor*0.1) + vec2(position_offset.x * rcosa - position_offset.y * rsina, position_offset.x * rsina + position_offset.y * rcosa );
     gl_Position = vec4( rp.x / aspect, rp.y, 0.0, 1.0 );
     texcoord = attr_texcoord;
 }
