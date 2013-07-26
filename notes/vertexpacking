@@ -1,0 +1,22 @@
+point sprites
+or quads (possibly better -- less limitations, even though storage space x4)
+    (quads just have different offsets -- otherwise the same.)
+
+for bullets we can save on effects by putting the velocity in the data.
+this should be helpful for bulletspam situations, especially for the
+bullets from rapid-fire weapons
+(although we still have to do the calculations for collisions)
+
+    (design 1: COM and rotate around that)
+uniforms:
+    float[2]: world coordinates translation
+
+attributes:
+    float[2]: world coordinates of center of mass
+    float: angle (rotation around center of mass, and sprite display angle)
+    float[2]: world coordinates offset from center of mass, unrotated
+    float[2]: texture coordinates position
+    float: texture coordinates size
+    float[4]: rgba tint
+
+
