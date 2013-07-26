@@ -12,12 +12,12 @@ if __name__ == '__main__':
     label = pyglet.text.Label( "Hello world!", font_name = "Times New Roman", font_size = 36, x = window.width//2, y = window.height//2, anchor_x = "center", anchor_y = "center" )
     fps = pyglet.clock.ClockDisplay()
     pyglet.clock.schedule( lambda _ : None )
-    bsgl.initialize()
     t0 = time.time()
+    psys = bsgl.System()
     @window.event
     def on_draw():
         window.clear()
         label.draw()
         fps.draw()
-        bsgl.draw_test( window.width, window.height, time.time() - t0, 300, 200, 100 )
+        psys.draw( window.width, window.height, time.time() - t0, 300, 200, 100 )
     pyglet.app.run()
