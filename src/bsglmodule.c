@@ -1,7 +1,20 @@
 #include <Python.h>
 
+#include <GL/gl.h>
+
 static PyObject *bsgl_test(PyObject *self, PyObject *args) {
-    fprintf(stderr, "Hello world!\n" );
+    float offset_x = 300.0, offset_y = 200.0;
+    float sz = 100.0;
+
+    glLoadIdentity();                                   // Reset The Current Modelview Matrix
+    glColor3f(0.5f,0.5f,1.0f);                          // Set The Color To Blue One Time Only
+    glBegin(GL_QUADS);                                  // Draw A Quad
+        glVertex2f( offset_x, offset_y + sz );
+        glVertex2f( offset_x + sz, offset_y + sz );
+        glVertex2f( offset_x + sz, offset_y );
+        glVertex2f( offset_x, offset_y );
+    glEnd();                                            // Done Drawing The Quad
+
     Py_INCREF( Py_None );
     return Py_None;
 }

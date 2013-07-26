@@ -6,4 +6,14 @@ def include_build_directory():
 if __name__ == '__main__':
     include_build_directory()
     import bsgl
-    bsgl.test()
+    import pyglet
+    window = pyglet.window.Window( vsync = True )
+    label = pyglet.text.Label( "Hello world!", font_name = "Times New Roman", font_size = 36, x = window.width//2, y = window.height//2, anchor_x = "center", anchor_y = "center" )
+    fps = pyglet.clock.ClockDisplay()
+    @window.event
+    def on_draw():
+        window.clear()
+        label.draw()
+        fps.draw()
+        bsgl.test()
+    pyglet.app.run()
