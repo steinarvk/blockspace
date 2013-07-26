@@ -7,6 +7,11 @@ import component
 from pymunk import Vec2d
 from util import *
 
+# note that we can get the C pointers from the pymunk objects:
+#   Space()._space
+#   Body()._body
+# and so on
+
 infinity = infinite_moment = pymunk.inf
 
 def zero_shape_centroid( shape ):
