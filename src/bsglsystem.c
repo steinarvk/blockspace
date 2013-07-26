@@ -7,7 +7,7 @@
 #include "cglutil.h"
 
 static int System_init(System *self, PyObject *args, PyObject *kwargs) {
-    const int number_of_things = 30;
+    const int number_of_things = 5000;
     const int floats_per_vertex = 7;
     const int number_of_elements = number_of_things * 6;
     GLfloat vertex_buffer_data[ 4 * floats_per_vertex * number_of_things ];
@@ -42,8 +42,8 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
     int index = 0;
 
     for(int k=0;k<number_of_things;k++) {
-        world_pos[0] = 0.1 * (rand() % 20 - 10);
-        world_pos[1] = 0.5 * 0.1 * (rand() % 20 - 10);
+        world_pos[0] = 10 * 0.1 * (rand() % 20 - 10);
+        world_pos[1] = 10 * 0.5 * 0.1 * (rand() % 20 - 10);
         double angle = (rand() / (double) RAND_MAX) * 6.28;
 
         for(int i=0;i<4;i++) {
