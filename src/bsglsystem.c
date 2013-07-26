@@ -29,8 +29,8 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
 
     fprintf( stderr, "%f %f\n", texture_size[0], texture_size[1] );
 
-    double world_pos[] = { -1, -1 };
-    double world_size[] = { 2, 2 };
+    double world_pos[] = { -0.2, -0.2 };
+    double world_size[] = { 0.4, 0.4 };
 
     int index = 0;
 
@@ -67,12 +67,12 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
         );
 
         fprintf( stderr, "A\n" );
-        self->vertex_shader = create_shader_from_file( GL_VERTEX_SHADER, "hello-gl.v.glsl" );
+        self->vertex_shader = create_shader_from_file( GL_VERTEX_SHADER, "shaded-block.v.glsl" );
         if( !self->vertex_shader ) break;
         fprintf( stderr, "error: %d\n", glGetError() );
 
         fprintf( stderr, "B\n" );
-        self->fragment_shader = create_shader_from_file( GL_FRAGMENT_SHADER, "hello-gl.f.glsl" );
+        self->fragment_shader = create_shader_from_file( GL_FRAGMENT_SHADER, "shaded-block.f.glsl" );
         if( !self->fragment_shader ) break;
 
         fprintf( stderr, "error: %d\n", glGetError() );

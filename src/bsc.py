@@ -13,7 +13,7 @@ if __name__ == '__main__':
     window = pyglet.window.Window( vsync = False )
     print window.width, window.height
     label = pyglet.text.Label( "Hello world!", font_name = "Times New Roman", font_size = 36, x = window.width//2, y = window.height//2, anchor_x = "center", anchor_y = "center" )
-    sheet = pyglet.image.load( "mytriangle.png" )
+    sheet = pyglet.image.load( "mynormaltriangle.png" )
     fps = pyglet.clock.ClockDisplay()
     pyglet.clock.schedule( lambda _ : None )
     t0 = time.time()

@@ -129,7 +129,7 @@ def generate_fancy_polygon(n = 3, size = 256, side_length = 0.3, subpixel_resolu
     if not generate_normals:
         polygons.append( (inner_vs, 0.7512345) )
     else:
-        polygons.append( (inner_vs, (0,0,255,255) ) ) # straight up, opaque
+        polygons.append( (inner_vs, (127,127,255,255) ) ) # straight up, opaque
     print map( lambda x: x[1], polygons )
     def average( rgbas ):   
         rs, gs, bs, alphas = [], [], [], []
