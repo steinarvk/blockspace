@@ -10,6 +10,7 @@ bullets from rapid-fire weapons
     (design 1: COM and rotate around that)
 uniforms:
     float[2]: world coordinates translation
+    float[2]: screen size (for aspect ratio)
 
 attributes:
     float[2]: world coordinates of center of mass

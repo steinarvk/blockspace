@@ -7,16 +7,54 @@
 #include "cglutil.h"
 
 static int System_init(System *self, PyObject *args, PyObject *kwargs) {
-    static const GLfloat vertex_buffer_data[] = { 
-        0.0f, -1.0f,
-        1.0f, -1.0f,
-        0.0f,  1.0f,
-         1.0f,  1.0f
-    };
+    int floats_per_vertex = 4;
+    GLfloat vertex_buffer_data[ 4 * floats_per_vertex ];
+    const int base_s[2][4] = { {0, 1, 0, 1}, {0, 0, 1, 1} };
     static const GLushort element_buffer_data[] = { 0, 1, 2, 3 };
 
+    static char *kwlist[] = { "texture_id", "texture_coordinates", "texture_size" };
+    int arg_texture_id;
+    float texture_coordinates[2];
+    float texture_size[2];
+    PyObject * arg_texture_coordinates = NULL, *arg_texture_size = NULL;
+    if( !PyArg_ParseTupleAndKeywords( args, kwargs, "iOO", kwlist, &arg_texture_id, &arg_texture_coordinates, &arg_texture_size ) ) {
+        return -1;
+    }
+    if( !PyArg_ParseTuple( arg_texture_coordinates, "ff", &texture_coordinates[0], &texture_coordinates[1] ) ) {
+        return -1;
+    }
+    if( !PyArg_ParseTuple( arg_texture_size, "ff", &texture_size[0], &texture_size[1] ) ) {
+        return -1;
+    }
+
+    fprintf( stderr, "%f %f\n", texture_size[0], texture_size[1] );
+
+    double world_pos[] = { -1, -1 };
+    double world_size[] = { 2, 2 };
+
+    int index = 0;
+
+    for(int i=0;i<4;i++) {
+        for(int j=0;j<2;j++) {
+            vertex_buffer_data[index++] = world_pos[j] + base_s[j][i] * world_size[j];
+        }
+        for(int j=0;j<2;j++) {
+            vertex_buffer_data[index++] = texture_coordinates[j] + base_s[j][i] * texture_size[j];
+        }
+    }
+
+    for(int i=0;i<16;i++) {
+        fprintf(stderr, "%f\n",  vertex_buffer_data[i] );
+    }
 
     do {
+        self->texture_id = arg_texture_id;
+
+        for(int i=0;i<2;i++) {
+            self->texture_coordinates[i] = texture_coordinates[i];
+            self->texture_size[i] = texture_size[i];
+        }
+
         self->vertex_buffer = create_buffer(
             GL_ARRAY_BUFFER,
             vertex_buffer_data,
@@ -45,12 +83,18 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
         fprintf( stderr, "error: %d\n", glGetError() );
         fprintf( stderr, "calling with program %d\n", self->program );
 
+        self->uniforms.sheet_texture = glGetUniformLocation( self->program, "sheet_texture" );
+
+        fprintf( stderr, "error: %d\n", glGetError() );
+
         self->uniforms.fade_factor = glGetUniformLocation( self->program, "fade_factor" );
 
         fprintf( stderr, "error: %d\n", glGetError() );
 
         self->attributes.position = glGetAttribLocation( self->program, "position" );
+        fprintf( stderr, "error: %d\n", glGetError() );
 
+        self->attributes.attr_texcoord = glGetAttribLocation( self->program, "attr_texcoord" );
         fprintf( stderr, "error: %d\n", glGetError() );
 
         fprintf( stderr, "Successfully created a System object!\n" );
@@ -63,42 +107,49 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
 }
 
 static PyObject *System_draw(System *self, PyObject *args) {
-    double width, height, offset_x, offset_y;
-    double sz;
+    double offset_x = 300, offset_y = 200;
+    double sz = 100;
     double seconds; 
 
-    if( !PyArg_ParseTuple( args, "dddddd", &width, &height, &seconds, &offset_x, &offset_y, &sz ) ) {
+    if( !PyArg_ParseTuple( args, "d", &seconds ) ) {
         return NULL;
     }
 
-    const double period = 2.0;
-    const double phase = fmod( seconds, 2.0 );
-    double red;
-    if( phase <= 1.0 ) {
-        red = phase;
-    } else {
-        red = 2.0 - phase;
-    }
-
     glUseProgram( self->program );
-    glUniform1f( self->uniforms.fade_factor, (GLfloat) red );
+    glUniform1f( self->uniforms.fade_factor, (GLfloat) seconds );
     glColor3f(1.f,1.f,1.f);
-    glLoadIdentity();                                   // Reset The Current Modelview Matrix
+
+    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+    glEnable( GL_BLEND );
+
+    glBindTexture( GL_TEXTURE_2D, self->texture_id );
+    glUniform1i( self->uniforms.sheet_texture, 0 );
+
     glBindBuffer( GL_ARRAY_BUFFER, self->vertex_buffer );
     glVertexAttribPointer(
         self->attributes.position,
         2,
         GL_FLOAT,
         GL_FALSE,
-        sizeof(GLfloat) * 2,
+        sizeof(GLfloat) * 4,
         (void*) 0
     );
     glEnableVertexAttribArray( self->attributes.position );
+    glVertexAttribPointer(
+        self->attributes.attr_texcoord,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(GLfloat) * 4,
+        (void*) ( sizeof(GLfloat) * 2 )
+    );
+    glEnableVertexAttribArray( self->attributes.attr_texcoord );
 
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, self->element_buffer );
     glDrawElements( GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, (void*) 0 );
 
     glDisableVertexAttribArray( self->attributes.position );
+    glDisableVertexAttribArray( self->attributes.attr_texcoord );
 
     glUseProgram( 0 ); // Without this Pyglet will stop working
 
