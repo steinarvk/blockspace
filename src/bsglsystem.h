@@ -12,6 +12,10 @@ typedef struct {
     float texture_coordinates[2];
     float texture_size[2];
 
+    int stride;
+
+    int number_of_elements;
+
     GLuint vertex_buffer, element_buffer;
 
     GLuint vertex_shader, fragment_shader, program;
@@ -21,8 +25,10 @@ typedef struct {
     } uniforms;
 
     struct {
-        GLint position;
+        GLint com_position;
+        GLint position_offset;
         GLint attr_texcoord;
+        GLint angle;
     } attributes;
 
     GLfloat fade_factor;

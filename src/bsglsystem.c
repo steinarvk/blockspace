@@ -7,10 +7,17 @@
 #include "cglutil.h"
 
 static int System_init(System *self, PyObject *args, PyObject *kwargs) {
-    int floats_per_vertex = 4;
-    GLfloat vertex_buffer_data[ 4 * floats_per_vertex ];
+    const int number_of_things = 30;
+    const int floats_per_vertex = 7;
+    const int number_of_elements = number_of_things * 6;
+    GLfloat vertex_buffer_data[ 4 * floats_per_vertex * number_of_things ];
     const int base_s[2][4] = { {0, 1, 0, 1}, {0, 0, 1, 1} };
-    static const GLushort element_buffer_data[] = { 0, 1, 2, 3 };
+    static const GLushort element_buffer_data_base[] = { 0, 1, 2, 3, 2, 1 };
+    GLushort element_buffer_data[number_of_elements];
+
+    for(int i=0;i<number_of_elements;i++) {
+        element_buffer_data[i] = 4 * (i/6) + element_buffer_data_base[i%6];
+    }
 
     static char *kwlist[] = { "texture_id", "texture_coordinates", "texture_size" };
     int arg_texture_id;
@@ -34,21 +41,29 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
 
     int index = 0;
 
-    for(int i=0;i<4;i++) {
-        for(int j=0;j<2;j++) {
-            vertex_buffer_data[index++] = world_pos[j] + base_s[j][i] * world_size[j];
-        }
-        for(int j=0;j<2;j++) {
-            vertex_buffer_data[index++] = texture_coordinates[j] + base_s[j][i] * texture_size[j];
-        }
-    }
+    for(int k=0;k<number_of_things;k++) {
+        world_pos[0] = 0.1 * (rand() % 20 - 10);
+        world_pos[1] = 0.5 * 0.1 * (rand() % 20 - 10);
+        double angle = (rand() / (double) RAND_MAX) * 6.28;
 
-    for(int i=0;i<16;i++) {
-        fprintf(stderr, "%f\n",  vertex_buffer_data[i] );
+        for(int i=0;i<4;i++) {
+            for(int j=0;j<2;j++) {
+                vertex_buffer_data[index++] = world_pos[j] + 0.5 * world_size[j];
+            }
+            for(int j=0;j<2;j++) {
+                vertex_buffer_data[index++] = (base_s[j][i]-0.5) * 0.5 * world_size[j];
+            }
+            for(int j=0;j<2;j++) {
+                vertex_buffer_data[index++] = texture_coordinates[j] + base_s[j][i] * texture_size[j];
+            }
+            vertex_buffer_data[index++] = angle;
+        }
     }
 
     do {
         self->texture_id = arg_texture_id;
+
+        self->number_of_elements = number_of_elements;
 
         for(int i=0;i<2;i++) {
             self->texture_coordinates[i] = texture_coordinates[i];
@@ -91,11 +106,19 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
 
         fprintf( stderr, "error: %d\n", glGetError() );
 
-        self->attributes.position = glGetAttribLocation( self->program, "position" );
+        self->attributes.position_offset = glGetAttribLocation( self->program, "position_offset" );
+        fprintf( stderr, "error: %d\n", glGetError() );
+
+        self->attributes.com_position = glGetAttribLocation( self->program, "com_position" );
+        fprintf( stderr, "error: %d\n", glGetError() );
+
+        self->attributes.angle = glGetAttribLocation( self->program, "angle" );
         fprintf( stderr, "error: %d\n", glGetError() );
 
         self->attributes.attr_texcoord = glGetAttribLocation( self->program, "attr_texcoord" );
         fprintf( stderr, "error: %d\n", glGetError() );
+
+        self->stride = sizeof(GLfloat) * 7;
 
         fprintf( stderr, "Successfully created a System object!\n" );
 
@@ -127,29 +150,50 @@ static PyObject *System_draw(System *self, PyObject *args) {
 
     glBindBuffer( GL_ARRAY_BUFFER, self->vertex_buffer );
     glVertexAttribPointer(
-        self->attributes.position,
+        self->attributes.com_position,
         2,
         GL_FLOAT,
         GL_FALSE,
-        sizeof(GLfloat) * 4,
+        self->stride,
         (void*) 0
     );
-    glEnableVertexAttribArray( self->attributes.position );
+    glEnableVertexAttribArray( self->attributes.com_position );
+    glVertexAttribPointer(
+        self->attributes.position_offset,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        self->stride,
+        (void*) ( sizeof(GLfloat) * 2 )
+    );
+    glEnableVertexAttribArray( self->attributes.position_offset );
     glVertexAttribPointer(
         self->attributes.attr_texcoord,
         2,
         GL_FLOAT,
         GL_FALSE,
-        sizeof(GLfloat) * 4,
-        (void*) ( sizeof(GLfloat) * 2 )
+        self->stride,
+        (void*) ( sizeof(GLfloat) * 4 )
     );
     glEnableVertexAttribArray( self->attributes.attr_texcoord );
+    glVertexAttribPointer(
+        self->attributes.angle,
+        1,
+        GL_FLOAT,
+        GL_FALSE,
+        self->stride,
+        (void*) ( sizeof(GLfloat) * 6 )
+    );
+    glEnableVertexAttribArray( self->attributes.angle );
+
 
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, self->element_buffer );
-    glDrawElements( GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, (void*) 0 );
+    glDrawElements( GL_TRIANGLES, self->number_of_elements, GL_UNSIGNED_SHORT, (void*) 0 );
 
-    glDisableVertexAttribArray( self->attributes.position );
+    glDisableVertexAttribArray( self->attributes.com_position );
+    glDisableVertexAttribArray( self->attributes.position_offset );
     glDisableVertexAttribArray( self->attributes.attr_texcoord );
+    glDisableVertexAttribArray( self->attributes.angle );
 
     glUseProgram( 0 ); // Without this Pyglet will stop working
 

@@ -31,7 +31,7 @@ PyMODINIT_FUNC initbsgl(void) {
         fprintf( stderr, "OpenGL 2.1 not supported!\n" );
     }
 
+    srand( time(NULL) );
+
     fprintf( stderr, "BSGL module initialized.\n" );
-
-
 }
