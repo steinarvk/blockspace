@@ -6,9 +6,10 @@ uniform sampler2D sheet_texture;
 varying vec2 texcoord;
 varying float rcosa;
 varying float rsina;
+varying vec4 v_tint;
 
 void main() {
-    vec4 tint = vec4(1.0,0.0,0.0,1.0);
+    vec4 tint = v_tint;
     vec4 tex = texture2D( sheet_texture, texcoord );
     vec3 texvec = (tex.rgb - vec3(0.5)) * 2.0;
     float light_slope = 0.6123;

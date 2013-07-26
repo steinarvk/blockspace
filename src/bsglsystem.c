@@ -8,7 +8,7 @@
 
 static int System_init(System *self, PyObject *args, PyObject *kwargs) {
     const int number_of_things = 5000;
-    const int floats_per_vertex = 7;
+    const int floats_per_vertex = 11;
     const int number_of_elements = number_of_things * 6;
     GLfloat vertex_buffer_data[ 4 * floats_per_vertex * number_of_things ];
     const int base_s[2][4] = { {0, 1, 0, 1}, {0, 0, 1, 1} };
@@ -45,6 +45,29 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
         world_pos[0] = 2.7 * (rand() - RAND_MAX/2) / (double)RAND_MAX;
         world_pos[1] = 2.0 * (rand() - RAND_MAX/2) / (double)RAND_MAX;
         double angle = (rand() / (double) RAND_MAX) * 6.28;
+        double red;
+        double blue;
+        double green;
+        double alpha = 1.0;
+
+
+        switch( rand() % 3 ) {
+            case 0:
+                red = 0.5 + 0.5 * (rand() / (double) RAND_MAX);
+                green = 0.9 * (rand() / (double) RAND_MAX);
+                blue = 0.0;
+                break;
+            case 1:
+                green = 0.5 + 0.5 * (rand() / (double) RAND_MAX);
+                blue = 0.9 * (rand() / (double) RAND_MAX);
+                red = 0.0;
+                break;
+            case 2:
+                blue = 0.5 + 0.5 * (rand() / (double) RAND_MAX);
+                red = 0.9 * (rand() / (double) RAND_MAX);
+                green = 0.0;
+                break;
+        }
 
         for(int i=0;i<4;i++) {
             for(int j=0;j<2;j++) {
@@ -58,6 +81,12 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
             for(int j=0;j<2;j++) {
                 vertex_buffer_data[index++] = texture_coordinates[j] + base_s[j][i] * texture_size[j];
             }
+
+            vertex_buffer_data[index++] = red;
+            vertex_buffer_data[index++] = green;
+            vertex_buffer_data[index++] = blue;
+            vertex_buffer_data[index++] = alpha;
+
             vertex_buffer_data[index++] = angle;
         }
     }
@@ -114,13 +143,16 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
         self->attributes.com_position = glGetAttribLocation( self->program, "com_position" );
         fprintf( stderr, "error: %d\n", glGetError() );
 
+        self->attributes.tint = glGetAttribLocation( self->program, "tint" );
+        fprintf( stderr, "error: %d\n", glGetError() );
+
         self->attributes.angle = glGetAttribLocation( self->program, "angle" );
         fprintf( stderr, "error: %d\n", glGetError() );
 
         self->attributes.attr_texcoord = glGetAttribLocation( self->program, "attr_texcoord" );
         fprintf( stderr, "error: %d\n", glGetError() );
 
-        self->stride = sizeof(GLfloat) * 7;
+        self->stride = sizeof(GLfloat) * 11;
 
         fprintf( stderr, "Successfully created a System object!\n" );
 
@@ -179,12 +211,21 @@ static PyObject *System_draw(System *self, PyObject *args) {
     );
     glEnableVertexAttribArray( self->attributes.attr_texcoord );
     glVertexAttribPointer(
+        self->attributes.tint,
+        4,
+        GL_FLOAT,
+        GL_FALSE,
+        self->stride,
+        (void*) ( sizeof(GLfloat) * 6 )
+    );
+    glEnableVertexAttribArray( self->attributes.tint );
+    glVertexAttribPointer(
         self->attributes.angle,
         1,
         GL_FLOAT,
         GL_FALSE,
         self->stride,
-        (void*) ( sizeof(GLfloat) * 6 )
+        (void*) ( sizeof(GLfloat) * 10 )
     );
     glEnableVertexAttribArray( self->attributes.angle );
 
@@ -196,6 +237,7 @@ static PyObject *System_draw(System *self, PyObject *args) {
     glDisableVertexAttribArray( self->attributes.position_offset );
     glDisableVertexAttribArray( self->attributes.attr_texcoord );
     glDisableVertexAttribArray( self->attributes.angle );
+    glDisableVertexAttribArray( self->attributes.tint );
 
     glUseProgram( 0 ); // Without this Pyglet will stop working
 

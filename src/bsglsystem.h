@@ -29,6 +29,7 @@ typedef struct {
         GLint position_offset;
         GLint attr_texcoord;
         GLint angle;
+        GLint tint;
     } attributes;
 
     GLfloat fade_factor;
