@@ -1,11 +1,68 @@
 #include <Python.h>
 #include <structmember.h>
 
-#include <GL/gl.h>
+#include <GL/glew.h>
 
 #include "bsglsystem.h"
+#include "cglutil.h"
 
-static PyObject *System_draw(PyObject *self, PyObject *args) {
+static int System_init(System *self, PyObject *args, PyObject *kwargs) {
+    static const GLfloat vertex_buffer_data[] = { 
+        0.0f, -1.0f,
+        1.0f, -1.0f,
+        0.0f,  1.0f,
+         1.0f,  1.0f
+    };
+    static const GLushort element_buffer_data[] = { 0, 1, 2, 3 };
+
+
+    do {
+        self->vertex_buffer = create_buffer(
+            GL_ARRAY_BUFFER,
+            vertex_buffer_data,
+            sizeof(vertex_buffer_data)
+        );
+        self->element_buffer = create_buffer(
+            GL_ELEMENT_ARRAY_BUFFER,
+            element_buffer_data,
+            sizeof(element_buffer_data)
+        );
+
+        fprintf( stderr, "A\n" );
+        self->vertex_shader = create_shader_from_file( GL_VERTEX_SHADER, "hello-gl.v.glsl" );
+        if( !self->vertex_shader ) break;
+        fprintf( stderr, "error: %d\n", glGetError() );
+
+        fprintf( stderr, "B\n" );
+        self->fragment_shader = create_shader_from_file( GL_FRAGMENT_SHADER, "hello-gl.f.glsl" );
+        if( !self->fragment_shader ) break;
+
+        fprintf( stderr, "error: %d\n", glGetError() );
+        fprintf( stderr, "C\n" );
+        self->program = create_program( self->vertex_shader, self->fragment_shader );
+        if( !self->program ) break;
+
+        fprintf( stderr, "error: %d\n", glGetError() );
+        fprintf( stderr, "calling with program %d\n", self->program );
+
+        self->uniforms.fade_factor = glGetUniformLocation( self->program, "fade_factor" );
+
+        fprintf( stderr, "error: %d\n", glGetError() );
+
+        self->attributes.position = glGetAttribLocation( self->program, "position" );
+
+        fprintf( stderr, "error: %d\n", glGetError() );
+
+        fprintf( stderr, "Successfully created a System object!\n" );
+
+        return 0;
+    } while(0);
+
+    fprintf( stderr, "Failed to initialize a System object\n" );
+    return -1;
+}
+
+static PyObject *System_draw(System *self, PyObject *args) {
     double width, height, offset_x, offset_y;
     double sz;
     double seconds; 
@@ -23,14 +80,27 @@ static PyObject *System_draw(PyObject *self, PyObject *args) {
         red = 2.0 - phase;
     }
 
+    glUseProgram( self->program );
+    glUniform1f( self->uniforms.fade_factor, (GLfloat) red );
+    glColor3f(1.f,1.f,1.f);
     glLoadIdentity();                                   // Reset The Current Modelview Matrix
-    glColor3f(red,0.5f,1.0f);                          // Set The Color To Blue One Time Only
-    glBegin(GL_QUADS);                                  // Draw A Quad
-        glVertex2f( offset_x, offset_y + sz );
-        glVertex2f( offset_x + sz, offset_y + sz );
-        glVertex2f( offset_x + sz, offset_y );
-        glVertex2f( offset_x, offset_y );
-    glEnd();                                            // Done Drawing The Quad
+    glBindBuffer( GL_ARRAY_BUFFER, self->vertex_buffer );
+    glVertexAttribPointer(
+        self->attributes.position,
+        2,
+        GL_FLOAT,
+        GL_FALSE,
+        sizeof(GLfloat) * 2,
+        (void*) 0
+    );
+    glEnableVertexAttribArray( self->attributes.position );
+
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, self->element_buffer );
+    glDrawElements( GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_SHORT, (void*) 0 );
+
+    glDisableVertexAttribArray( self->attributes.position );
+
+    glUseProgram( 0 ); // Without this Pyglet will stop working
 
     Py_INCREF( Py_None );
     return Py_None;
@@ -50,11 +120,6 @@ static void System_dealloc(System *self) {
     fprintf( stderr, "Deallocating a System object\n" );
     // Py_XDECREF members
     self->ob_type->tp_free( (PyObject*) self );
-}
-
-static int System_init(System *self, PyObject *args, PyObject *kwargs) {
-    fprintf( stderr, "Initialized a System object\n" );
-    return 0;
 }
 
 PyTypeObject SystemType = {

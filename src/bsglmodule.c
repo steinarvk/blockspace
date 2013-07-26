@@ -1,6 +1,6 @@
 #include <Python.h>
 
-#include <GL/gl.h>
+#include <GL/glew.h>
 
 #include <math.h>
 
@@ -21,5 +21,17 @@ PyMODINIT_FUNC initbsgl(void) {
     Py_INCREF( & SystemType );
     PyModule_AddObject( m, "System", (PyObject*) &SystemType );
 
+    GLenum err = glewInit();
+    if( err != GLEW_OK ) {
+        fprintf( stderr, "GLEW initialization failed!\n" );
+        fprintf( stderr, "%d\n", err );
+    }
+
+    if( !GLEW_VERSION_2_1 ) {
+        fprintf( stderr, "OpenGL 2.1 not supported!\n" );
+    }
+
     fprintf( stderr, "BSGL module initialized.\n" );
+
+
 }

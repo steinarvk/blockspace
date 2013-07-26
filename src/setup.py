@@ -1,6 +1,6 @@
 from distutils.core import setup, Extension
 
-bsgl_module = Extension( "bsgl", sources = [ "bsglmodule.c", "bsglsystem.c" ], libraries = ["GL"] )
+bsgl_module = Extension( "bsgl", sources = [ "bsglmodule.c", "bsglsystem.c", "cglutil.c" ], libraries = ["GL", "glut", "GLEW", "m"] )
 
 setup( name = "blockspace",
        version = "1.0",
