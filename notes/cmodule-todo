@@ -1,0 +1,11 @@
+
+thing_system.add_thing( thing )
+thing_system.set_thing_sprites( thing, sprites )
+thing_system.update_thing( thing )
+thing_system.remove_thing( thing )
+
+system.add( attributes ) --> token
+system.update_from_chipmunk( body, token_list ) --> None
+system.remove( token ) --> None
+system.upload() --> None
+system.draw() --> None
