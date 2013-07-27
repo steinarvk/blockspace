@@ -5,7 +5,18 @@ thing_system.update_thing( thing )
 thing_system.remove_thing( thing )
 
 system.add( attributes ) --> token
+system.reserve( n ) --> None
 system.update_from_chipmunk( body, token_list ) --> None
 system.remove( token ) --> None
 system.upload() --> None
 system.draw() --> None
+
+data structure:
+    array with free-list (allocate linked lists up front)
+        constant-time addition to free slot
+            (reallocation if 100% full)
+        constant-time removal from anywhere using a token, freeing up the slot
+        constant-time update
+
+    initially it's permissible to not optimize to this degree.
+    just have system be opaque, and an array.
