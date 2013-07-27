@@ -94,7 +94,7 @@ GLuint create_program(GLuint vertex_shader, GLuint fragment_shader ) {
     return program;
 }
 
-GLuint create_buffer(
+GLuint create_static_buffer(
     GLenum target,
     const void *buffer_data,
     GLsizei buffer_size
@@ -103,6 +103,18 @@ GLuint create_buffer(
     glGenBuffers(1, &buffer);
     glBindBuffer(target, buffer);
     glBufferData(target, buffer_size, buffer_data, GL_STATIC_DRAW);
+    return buffer;
+}
+
+GLuint create_dynamic_buffer(
+    GLenum target,
+    const void *buffer_data,
+    GLsizei buffer_size
+) {
+    GLuint buffer;
+    glGenBuffers(1, &buffer);
+    glBindBuffer(target, buffer);
+    glBufferData(target, buffer_size, buffer_data, GL_DYNAMIC_DRAW);
     return buffer;
 }
 

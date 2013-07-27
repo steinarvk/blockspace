@@ -4,6 +4,8 @@
 #include <Python.h>
 #include <GL/glew.h>
 
+#include "bsglarray.h"
+
 typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */

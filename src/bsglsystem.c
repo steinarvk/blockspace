@@ -50,6 +50,9 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
         double green;
         double alpha = 1.0;
 
+		if( rand() % 100 ) {
+			alpha = 0.0;
+		}
 
         switch( rand() % 3 ) {
             case 0:
@@ -101,12 +104,12 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
             self->texture_size[i] = texture_size[i];
         }
 
-        self->vertex_buffer = create_buffer(
+        self->vertex_buffer = create_dynamic_buffer(
             GL_ARRAY_BUFFER,
             vertex_buffer_data,
             sizeof(vertex_buffer_data)
         );
-        self->element_buffer = create_buffer(
+        self->element_buffer = create_dynamic_buffer(
             GL_ELEMENT_ARRAY_BUFFER,
             element_buffer_data,
             sizeof(element_buffer_data)
