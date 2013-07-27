@@ -57,6 +57,7 @@ int bsgl_array_reserve( struct bsgl_array *arr, int n ) {
     }
 
     int new_byte_size = n * arr->element_size;
+    fprintf(stderr, "2trying realloc to rs %d\n", new_byte_size );
     unsigned char *new_data = realloc( arr->data, new_byte_size );
     if( !new_data ) {
         return 1;

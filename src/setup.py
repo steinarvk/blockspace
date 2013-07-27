@@ -2,7 +2,7 @@ from distutils.core import setup, Extension
 
 bsgl_module = Extension(
     "bsgl",
-    sources = [ "bsglmodule.c", "bsglsystem.c", "cglutil.c" ],
+    sources = [ "bsglmodule.c", "bsglsystem.c", "cglutil.c", "bsglarray.c" ],
     libraries = ["GL", "glut", "GLEW", "m"],
     extra_compile_args = [ "-std=c99" ]
 )

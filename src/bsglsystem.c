@@ -6,166 +6,327 @@
 #include "bsglsystem.h"
 #include "cglutil.h"
 
-static int System_init(System *self, PyObject *args, PyObject *kwargs) {
-    const int number_of_things = 5000;
+int bsgl_system_unbind_vertex_attributes( System *sys ) {
+    const GLint attrs[] = {
+        sys->attributes.com_position,
+        sys->attributes.angle,
+        sys->attributes.tint,
+        sys->attributes.position_offset,
+        sys->attributes.attr_texcoord
+    };
+    const int n = 5;
+
+    for(int i = 0; i < n; i++) {
+        glDisableVertexAttribArray( attrs[i] );
+    }
+
+    return 0;
+}
+
+int bsgl_system_bind_vertex_attributes( System *sys ) {
+    const GLint attrs[] = {
+        sys->attributes.com_position,
+        sys->attributes.angle,
+        sys->attributes.tint,
+        sys->attributes.position_offset,
+        sys->attributes.attr_texcoord
+    };
+    const int floats[] = {
+        2,
+        1,
+        4,
+        2,
+        2
+    };
+    const int n = 5;
+
+    int floatcount = 0;
+
+    for(int i = 0; i < n; i++) {
+        glVertexAttribPointer( attrs[i],
+                               floats[i],
+                               GL_FLOAT,
+                               GL_FALSE,
+                               sys->stride,
+                               (void *) (floatcount * sizeof (GLfloat)) );
+        floatcount += floats[i];
+        glEnableVertexAttribArray( attrs[i] );
+    }
+
+    return 0;
+};
+
+int bsgl_system_add( System *sys, double com_position[2], double offset[2], double angle, double sz[2], double tint[4], double texcoords[2], double texsize[2] ) {
     const int floats_per_vertex = 11;
-    const int number_of_elements = number_of_things * 6;
-    GLfloat vertex_buffer_data[ 4 * floats_per_vertex * number_of_things ];
-    const int base_s[2][4] = { {0, 1, 0, 1}, {0, 0, 1, 1} };
-    static const GLushort element_buffer_data_base[] = { 0, 1, 2, 3, 2, 1 };
-    GLushort element_buffer_data[number_of_elements];
+    const double xs[] = { 0, 1, 0, 1 };
+    const double ys[] = { 0, 0, 1, 1 };
 
-    for(int i=0;i<number_of_elements;i++) {
-        element_buffer_data[i] = 4 * (i/6) + element_buffer_data_base[i%6];
+    GLfloat data[floats_per_vertex*4];
+    int float_count = 0;
+
+    for(int i=0;i<4;i++) {
+        assert( (float_count % floats_per_vertex) == 0 );
+
+        data[float_count++] = com_position[0];
+        data[float_count++] = com_position[1];
+        data[float_count++] = angle;
+        data[float_count++] = tint[0];
+        data[float_count++] = tint[1];
+        data[float_count++] = tint[2];
+        data[float_count++] = tint[3];
+        data[float_count++] = offset[0] + (xs[i]-0.5) * sz[0];
+        data[float_count++] = offset[1] + (ys[i]-0.5) * sz[1];
+        data[float_count++] = texcoords[0] + xs[i] * texsize[0];
+        data[float_count++] = texcoords[1] + ys[i] * texsize[1];
     }
 
-    static char *kwlist[] = { "texture_id", "texture_coordinates", "texture_size" };
-    int arg_texture_id;
-    float texture_coordinates[2];
-    float texture_size[2];
-    PyObject * arg_texture_coordinates = NULL, *arg_texture_size = NULL;
-    if( !PyArg_ParseTupleAndKeywords( args, kwargs, "iOO", kwlist, &arg_texture_id, &arg_texture_coordinates, &arg_texture_size ) ) {
-        return -1;
-    }
-    if( !PyArg_ParseTuple( arg_texture_coordinates, "ff", &texture_coordinates[0], &texture_coordinates[1] ) ) {
-        return -1;
-    }
-    if( !PyArg_ParseTuple( arg_texture_size, "ff", &texture_size[0], &texture_size[1] ) ) {
-        return -1;
+    const int datasize = float_count * sizeof data[0];
+
+    assert( datasize == sys->vertex_buffer.element_size );
+
+    int old_capacity = sys->vertex_buffer.capacity;
+
+    int bsgl_index;
+    if( bsgl_array_add_and_fill( &sys->vertex_buffer, &bsgl_index, data, datasize ) ) {
+        return 1;
     }
 
-    fprintf( stderr, "%f %f\n", texture_size[0], texture_size[1] );
+    if( sys->vertex_buffer.capacity != old_capacity ) {
+        if( bsgl_system_reallocate_elements( sys ) ) {
+            return 1;
+        }
+    }
 
-    double world_pos[] = { 0.0, 0.0 };
-    double world_size[] = { 0.4, 0.4 };
+    int vertex_index = 4 * bsgl_index;
+    int element_index = 6 * bsgl_index;
+    const int element_quad_base[] = { 0, 1, 2, 3, 2, 1 };
 
-    int index = 0;
+    assert( vertex_index >= 0 );
+    assert( vertex_index < 0xffff );
 
+    for(int i = 0; i < 6; i++ ) {
+        int element = vertex_index + element_quad_base[ i ];
+        sys->element_buffer_data[ element_index++ ] = element;
+    }
+
+    sys->element_buffer_dirty = true;
+    sys->vertex_buffer_dirty = true;
+
+    return 0;
+}
+
+int bsgl_system_reallocate_elements( System *sys ) {
+    const int elements_per_quad = 6;
+    const int number_of_elements = sys->vertex_buffer.capacity;
+    const int required_size = number_of_elements * elements_per_quad * sizeof (GLushort);
+    const int old_size = sys->element_buffer_data_size;
+
+    assert( number_of_elements < 0xffff );
+    assert( required_size > old_size );
+
+    GLushort *new_data = realloc( sys->element_buffer_data, required_size );
+    if( !new_data ) {
+        return 1;
+    }
+
+    char * raw_data = (char*) new_data;
+
+    memset( &raw_data[old_size], 0, required_size - old_size );
+    sys->element_buffer_data_size = required_size;
+    sys->element_buffer_data = new_data;
+
+    sys->element_buffer_dirty = true;
+
+    return 0;
+}
+
+int bsgl_system_upload_vertex_buffer( System *sys ) {
+    glBindBuffer( GL_ARRAY_BUFFER, sys->vertex_buffer_id );
+    glBufferData( GL_ARRAY_BUFFER, sys->vertex_buffer.array_byte_size, sys->vertex_buffer.data, GL_DYNAMIC_DRAW );
+
+    sys->vertex_buffer_dirty = false;
+
+    return 0;
+}
+
+int bsgl_system_upload_element_buffer( System *sys ) {
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, sys->element_buffer_id );
+    glBufferData( GL_ELEMENT_ARRAY_BUFFER, sys->element_buffer_data_size, sys->element_buffer_data, GL_DYNAMIC_DRAW );
+
+    sys->element_buffer_dirty = false;
+
+    return 0;
+}
+
+int bsgl_system_refresh( System *sys ) {
+    if( sys->element_buffer_dirty ) {
+        if( bsgl_system_upload_element_buffer( sys ) ) {
+            return 1;
+        }
+    }
+
+    if( sys->vertex_buffer_dirty ) {
+        if( bsgl_system_upload_vertex_buffer( sys ) ) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+int bsgl_system_draw( System *sys ) {
+    if( bsgl_system_refresh( sys ) ) {
+        return 1;
+    }
+
+    glUseProgram( sys->program_id );
+
+    glUniform1f( sys->uniforms.fade_factor, (GLfloat) 0.0 );
+    glColor3f(1.f, 1.f, 1.f);
+    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+    glEnable( GL_BLEND );
+
+    glActiveTexture( GL_TEXTURE0 );
+    glBindTexture( GL_TEXTURE_2D, sys->texture_id );
+    glUniform1i( sys->uniforms.sheet_texture, 0 );
+
+    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, sys->element_buffer_id );
+
+    glBindBuffer( GL_ARRAY_BUFFER, sys->vertex_buffer_id );
+
+    if( bsgl_system_bind_vertex_attributes( sys ) ) {
+        return 1;
+    }
+
+    int number_of_elements = 6 * sys->vertex_buffer.number_of_elements;
+
+    glDrawElements( GL_TRIANGLES, number_of_elements, GL_UNSIGNED_SHORT, (void*) 0 );
+
+    if( bsgl_system_unbind_vertex_attributes( sys ) ) {
+        return 1;
+    }
+
+    glUseProgram( 0 );
+
+    return 0;
+}
+
+int bsgl_system_setup_test_quads(System *self, int number_of_things) {
     for(int k=0;k<number_of_things;k++) {
+        double world_pos[] = { 0.0, 0.0 };
+        double world_size[] = { 0.05, 0.05 };
+        double offset[] = { 0.0, 0.0 };
+        double texcoords[] = { 0.0, 0.0 };
+        double texsize[] = { 1.0, 1.0 };
+        double angle = (rand() / (double) RAND_MAX) * 6.28;
+        double rgba[] = { 0.0, 0.0, 0.0, 1.0 };
+
         world_pos[0] = 2.7 * (rand() - RAND_MAX/2) / (double)RAND_MAX;
         world_pos[1] = 2.0 * (rand() - RAND_MAX/2) / (double)RAND_MAX;
-        double angle = (rand() / (double) RAND_MAX) * 6.28;
-        double red = 0.0;
-        double blue = 0.0;
-        double green = 0.0;
-        double alpha = 1.0;
-
-		if( rand() % 100 ) {
-			alpha = 0.0;
-		}
 
         switch( rand() % 3 ) {
             case 0:
-                red = 0.5 + 0.5 * (rand() / (double) RAND_MAX);
-                green = 0.9 * (rand() / (double) RAND_MAX);
-                blue = 0.0;
+                rgba[0] = 0.5 + 0.5 * (rand() / (double) RAND_MAX);
+                rgba[2] = 0.9 * (rand() / (double) RAND_MAX);
+                rgba[1] = 0.0;
                 break;
             case 1:
-                green = 0.5 + 0.5 * (rand() / (double) RAND_MAX);
-                blue = 0.9 * (rand() / (double) RAND_MAX);
-                red = 0.0;
+                rgba[2] = 0.5 + 0.5 * (rand() / (double) RAND_MAX);
+                rgba[1] = 0.9 * (rand() / (double) RAND_MAX);
+                rgba[0] = 0.0;
                 break;
             case 2:
-                blue = 0.5 + 0.5 * (rand() / (double) RAND_MAX);
-                red = 0.9 * (rand() / (double) RAND_MAX);
-                green = 0.0;
+                rgba[1] = 0.5 + 0.5 * (rand() / (double) RAND_MAX);
+                rgba[0] = 0.9 * (rand() / (double) RAND_MAX);
+                rgba[2] = 0.0;
                 break;
         }
 
-        for(int i=0;i<4;i++) {
-            for(int j=0;j<2;j++) {
-//                vertex_buffer_data[index++] = world_pos[j];
-                vertex_buffer_data[index++] = 0;
-            }
-            for(int j=0;j<2;j++) {
-//                vertex_buffer_data[index++] = (base_s[j][i]-0.5) * 0.5 * world_size[j];
-                vertex_buffer_data[index++] = world_pos[j] + 0.5 * world_size[j] + (base_s[j][i]-0.5) * 0.5 * world_size[j];
-            }
-            for(int j=0;j<2;j++) {
-                vertex_buffer_data[index++] = texture_coordinates[j] + base_s[j][i] * texture_size[j];
-            }
-
-            vertex_buffer_data[index++] = red;
-            vertex_buffer_data[index++] = green;
-            vertex_buffer_data[index++] = blue;
-            vertex_buffer_data[index++] = alpha;
-
-            vertex_buffer_data[index++] = angle;
+        if( bsgl_system_add( self, world_pos, offset, angle, world_size, rgba, texcoords, texsize ) ) {
+            return 1;
         }
     }
+
+    return 0;
+}
+
+static int System_init(System *self, PyObject *args, PyObject *kwargs) {
+    const int floats_per_vertex = 11;
+
+    static char *kwlist[] = { "texture_id" };
+    int arg_texture_id;
+    if( !PyArg_ParseTupleAndKeywords( args, kwargs, "i", kwlist, &arg_texture_id ) ) {
+        return -1;
+    }
+
 
     do {
         self->texture_id = arg_texture_id;
 
-        self->number_of_elements = number_of_elements;
+        self->element_buffer_dirty = true;
+        self->vertex_buffer_dirty = true;
 
-        for(int i=0;i<2;i++) {
-            self->texture_coordinates[i] = texture_coordinates[i];
-            self->texture_size[i] = texture_size[i];
+        if( bsgl_array_initialize( &self->vertex_buffer, floats_per_vertex * 4 * sizeof (GLfloat)) ) {
+            break;
         }
 
-        self->vertex_buffer = create_dynamic_buffer(
+        if( bsgl_system_setup_test_quads( self, 5000 ) ) {
+            break;
+        }
+
+        self->vertex_buffer_id = create_dynamic_buffer(
             GL_ARRAY_BUFFER,
-            vertex_buffer_data,
-            sizeof(vertex_buffer_data)
+            NULL,
+            0
         );
 
-        self->element_buffer = create_dynamic_buffer(
+        self->element_buffer_id = create_dynamic_buffer(
             GL_ELEMENT_ARRAY_BUFFER,
-            element_buffer_data,
-            sizeof(element_buffer_data)
+            NULL,
+            0
         );
-
-		// memory leak! TODO
-		self->vertex_buffer_data = malloc( sizeof (vertex_buffer_data) );
-		self->vertex_buffer_data_size = sizeof vertex_buffer_data;
-		memcpy( self->vertex_buffer_data, vertex_buffer_data, sizeof vertex_buffer_data );
-		self->element_buffer_data = malloc( sizeof (element_buffer_data) );
-		memcpy( self->element_buffer_data, element_buffer_data, sizeof element_buffer_data );
-		self->element_buffer_data_size = sizeof element_buffer_data;
-		// end known memory leak TODO
 
         fprintf( stderr, "A\n" );
-        self->vertex_shader = create_shader_from_file( GL_VERTEX_SHADER, "shaded-block.v.glsl" );
-        if( !self->vertex_shader ) break;
+        self->vertex_shader_id = create_shader_from_file( GL_VERTEX_SHADER, "shaded-block.v.glsl" );
+        if( !self->vertex_shader_id ) break;
         fprintf( stderr, "error: %d\n", glGetError() );
 
         fprintf( stderr, "B\n" );
-        self->fragment_shader = create_shader_from_file( GL_FRAGMENT_SHADER, "shaded-block.f.glsl" );
-        if( !self->fragment_shader ) break;
+        self->fragment_shader_id = create_shader_from_file( GL_FRAGMENT_SHADER, "shaded-block.f.glsl" );
+        if( !self->fragment_shader_id ) break;
 
         fprintf( stderr, "error: %d\n", glGetError() );
         fprintf( stderr, "C\n" );
-        self->program = create_program( self->vertex_shader, self->fragment_shader );
-        if( !self->program ) break;
+        self->program_id = create_program( self->vertex_shader_id, self->fragment_shader_id );
+        if( !self->program_id ) break;
 
         fprintf( stderr, "error: %d\n", glGetError() );
-        fprintf( stderr, "calling with program %d\n", self->program );
+        fprintf( stderr, "calling with program %d\n", self->program_id );
 
-        self->uniforms.sheet_texture = glGetUniformLocation( self->program, "sheet_texture" );
-
-        fprintf( stderr, "error: %d\n", glGetError() );
-
-        self->uniforms.fade_factor = glGetUniformLocation( self->program, "fade_factor" );
+        self->uniforms.sheet_texture = glGetUniformLocation( self->program_id, "sheet_texture" );
 
         fprintf( stderr, "error: %d\n", glGetError() );
 
-        self->attributes.position_offset = glGetAttribLocation( self->program, "position_offset" );
+        self->uniforms.fade_factor = glGetUniformLocation( self->program_id, "fade_factor" );
+
         fprintf( stderr, "error: %d\n", glGetError() );
 
-        self->attributes.com_position = glGetAttribLocation( self->program, "com_position" );
+        self->attributes.position_offset = glGetAttribLocation( self->program_id, "position_offset" );
         fprintf( stderr, "error: %d\n", glGetError() );
 
-        self->attributes.tint = glGetAttribLocation( self->program, "tint" );
+        self->attributes.com_position = glGetAttribLocation( self->program_id, "com_position" );
         fprintf( stderr, "error: %d\n", glGetError() );
 
-        self->attributes.angle = glGetAttribLocation( self->program, "angle" );
+        self->attributes.tint = glGetAttribLocation( self->program_id, "tint" );
         fprintf( stderr, "error: %d\n", glGetError() );
 
-        self->attributes.attr_texcoord = glGetAttribLocation( self->program, "attr_texcoord" );
+        self->attributes.angle = glGetAttribLocation( self->program_id, "angle" );
         fprintf( stderr, "error: %d\n", glGetError() );
 
-        self->stride = sizeof(GLfloat) * 11;
+        self->attributes.attr_texcoord = glGetAttribLocation( self->program_id, "attr_texcoord" );
+        fprintf( stderr, "error: %d\n", glGetError() );
+
+        self->stride = sizeof(GLfloat) * floats_per_vertex;
 
         fprintf( stderr, "Successfully created a System object!\n" );
 
@@ -177,82 +338,7 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
 }
 
 static PyObject *System_draw(System *self, PyObject *args) {
-    double seconds; 
-
-    if( !PyArg_ParseTuple( args, "d", &seconds ) ) {
-        return NULL;
-    }
-
-    glUseProgram( self->program );
-    glUniform1f( self->uniforms.fade_factor, (GLfloat) seconds );
-    glColor3f(1.f,1.f,1.f);
-
-    glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
-    glEnable( GL_BLEND );
-
-    glBindTexture( GL_TEXTURE_2D, self->texture_id );
-    glUniform1i( self->uniforms.sheet_texture, 0 );
-
-    glBindBuffer( GL_ARRAY_BUFFER, self->vertex_buffer );
-	glBufferData( GL_ARRAY_BUFFER, self->vertex_buffer_data_size, self->vertex_buffer_data, GL_DYNAMIC_DRAW );
-
-    glVertexAttribPointer(
-        self->attributes.com_position,
-        2,
-        GL_FLOAT,
-        GL_FALSE,
-        self->stride,
-        (void*) 0
-    );
-    glEnableVertexAttribArray( self->attributes.com_position );
-    glVertexAttribPointer(
-        self->attributes.position_offset,
-        2,
-        GL_FLOAT,
-        GL_FALSE,
-        self->stride,
-        (void*) ( sizeof(GLfloat) * 2 )
-    );
-    glEnableVertexAttribArray( self->attributes.position_offset );
-    glVertexAttribPointer(
-        self->attributes.attr_texcoord,
-        2,
-        GL_FLOAT,
-        GL_FALSE,
-        self->stride,
-        (void*) ( sizeof(GLfloat) * 4 )
-    );
-    glEnableVertexAttribArray( self->attributes.attr_texcoord );
-    glVertexAttribPointer(
-        self->attributes.tint,
-        4,
-        GL_FLOAT,
-        GL_FALSE,
-        self->stride,
-        (void*) ( sizeof(GLfloat) * 6 )
-    );
-    glEnableVertexAttribArray( self->attributes.tint );
-    glVertexAttribPointer(
-        self->attributes.angle,
-        1,
-        GL_FLOAT,
-        GL_FALSE,
-        self->stride,
-        (void*) ( sizeof(GLfloat) * 10 )
-    );
-    glEnableVertexAttribArray( self->attributes.angle );
-
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, self->element_buffer );
-	glBufferData( GL_ELEMENT_ARRAY_BUFFER, self->element_buffer_data_size, self->element_buffer_data, GL_STATIC_DRAW );
-    glDrawElements( GL_TRIANGLES, self->number_of_elements, GL_UNSIGNED_SHORT, (void*) 0 );
-
-    glDisableVertexAttribArray( self->attributes.com_position );
-    glDisableVertexAttribArray( self->attributes.position_offset );
-    glDisableVertexAttribArray( self->attributes.attr_texcoord );
-    glDisableVertexAttribArray( self->attributes.angle );
-    glDisableVertexAttribArray( self->attributes.tint );
-
-    glUseProgram( 0 ); // Without this Pyglet will stop working
+    bsgl_system_draw( self );
 
     Py_INCREF( Py_None );
     return Py_None;
@@ -264,7 +350,7 @@ PyMemberDef System_members[] = {
 };
 
 PyMethodDef System_methods[] = {
-    { "draw", (PyCFunction) System_draw, METH_VARARGS, "Draw the system" },
+    { "draw", (PyCFunction) System_draw, METH_NOARGS, "Draw the system" },
     { NULL }
 };
 
