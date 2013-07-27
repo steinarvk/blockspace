@@ -44,7 +44,7 @@ typedef struct {
 extern PyTypeObject SystemType;
 
 int bsgl_system_reallocate_elements( System *sys );
-int bsgl_system_add( System *sys, double com_position[2], double offset[2], double angle, double sz[2], double tint[4], double texcoords[2], double texsize[2] );
+int bsgl_system_add( System *sys, int *out_index, double com_position[2], double offset[2], double angle, double sz[2], double tint[4], double texcoords[2], double texsize[2] );
 int bsgl_system_upload_vertex_buffer( System *sys );
 int bsgl_system_upload_element_buffer( System *sys );
 int bsgl_system_refresh( System *sys );

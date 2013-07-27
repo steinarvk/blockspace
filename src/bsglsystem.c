@@ -56,7 +56,7 @@ int bsgl_system_bind_vertex_attributes( System *sys ) {
     return 0;
 };
 
-int bsgl_system_add( System *sys, double com_position[2], double offset[2], double angle, double sz[2], double tint[4], double texcoords[2], double texsize[2] ) {
+int bsgl_system_add( System *sys, int *out_index, double com_position[2], double offset[2], double angle, double sz[2], double tint[4], double texcoords[2], double texsize[2] ) {
     const int floats_per_vertex = 11;
     const double xs[] = { 0, 1, 0, 1 };
     const double ys[] = { 0, 0, 1, 1 };
@@ -111,6 +111,10 @@ int bsgl_system_add( System *sys, double com_position[2], double offset[2], doub
 
     sys->element_buffer_dirty = true;
     sys->vertex_buffer_dirty = true;
+
+    if( out_index ) {
+        *out_index = bsgl_index;
+    }
 
     return 0;
 }
@@ -242,7 +246,7 @@ int bsgl_system_setup_test_quads(System *self, int number_of_things) {
                 break;
         }
 
-        if( bsgl_system_add( self, world_pos, offset, angle, world_size, rgba, texcoords, texsize ) ) {
+        if( bsgl_system_add( self, NULL, world_pos, offset, angle, world_size, rgba, texcoords, texsize ) ) {
             return 1;
         }
     }
@@ -267,10 +271,6 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
         self->vertex_buffer_dirty = true;
 
         if( bsgl_array_initialize( &self->vertex_buffer, floats_per_vertex * 4 * sizeof (GLfloat)) ) {
-            break;
-        }
-
-        if( bsgl_system_setup_test_quads( self, 5000 ) ) {
             break;
         }
 
@@ -367,6 +367,48 @@ PyObject *System_reserve(System *self, PyObject *args) {
     return Py_None;
 }
 
+PyObject *System_add(System *self, PyObject *args, PyObject *kwargs) {
+    static char *kwlist[] = { "position", "offset", "angle", "size", "texture_coordinates", "texture_size", "colour" };
+
+    double position[] = { 0.0, 0.0 };
+    double offset[] = { 0.0, 0.0 };
+    double angle = 0.0;
+    double size[] = { 1.0, 1.0 };
+    double texcoords[] = { 0.0, 0.0 };
+    double texsize[] = { 1.0, 1.0 };
+    double rgba[] = { 1.0, 1.0, 1.0, 1.0 };
+
+    if( !PyArg_ParseTupleAndKeywords( args,
+                                      kwargs,
+                                      "|(dd)(dd)d(dd)(dd)(dd)(dddd)",
+                                      kwlist, 
+                                      &position[0], &position[1],
+                                      &offset[0], &offset[1],
+                                      &angle,
+                                      &size[0], &size[1],
+                                      &texcoords[0], &texcoords[1],
+                                      &texsize[0], &texsize[1],
+                                      &rgba[0], &rgba[1], &rgba[2], &rgba[3] ) ) {
+        return NULL;
+    }
+
+    fprintf( stderr, "position %lf %lf\n", position[0], position[1] );
+    fprintf( stderr, "offset %lf %lf\n", offset[0], offset[1] );
+    fprintf( stderr, "angle %lf\n", angle );
+    fprintf( stderr, "size %lf %lf\n", size[0], size[1] );
+    fprintf( stderr, "texcoords %lf %lf\n", texcoords[0], texcoords[1] );
+    fprintf( stderr, "texsize %lf %lf\n", texsize[0], texsize[1] );
+    fprintf( stderr, "rgba %lf %lf %lf %lf\n", rgba[0], rgba[1], rgba[2], rgba[3] );
+    
+    int index = -1;
+
+    if( bsgl_system_add( self, &index, position, offset, angle, size, rgba, texcoords, texsize ) ) {
+        return NULL;
+    }
+
+    return Py_BuildValue( "i", index );
+}
+
 PyObject *System_get_capacity(System *self, PyObject *args) {
     return Py_BuildValue( "i", self->vertex_buffer.capacity );
 }
@@ -383,7 +425,7 @@ PyMemberDef System_members[] = {
 PyMethodDef System_methods[] = {
     { "draw", (PyCFunction) System_draw, METH_NOARGS, "Draw the system" },
     { "reserve", (PyCFunction) System_reserve, METH_VARARGS, "Pre-reserve space for system elements." },
-//    { "add", (PyCFunction) System_add, METH_VARARGS | METH_KEYWORDS, "Add an element to the system and return its index." },
+    { "add", (PyCFunction) System_add, METH_VARARGS | METH_KEYWORDS, "Add an element to the system and return its index." },
     { "get_capacity", (PyCFunction) System_get_capacity, METH_NOARGS, "Get the number of elements for which space has been allocated." },
     { "get_number_of_elements", (PyCFunction) System_get_number_of_elements, METH_NOARGS, "Get the number of elements." },
     { NULL }
