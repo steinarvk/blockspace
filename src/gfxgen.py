@@ -170,6 +170,6 @@ def generate_fancy_polygon(n = 3, size = 256, side_length = 0.3, subpixel_resolu
         img.save( "polygon_fancy.{0}.generated.png".format(n) )
             
 if __name__ == '__main__':
-    for i in (3,):
-        generate_fancy_polygon(i, size = 64, side_length = 0.8, generate_normals = True)
+    for i in (3,4,5,6,8):
+        generate_fancy_polygon(i, size = 256, side_length = 0.3, generate_normals = True)
     
