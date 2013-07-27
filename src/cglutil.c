@@ -118,3 +118,15 @@ GLuint create_dynamic_buffer(
     return buffer;
 }
 
+GLuint create_stream_buffer(
+    GLenum target,
+    const void *buffer_data,
+    GLsizei buffer_size
+) {
+    GLuint buffer;
+    glGenBuffers(1, &buffer);
+    glBindBuffer(target, buffer);
+    glBufferData(target, buffer_size, buffer_data, GL_STREAM_DRAW);
+    return buffer;
+}
+

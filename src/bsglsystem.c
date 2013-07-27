@@ -45,9 +45,9 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
         world_pos[0] = 2.7 * (rand() - RAND_MAX/2) / (double)RAND_MAX;
         world_pos[1] = 2.0 * (rand() - RAND_MAX/2) / (double)RAND_MAX;
         double angle = (rand() / (double) RAND_MAX) * 6.28;
-        double red;
-        double blue;
-        double green;
+        double red = 0.0;
+        double blue = 0.0;
+        double green = 0.0;
         double alpha = 1.0;
 
 		if( rand() % 100 ) {
@@ -104,7 +104,7 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
             self->texture_size[i] = texture_size[i];
         }
 
-        self->vertex_buffer = create_dynamic_buffer(
+        self->vertex_buffer = create_stream_buffer(
             GL_ARRAY_BUFFER,
             vertex_buffer_data,
             sizeof(vertex_buffer_data)
@@ -167,8 +167,6 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
 }
 
 static PyObject *System_draw(System *self, PyObject *args) {
-    double offset_x = 300, offset_y = 200;
-    double sz = 100;
     double seconds; 
 
     if( !PyArg_ParseTuple( args, "d", &seconds ) ) {
