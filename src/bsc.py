@@ -1,6 +1,8 @@
 import sys
 import time
 import random
+import math
+from physics import Vec2d
 
 def include_build_directory():
     sys.path.append( "./build/lib.linux-x86_64-2.7" )
@@ -17,41 +19,45 @@ def main():
     sheet = pyglet.image.load( "mynormaltriangle.png" )
     fps = pyglet.clock.ClockDisplay()
     pyglet.clock.schedule( lambda _ : None )
-    t0 = time.time()
+    t0 = [time.time()]
     psys = bsgl.System( texture_id = sheet.texture.id )
     print psys.get_capacity(), psys.get_number_of_elements()
-    psys.reserve( 1000 )
-    indices = []
-    def add_random():
-        pos = [ random.random() for i in range(2) ]
+    amount = 1000
+    psys.reserve( amount )
+    things = {}
+    for i in range( amount ):
+        z = random.random() * 6.28
+        r = 0.001 + random.random() * 0.01
+        pos = r*math.cos(z), r*math.sin(z)
+        vel = tuple(Vec2d( pos ).normalized()*(1+4*random.random()))
         offset = 0,0
         texcoords = 0,0
         texsize = 1,1
         angle = random.random() * 6.28
+        avel = (random.random()-0.5)* 50 * Vec2d(vel).get_length()
         size = (0.05,0.05)
         rgba = [ random.random() for i in range(3) ] + [ 1.0 ]
         rv = psys.add( size = size, texture_coordinates = texcoords, texture_size = texsize, position = pos, offset = offset, angle = angle, colour = rgba )
-        indices.append( rv )
-    def remove_random():
-        index = random.choice( indices )
-        indices.remove( index )
-        psys.remove( index )
-    for i in range( 10 ):
-        add_random()
+        things[ rv ] = (pos, angle, vel,avel)
+    def update_things( dt ):
+        for index, (pos, a, vel, avel) in things.items():
+            x, y = pos
+            dx, dy = vel
+            t = 0.2 * dt
+            xp, yp = x + t * dx, y + t * dy
+            ap = a + t * avel
+            things[index] = ((xp,yp),ap,vel,avel)
+            psys.update_position_and_angle( index, (xp,yp), ap )
     print psys.get_capacity(), psys.get_number_of_elements()
     @window.event
     def on_draw():
         pyglet.gl.glClearColor( 0.5, 0.2, 0.5, 1.0 )
         window.clear()
         label.draw()
-        dt = time.time() - t0
-        if psys.get_number_of_elements() < 1000:
-            add_random()
-        elif random.random() > 0.5:
-            add_random()
-        else:
-            remove_random()
-        print psys.get_capacity(), psys.get_number_of_elements()
+        t1 = time.time()
+        dt = t1 - t0[0]
+        t0[0] = t1
+        update_things( dt )
         psys.draw()# position = (dt,2*dt) )
         fps.draw()
     pyglet.app.run()

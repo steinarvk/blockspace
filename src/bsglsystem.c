@@ -409,6 +409,32 @@ PyObject *System_add(System *self, PyObject *args, PyObject *kwargs) {
     return Py_BuildValue( "i", index );
 }
 
+PyObject *System_update_position_and_angle(System *self, PyObject *args) {
+    int index = -1;
+    double position[2];
+    double angle;
+
+    if( !PyArg_ParseTuple( args, "i(dd)d", &index, &position[0], &position[1], &angle ) ) {
+        return NULL;
+    }
+
+    int vertex_index0 = 4 * index;
+    const int floats_per_vertex = 11;
+    GLfloat* floats = (void*) self->vertex_buffer.data;
+
+    for(int i=0;i<4;i++) {
+        int vindex = vertex_index0 + i;
+        floats[ vindex * floats_per_vertex + 0 ] = position[0];
+        floats[ vindex * floats_per_vertex + 1 ] = position[1];
+        floats[ vindex * floats_per_vertex + 2 ] = angle;
+    }
+
+    self->vertex_buffer_dirty = true;
+
+    Py_INCREF( Py_None );
+    return Py_None;
+}
+
 PyObject *System_remove(System *self, PyObject *args) {
     int index = -1;
     if( !PyArg_ParseTuple( args, "i", &index ) ) {
@@ -443,6 +469,7 @@ PyMethodDef System_methods[] = {
     { "remove", (PyCFunction) System_remove, METH_VARARGS, "Remove an element by its index." },
     { "get_capacity", (PyCFunction) System_get_capacity, METH_NOARGS, "Get the number of elements for which space has been allocated." },
     { "get_number_of_elements", (PyCFunction) System_get_number_of_elements, METH_NOARGS, "Get the number of elements." },
+    { "update_position_and_angle", (PyCFunction) System_update_position_and_angle, METH_VARARGS, "Update one element by setting its angle and center of mass position." },
     { NULL }
 };
 
