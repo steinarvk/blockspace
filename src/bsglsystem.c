@@ -56,6 +56,14 @@ int bsgl_system_bind_vertex_attributes( System *sys ) {
     return 0;
 };
 
+int bsgl_system_remove( System *sys, int index ) {
+    bsgl_array_remove( &sys->vertex_buffer, index );
+
+    sys->vertex_buffer_dirty = true;
+
+    return 0;
+}
+
 int bsgl_system_add( System *sys, int *out_index, double com_position[2], double offset[2], double angle, double sz[2], double tint[4], double texcoords[2], double texsize[2] ) {
     const int floats_per_vertex = 11;
     const double xs[] = { 0, 1, 0, 1 };
@@ -392,14 +400,6 @@ PyObject *System_add(System *self, PyObject *args, PyObject *kwargs) {
         return NULL;
     }
 
-    fprintf( stderr, "position %lf %lf\n", position[0], position[1] );
-    fprintf( stderr, "offset %lf %lf\n", offset[0], offset[1] );
-    fprintf( stderr, "angle %lf\n", angle );
-    fprintf( stderr, "size %lf %lf\n", size[0], size[1] );
-    fprintf( stderr, "texcoords %lf %lf\n", texcoords[0], texcoords[1] );
-    fprintf( stderr, "texsize %lf %lf\n", texsize[0], texsize[1] );
-    fprintf( stderr, "rgba %lf %lf %lf %lf\n", rgba[0], rgba[1], rgba[2], rgba[3] );
-    
     int index = -1;
 
     if( bsgl_system_add( self, &index, position, offset, angle, size, rgba, texcoords, texsize ) ) {
@@ -407,6 +407,20 @@ PyObject *System_add(System *self, PyObject *args, PyObject *kwargs) {
     }
 
     return Py_BuildValue( "i", index );
+}
+
+PyObject *System_remove(System *self, PyObject *args) {
+    int index = -1;
+    if( !PyArg_ParseTuple( args, "i", &index ) ) {
+        return NULL;
+    }
+
+    if( bsgl_system_remove( self, index ) ) {
+        return NULL;
+    }
+
+    Py_INCREF( Py_None );
+    return Py_None;
 }
 
 PyObject *System_get_capacity(System *self, PyObject *args) {
@@ -426,6 +440,7 @@ PyMethodDef System_methods[] = {
     { "draw", (PyCFunction) System_draw, METH_NOARGS, "Draw the system" },
     { "reserve", (PyCFunction) System_reserve, METH_VARARGS, "Pre-reserve space for system elements." },
     { "add", (PyCFunction) System_add, METH_VARARGS | METH_KEYWORDS, "Add an element to the system and return its index." },
+    { "remove", (PyCFunction) System_remove, METH_VARARGS, "Remove an element by its index." },
     { "get_capacity", (PyCFunction) System_get_capacity, METH_NOARGS, "Get the number of elements for which space has been allocated." },
     { "get_number_of_elements", (PyCFunction) System_get_number_of_elements, METH_NOARGS, "Get the number of elements." },
     { NULL }
