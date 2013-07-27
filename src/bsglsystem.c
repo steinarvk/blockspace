@@ -104,7 +104,7 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
             self->texture_size[i] = texture_size[i];
         }
 
-        self->vertex_buffer = create_stream_buffer(
+        self->vertex_buffer = create_dynamic_buffer(
             GL_ARRAY_BUFFER,
             vertex_buffer_data,
             sizeof(vertex_buffer_data)
@@ -194,7 +194,7 @@ static PyObject *System_draw(System *self, PyObject *args) {
     glUniform1i( self->uniforms.sheet_texture, 0 );
 
     glBindBuffer( GL_ARRAY_BUFFER, self->vertex_buffer );
-	glBufferData( GL_ARRAY_BUFFER, self->vertex_buffer_data_size, self->vertex_buffer_data, GL_STREAM_DRAW );
+	glBufferData( GL_ARRAY_BUFFER, self->vertex_buffer_data_size, self->vertex_buffer_data, GL_DYNAMIC_DRAW );
 
     glVertexAttribPointer(
         self->attributes.com_position,
@@ -243,7 +243,7 @@ static PyObject *System_draw(System *self, PyObject *args) {
     glEnableVertexAttribArray( self->attributes.angle );
 
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, self->element_buffer );
-	glBufferData( GL_ELEMENT_ARRAY_BUFFER, self->element_buffer_data_size, self->element_buffer_data, GL_STREAM_DRAW );
+	glBufferData( GL_ELEMENT_ARRAY_BUFFER, self->element_buffer_data_size, self->element_buffer_data, GL_STATIC_DRAW );
     glDrawElements( GL_TRIANGLES, self->number_of_elements, GL_UNSIGNED_SHORT, (void*) 0 );
 
     glDisableVertexAttribArray( self->attributes.com_position );
