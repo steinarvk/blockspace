@@ -10,6 +10,11 @@ typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
 
+	void *vertex_buffer_data;
+	int vertex_buffer_data_size;
+	void *element_buffer_data;
+	int element_buffer_data_size;
+
     int texture_id;
     float texture_coordinates[2];
     float texture_size[2];

@@ -109,11 +109,21 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
             vertex_buffer_data,
             sizeof(vertex_buffer_data)
         );
+
         self->element_buffer = create_dynamic_buffer(
             GL_ELEMENT_ARRAY_BUFFER,
             element_buffer_data,
             sizeof(element_buffer_data)
         );
+
+		// memory leak! TODO
+		self->vertex_buffer_data = malloc( sizeof (vertex_buffer_data) );
+		self->vertex_buffer_data_size = sizeof vertex_buffer_data;
+		memcpy( self->vertex_buffer_data, vertex_buffer_data, sizeof vertex_buffer_data );
+		self->element_buffer_data = malloc( sizeof (element_buffer_data) );
+		memcpy( self->element_buffer_data, element_buffer_data, sizeof element_buffer_data );
+		self->element_buffer_data_size = sizeof element_buffer_data;
+		// end known memory leak TODO
 
         fprintf( stderr, "A\n" );
         self->vertex_shader = create_shader_from_file( GL_VERTEX_SHADER, "shaded-block.v.glsl" );
@@ -184,6 +194,8 @@ static PyObject *System_draw(System *self, PyObject *args) {
     glUniform1i( self->uniforms.sheet_texture, 0 );
 
     glBindBuffer( GL_ARRAY_BUFFER, self->vertex_buffer );
+	glBufferData( GL_ARRAY_BUFFER, self->vertex_buffer_data_size, self->vertex_buffer_data, GL_STREAM_DRAW );
+
     glVertexAttribPointer(
         self->attributes.com_position,
         2,
@@ -230,8 +242,8 @@ static PyObject *System_draw(System *self, PyObject *args) {
     );
     glEnableVertexAttribArray( self->attributes.angle );
 
-
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, self->element_buffer );
+	glBufferData( GL_ELEMENT_ARRAY_BUFFER, self->element_buffer_data_size, self->element_buffer_data, GL_STREAM_DRAW );
     glDrawElements( GL_TRIANGLES, self->number_of_elements, GL_UNSIGNED_SHORT, (void*) 0 );
 
     glDisableVertexAttribArray( self->attributes.com_position );
