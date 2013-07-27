@@ -21,7 +21,7 @@ def main():
     psys = bsgl.System( texture_id = sheet.texture.id )
     print psys.get_capacity(), psys.get_number_of_elements()
     psys.reserve( 1000 )
-    for i in range( 1000 ):
+    def add_random():
         pos = [ random.random() for i in range(2) ]
         offset = 0,0
         texcoords = 0,0
@@ -30,6 +30,8 @@ def main():
         size = (0.05,0.05)
         rgba = [ random.random() for i in range(3) ] + [ 1.0 ]
         psys.add( size = size, texture_coordinates = texcoords, texture_size = texsize, position = pos, offset = offset, angle = angle, colour = rgba )
+    for i in range( 10 ):
+        add_random()
     print psys.get_capacity(), psys.get_number_of_elements()
     @window.event
     def on_draw():
@@ -37,6 +39,9 @@ def main():
         window.clear()
         label.draw()
         dt = time.time() - t0
+        if psys.get_number_of_elements() < 10000:
+            add_random()
+            print psys.get_capacity(), psys.get_number_of_elements()
         psys.draw()# position = (dt,2*dt) )
         fps.draw()
     pyglet.app.run()
