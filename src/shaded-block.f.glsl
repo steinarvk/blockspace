@@ -15,7 +15,7 @@ void main() {
     float light_slope = 0.6123;
     vec2 light2d = vec2( -0.447213, 0.894427 ) * sqrt(1.0-light_slope*light_slope);
     vec3 light = vec3( light2d.x * rcosa - light2d.y * rsina, light2d.x * rsina + light2d.y * rcosa, light_slope );
-    float shade = (dot( texvec, light ) + 1.0) * 0.5;
+    float shade = (dot( normalize(texvec), normalize(light) ) + 1.0) * 0.5;
     float dark = 0.2;
     float shade_scaled = dark + shade * (1.0-dark);
     gl_FragColor = vec4( vec3(shade_scaled), tex.a ) * tint;
