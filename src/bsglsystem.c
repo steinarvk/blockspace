@@ -337,11 +337,42 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
     return -1;
 }
 
-static PyObject *System_draw(System *self, PyObject *args) {
+PyObject *System_draw(System *self, PyObject *args) {
     bsgl_system_draw( self );
 
     Py_INCREF( Py_None );
     return Py_None;
+}
+
+PyObject *System_reserve(System *self, PyObject *args) {
+    int n = 0;
+
+    if( !PyArg_ParseTuple( args, "i", &n ) ) {
+        return NULL;
+    }
+
+    int old_capacity = self->vertex_buffer.capacity;
+
+    if( bsgl_array_reserve( &self->vertex_buffer, n ) ) {
+        return NULL;
+    }
+
+    if( self->vertex_buffer.capacity != old_capacity ) {
+        if( bsgl_system_reallocate_elements( self ) ) {
+            return NULL;
+        }
+    }
+
+    Py_INCREF( Py_None );
+    return Py_None;
+}
+
+PyObject *System_get_capacity(System *self, PyObject *args) {
+    return Py_BuildValue( "i", self->vertex_buffer.capacity );
+}
+
+PyObject *System_get_number_of_elements(System *self, PyObject *args) {
+    return Py_BuildValue( "i", self->vertex_buffer.number_of_elements );
 }
 
 PyMemberDef System_members[] = {
@@ -351,6 +382,10 @@ PyMemberDef System_members[] = {
 
 PyMethodDef System_methods[] = {
     { "draw", (PyCFunction) System_draw, METH_NOARGS, "Draw the system" },
+    { "reserve", (PyCFunction) System_reserve, METH_VARARGS, "Pre-reserve space for system elements." },
+//    { "add", (PyCFunction) System_add, METH_VARARGS | METH_KEYWORDS, "Add an element to the system and return its index." },
+    { "get_capacity", (PyCFunction) System_get_capacity, METH_NOARGS, "Get the number of elements for which space has been allocated." },
+    { "get_number_of_elements", (PyCFunction) System_get_number_of_elements, METH_NOARGS, "Get the number of elements." },
     { NULL }
 };
 

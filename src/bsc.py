@@ -4,7 +4,7 @@ import time
 def include_build_directory():
     sys.path.append( "./build/lib.linux-x86_64-2.7" )
 
-if __name__ == '__main__':
+def main():
     include_build_directory()
     import pyglet
     import pyglet.gl
@@ -18,6 +18,7 @@ if __name__ == '__main__':
     pyglet.clock.schedule( lambda _ : None )
     t0 = time.time()
     psys = bsgl.System( texture_id = sheet.texture.id )
+    print psys.get_capacity(), psys.get_number_of_elements()
 #    psys.reserve( 20 )
 #    psys.add( size = (0.4,0.4), texture_coordinates = (0.0,0.0), texture_size = (1.0,1.0), position = (0,0), offset = (0,0), angle = 0.0, colour = (255,255,255,255) )
     @window.event
@@ -29,3 +30,6 @@ if __name__ == '__main__':
         psys.draw()# position = (dt,2*dt) )
         fps.draw()
     pyglet.app.run()
+
+if __name__ == '__main__':
+    main()
