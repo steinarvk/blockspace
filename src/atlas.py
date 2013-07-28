@@ -1,6 +1,21 @@
 import Image
 import yaml
 
+class Atlas (object):
+    def __init__(self, name):
+        import pyglet
+        self.png_name = name + ".png"
+        self.yaml_name = name + ".yaml"
+        self.sheet = pyglet.image.load( self.png_name )
+        with open( self.yaml_name, "r" ) as f:
+            self.records = yaml.safe_load( f.read() )
+    def texcoords(self, record_name):
+        d = self.records[ record_name ]
+        return (d["x"], d["y"])
+    def texsize(self, record_name):
+        d = self.records[ record_name ]
+        return (d["w"], d["h"])
+
 class Rectangle (object):
     def __init__(self, width, height, x = 0, y = 0):
         self.x = x
@@ -75,7 +90,7 @@ class AtlasBuilder (object):
         left, right = x, x + w
         top, bottom = y, y + h
         glx = left / float(self.width)
-        gly = bottom / float(self.height)
+        gly = 1.0 - bottom / float(self.height)
         glw = w / float(self.width)
         glh = h / float(self.height)
         self.records[ name ] = {"x": glx, "y": gly, "w": glw, "h": glh}
