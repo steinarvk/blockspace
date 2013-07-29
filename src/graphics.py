@@ -21,7 +21,7 @@ def kill_sprite( thing ):
     thing.sprite.kill()
 
 class Window (object):
-    def __init__(self, size = (1024,768) ):
+    def __init__(self, size = (1024,768), vsync = False ):
         self.width, self.height = size
         self.director = cocos.director.director
         self.director.init( width = self.width, height = self.height )
