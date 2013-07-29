@@ -542,7 +542,7 @@ class MainWorld (World):
         self.main_layer.cocos_layer.add( self.batch )
         self.physics_objects = []
         self.things = []
-        self.psys_managed_things = {}
+        self.psys_managed_things = []
         for i in range(200):
             cols = "red", "purple", "grey", "blue", "green", "yellow"
             sq = create_square_thing( self, None, (100,0), None )
@@ -571,7 +571,7 @@ class MainWorld (World):
             kw[ "angle" ] = sq.angle_radians
             kw[ "colour" ] = 1.0, 0.5, 0.5, 1.0
             index = self.object_psys.add( **kw )
-            self.psys_managed_things[ sq ] = index
+            self.psys_managed_things.append( (sq, index) )
             self.things.append( sq )
         def draw_psys():
             glEnable( GL_SCISSOR_TEST )
@@ -605,7 +605,7 @@ class MainWorld (World):
             kw[ "angle" ] = sq.angle_radians
             kw[ "colour" ] = (0.0,1.0,0.0,1.0)
             sq.index = self.object_psys.add( **kw )
-            self.psys_managed_things[ sq ] = sq.index
+            self.psys_managed_things.append( (sq, sq.index) )
             print "bullet, created", sq.index
             def update_bullet( bullet, dt ):
                 if not bullet.alive:
@@ -617,7 +617,7 @@ class MainWorld (World):
                     print "bullet has expired", bullet.index
                     bullet.kill()
             def kill_bullet( sq ):
-                del self.psys_managed_things[ sq ]
+                self.psys_managed_things.remove( (sq,sq.index) )
                 print "bullet, removing", sq.index
                 self.object_psys.remove( sq.index )
             sq.ttl = 5.0
@@ -629,7 +629,7 @@ class MainWorld (World):
         draw_space( self.screen, self.sim.space )
         pygame.display.flip()
     def update_psys_managed_objects(self):
-        for thing, index in self.psys_managed_things.items():
+        for thing, index in self.psys_managed_things:
             self.object_psys.update_position_and_angle( index, self.silly_software_transform( thing.position ), thing.angle_radians )
 
     def silly_software_transform(self, p):

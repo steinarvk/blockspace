@@ -422,6 +422,10 @@ PyObject *System_update_position_and_angle(System *self, PyObject *args) {
     const int floats_per_vertex = 11;
     GLfloat* floats = (void*) self->vertex_buffer.data;
 
+    if( index >= 200 ) {
+        fprintf( stderr, "operating on index %d (%lf %lf %lf)\n", index, position[0], position[1], angle );
+    }
+
     for(int i=0;i<4;i++) {
         int vindex = vertex_index0 + i;
         floats[ vindex * floats_per_vertex + 0 ] = position[0];
