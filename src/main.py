@@ -606,19 +606,15 @@ class MainWorld (World):
             kw[ "colour" ] = (0.0,1.0,0.0,1.0)
             sq.index = self.object_psys.add( **kw )
             self.psys_managed_things.append( (sq, sq.index) )
-            print "bullet, created", sq.index
             def update_bullet( bullet, dt ):
                 if not bullet.alive:
                     return
                 bullet.ttl -= dt
                 bullet.grace -= dt
-                print "bullet", bullet.index, "ttl", bullet.ttl
                 if bullet.ttl <= 0.0:
-                    print "bullet has expired", bullet.index
                     bullet.kill()
             def kill_bullet( sq ):
                 self.psys_managed_things.remove( (sq,sq.index) )
-                print "bullet, removing", sq.index
                 self.object_psys.remove( sq.index )
             sq.ttl = 5.0
             sq.kill_hooks.append( kill_bullet )

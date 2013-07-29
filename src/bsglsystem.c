@@ -210,7 +210,7 @@ int bsgl_system_draw( System *sys ) {
         return 1;
     }
 
-    int number_of_elements = 6 * sys->vertex_buffer.number_of_elements;
+    int number_of_elements = 6 * sys->vertex_buffer.capacity;
 
     glDrawElements( GL_TRIANGLES, number_of_elements, GL_UNSIGNED_SHORT, (void*) 0 );
 
@@ -421,10 +421,6 @@ PyObject *System_update_position_and_angle(System *self, PyObject *args) {
     int vertex_index0 = 4 * index;
     const int floats_per_vertex = 11;
     GLfloat* floats = (void*) self->vertex_buffer.data;
-
-    if( index >= 200 ) {
-        fprintf( stderr, "operating on index %d (%lf %lf %lf)\n", index, position[0], position[1], angle );
-    }
 
     for(int i=0;i<4;i++) {
         int vindex = vertex_index0 + i;

@@ -57,7 +57,6 @@ int bsgl_array_reserve( struct bsgl_array *arr, int n ) {
     }
 
     int new_byte_size = n * arr->element_size;
-    fprintf(stderr, "2trying realloc to rs %d\n", new_byte_size );
     unsigned char *new_data = realloc( arr->data, new_byte_size );
     if( !new_data ) {
         return 1;
@@ -90,8 +89,6 @@ int bsgl_array_reserve( struct bsgl_array *arr, int n ) {
 void bsgl_array_remove( struct bsgl_array *arr, int index ) {
     assert( arr->unused_nodes );
 
-    fprintf( stderr, "removing item %d\n", index );
-
     struct bsgl_llnode *node = arr->unused_nodes;
     arr->unused_nodes = node->next;
 
@@ -100,15 +97,8 @@ void bsgl_array_remove( struct bsgl_array *arr, int index ) {
     arr->free_indices = node;
 
     memset( (void*)bsgl_array_get( arr, index ), 0, arr->element_size ); 
-//    int vertex_index0 = 4 * index;
-//    float *floats = (float*) arr->data;
-//    for(int i=0;i<4;i++) {
-//        int vindex = vertex_index0 + i;
-//        floats[ vindex * 11 + 2 ] = 1.2;
-//    }
-//    memset( (void*)bsgl_array_get( arr, index ), 0, 11*4*2 ); 
 
-    arr->number_of_elements--; // <-- this line causes the bug -- why? upload is by capacity
+    arr->number_of_elements--;
 }
 
 int bsgl_array_add( struct bsgl_array *arr, int *index ) {
@@ -143,7 +133,6 @@ int bsgl_array_add_and_fill( struct bsgl_array *arr, int *index, void *data, int
     int rv = bsgl_array_add( arr, index );
     if( rv ) return rv;
     len = MIN( len, arr->element_size );
-    fprintf( stderr, "putting %d bytes into slot %d\n", len, *index );
     memcpy( &arr->data[*index * arr->element_size ], data, len );
     return 0;
 }
