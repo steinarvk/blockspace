@@ -39,6 +39,7 @@ class Ship (physics.Thing):
         super( Ship, self ).__init__( world, block_structure.create_collision_shape(), mass, moment, **kwargs )
         self.block_structure = block_structure
         self.layer = layer
+        self.world.pre_display.add_hook( self, self.update_graphics )
         print self, "creating mss"
         self.sprite = self.main_sprite_structure = self.block_structure.create_sys_structure( world.object_psys, world.atlas, self, absolute_transformation = world.silly_software_transform_borked, relative_transformation = world.silly_software_transform_relative )
         print self, "created mss", self.main_sprite_structure
@@ -122,12 +123,10 @@ class Ship (physics.Thing):
         return rv
     def may_fire(self):
         return bool( self.ready_guns() )
+    def update_graphics(self):
+        self.main_sprite_structure.update_elements()
     def update(self, dt):
         super( Ship, self ).update()
-        if self.main_sprite_structure:
-            self.main_sprite_structure.update_elements()
-        else:
-            print "no main sprite structure!", self
         if self.minimap_symbol_sprite:
             self.minimap_symbol_sprite.position = self.position
         if self._shooting:
@@ -376,7 +375,11 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
         for block in list(s.blocks)[1:]:
             random.choice(gens)( block )
         make_cockpit( s.blocks[0] )
-    rv = Ship( world, s, layer, position, mass = len(s.blocks), moment = 20000.0, collision_type = collision_type_main )
+    total_moment = 0.0
+    density = 1/(32.*32.)
+    for block in s.blocks:
+        total_moment += pymunk.moment_for_poly( block.area() * density, block.vertices )
+    rv = Ship( world, s, layer, position, mass = s.area() * density, moment = total_moment, collision_type = collision_type_main )
     rv._gun_distance = 65
     return rv
 
