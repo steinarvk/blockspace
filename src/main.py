@@ -2,6 +2,8 @@ import graphics
 import physics
 import gameinput
 
+from atlas import Atlas
+
 from physics import ConvexPolygonShape, DiskShape, Vec2d
 from gameinput import key
 
@@ -12,6 +14,11 @@ import random
 from util import *
 
 from pyglet.gl import *
+
+from bsc import include_build_directory
+include_build_directory()
+
+import bsgl
 
 from functools import partial
 from itertools import cycle
@@ -204,13 +211,14 @@ def ai_seek_target( dt, actor, target, fire):
                 fire()
 
 class Debris (physics.Thing):
-    def __init__(self, world, layer, position, shape, sprite, mass = 1.0, moment = 1.0, **kwargs):
+    def __init__(self, world, layer, position, shape, sprite = None, mass = 1.0, moment = 1.0, **kwargs):
         super( Debris, self ).__init__( world, shape, mass, moment, **kwargs )
-        graphics.Sprite( sprite, self, layer )
+        if sprite:
+            graphics.Sprite( sprite, self, layer )
+            self.sprite.cocos_sprite.draw = lambda : graphics.draw_thing_shapes(self)
         self.position = position
 #        f = self.sprite.cocos_sprite.draw
 #        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
-        self.sprite.cocos_sprite.draw = lambda : graphics.draw_thing_shapes(self)
     def update(self):
         super( Debris, self ).update()
 
@@ -404,6 +412,7 @@ class MainWorld (World):
             self.setup_pygame( resolution )
             self.display.add_anonymous_hook( self.update_pygame )
         self.pre_display.add_anonymous_hook( self.update_display_objects )
+        self.pre_display.add_anonymous_hook( self.update_psys_managed_objects )
         self.pre_physics.add_anonymous_hook( self.update_camera )
         self.display.add_anonymous_hook( self.scene.update )
         self.player.body.velocity_limit = 800.0 # experiment with this for actually chasing fleeing ships
@@ -530,21 +539,53 @@ class MainWorld (World):
         self.enemy2.angle_degrees = random.random() * 360.0
         self.img_square = pyglet.image.load( "myblockgray.png" )
         self.img_bullet = pyglet.image.load( "laserGreen.png" )
+        self.atlas = Atlas( "atlas.generated" )
+        self.object_psys = bsgl.System( texture_id = self.atlas.sheet.get_texture().id )
         self.batch = cocos.batch.BatchNode()
         self.main_layer.cocos_layer.add( self.batch )
         self.display_objects = []
         self.physics_objects = []
         self.things = []
+        self.psys_managed_things = {}
         for i in range(200):
             cols = "red", "purple", "grey", "blue", "green", "yellow"
-            sq = create_square_thing( self, None, (100,0), self.img_square )
+            sq = create_square_thing( self, None, (100,0), None )
             sq.position = (random.random()-0.5) * 4000, (random.random()-0.5) * 4000
             sq.angle_radians = random.random() * math.pi * 2
             sq.mylabel = sq.position
-            sq.velocity = (300,10)
-            self.batch.add( sq.sprite.cocos_sprite )
-            self.display_objects.append( sq.sprite )
+            sq.velocity = (30,10)
+            kw = {}
+            name = "polygon_normals.4.generated"
+            kw[ "size" ] = (32.0/128.0,32.0/128.0)
+            kw[ "texture_coordinates" ] = self.atlas.texcoords( name )
+            kw[ "texture_size" ] = self.atlas.texsize( name )
+            z = random.random() * 6.28
+            r = 0.1 + random.random() * 10.0
+            pos = r*math.cos(z), r*math.sin(z)
+            # need to translate from pixel space
+            # [0,self.
+            # to
+            # [-1.3333,1.3333] x [-1,1]
+            p = sq.position
+            p = p + self.main_layer.cocos_layer.position
+            p = Vec2d(p) / Vec2d( self.window.width, self.window.height )
+            p = (p * 2) - Vec2d(1,1)
+            p = p * Vec2d( self.window.width / float(self.window.height), 1 ) 
+            kw[ "position" ] = p
+            kw[ "angle" ] = sq.angle_radians
+            kw[ "colour" ] = 1.0, 0.5, 0.5, 1.0
+            index = self.object_psys.add( **kw )
+            self.psys_managed_things[ sq ] = index
+#            self.batch.add( sq.sprite.cocos_sprite )
+#            self.display_objects.append( sq.sprite )
             self.things.append( sq )
+        def draw_psys():
+            glEnable( GL_SCISSOR_TEST )
+            glScissor( 0, 0, self.window.width + 1 - self.hud_width, self.window.height )
+            self.object_psys.draw()
+            glDisable( GL_SCISSOR_TEST )
+        graphics.Layer( self.scene, cocos_layer = graphics.FunctionCocosLayer( draw_psys ) )
+        print self.display.hooks
         self.sim.space.add_collision_handler( collision_type_main, collision_type_bullet, self.collide_general_with_bullet )
     def setup_input(self):
         input_layer = graphics.Layer( self.scene, gameinput.CocosInputLayer() )
@@ -583,6 +624,15 @@ class MainWorld (World):
         self.screen.fill( pygame.color.THECOLORS[ "black" ] )
         draw_space( self.screen, self.sim.space )
         pygame.display.flip()
+    def update_psys_managed_objects(self):
+        for thing, index in self.psys_managed_things.items():
+            p = thing.position
+            p = p + self.main_layer.cocos_layer.position
+            p = Vec2d(p) / Vec2d( self.window.width, self.window.height )
+            p = (p * 2) - Vec2d(1,1)
+            p = p * Vec2d( self.window.width / float(self.window.height), 1 ) 
+            self.object_psys.update_position_and_angle( index, p, thing.angle_radians )
+
     def update_display_objects(self):
         x, y = self.camera.focus
         hw, hh = 0.5 * self.window.width, 0.5 * self.window.height
@@ -592,7 +642,8 @@ class MainWorld (World):
         big_bb = pymunk.BB(x-hw-beyond_slack,y-hh-beyond_slack,x+hw+beyond_slack,y+hh+beyond_slack)
         onscreen = set(self.sim.space.bb_query( screen_bb ))
         for shape in onscreen:
-            shape.thing.sprite.update()
+            if shape.thing.sprite:
+                shape.thing.sprite.update()
         prech = set(self.batch.get_children())
         for spr in self.display_objects:
             if all((shape not in onscreen for shape in spr.thing.shapes)):

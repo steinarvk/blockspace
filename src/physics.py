@@ -240,6 +240,7 @@ class StaticObstacle (object):
 class Thing (object):
     def __init__(self, world, shape, mass, moment, group = False, name = "anonymous", collision_type = None ):
         self.world = world
+        self.sprite = None
         self.sim = self.world.sim
         self.name = name
         self.body = pymunk.Body( mass, moment )
