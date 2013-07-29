@@ -261,7 +261,7 @@ def with_gun( block, edge_index = 1, sprite = None ):
     gun = component.PointComponent( block, pos, angle, required_edges = (edge_index,), category = "gun", sprite = spr )
     gun.cooldown = 0.2
 #    gun.cooldown = 0.1 # a LOT more powerful with lower cooldown
-    gun.power_usage = (750 * gun.cooldown) * 2.0/3.0 # more reasonable power usage
+    gun.power_usage = (250 * gun.cooldown) * 2.0/3.0 # more reasonable power usage
     return block
 
 def with_guns( block, sprite = None ):
