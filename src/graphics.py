@@ -120,6 +120,34 @@ class Sprite (object):
         self.cocos_sprite.rotation = 180.0 - self.thing.angle_degrees
 
         
+class BlockSystemStructure (object):
+    def __init__(self, psys, thing, transformation = None):
+        self.psys = psys
+        self.thing = thing
+        self.transformation = transformation
+        self.elements = []
+    def update_elements(self):
+        position = tuple( self.thing.position )
+        if self.transformation:
+            position = self.transformation( position )
+        angle = self.thing.angle_radians
+        for index in self.elements:
+            self.psys.update_position_and_angle( index, position, angle )
+    def add_element( self, info ):
+        info = dict(info)
+        info["position"] = self.thing.position
+        info["angle"] = self.thing.angle_radians
+        if self.transformation:
+            info[ "position" ] = self.transformation( info["position"] )
+            # note offset must come pretransformed.
+            # transforming here is a hack anyway
+        index = self.psys.add( **info )
+        print info, "new element with index", index
+        self.elements.append( index )
+    def kill(self):
+        while self.elements:
+            index = self.elements.pop(0)
+            self.psys.remove( index )
         
 
 

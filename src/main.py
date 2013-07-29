@@ -39,10 +39,15 @@ class Ship (physics.Thing):
         super( Ship, self ).__init__( world, block_structure.create_collision_shape(), mass, moment, **kwargs )
         self.block_structure = block_structure
         self.layer = layer
-        self.sprite = self.main_sprite_structure = self.block_structure.create_sprite_structure( layer = self.layer, thing = self )
+        print self, "creating mss"
+        self.sprite = self.main_sprite_structure = self.block_structure.create_sys_structure( world.object_psys, world.atlas, self, absolute_transformation = world.silly_software_transform_borked, relative_transformation = world.silly_software_transform_relative )
+        print self, "created mss", self.main_sprite_structure
         def recreate_sprite_structure():
             self.main_sprite_structure.kill()
-            self.sprite = self.main_sprite_structure = self.block_structure.create_sprite_structure( layer = self.layer, thing = self )
+            self.sprite = self.main_sprite_structure = self.block_structure.create_sys_structure( world.object_psys, world.atlas, self, absolute_transformation = world.silly_software_transform_borked, relative_transformation = world.silly_software_transform_relative )
+        def kill_sprite_structure():
+            self.main_sprite_structure.kill()
+        self.kill_hooks.append( ignore_arguments( kill_sprite_structure ) )
         self.reshape_hooks.add_anonymous_hook( recreate_sprite_structure )
         self.body.velocity_limit = min( self.body.velocity_limit, 700.0 )
         self.body.angular_velocity_limit = degrees_to_radians( 360.0 )
@@ -119,6 +124,10 @@ class Ship (physics.Thing):
         return bool( self.ready_guns() )
     def update(self, dt):
         super( Ship, self ).update()
+        if self.main_sprite_structure:
+            self.main_sprite_structure.update_elements()
+        else:
+            print "no main sprite structure!", self
         if self.minimap_symbol_sprite:
             self.minimap_symbol_sprite.position = self.position
         if self._shooting:
@@ -399,7 +408,7 @@ def create_bullet_thing(world, shooter, gun):
     return rv
 
 class MainWorld (World):
-    def __init__(self, resolution = (1000,800), use_pygame = True, **kwargs):
+    def __init__(self, resolution = (1000,800), use_pygame = False, **kwargs):
         super( MainWorld, self ).__init__( **kwargs)
         self.setup_graphics( resolution )
         self.setup_game()
@@ -455,6 +464,8 @@ class MainWorld (World):
         self.hud_layer = graphics.Layer( self.scene, cocos_layer = self.hud_cocos_layer )
         self.hud_layer.cocos_layer.position = 0,0
         self.gem_images = pyglet.image.ImageGrid( pyglet.image.load("gems3.png"), 4, 4 )
+        self.atlas = Atlas( "atlas.generated" )
+        self.object_psys = bsgl.System( texture_id = self.atlas.sheet.get_texture().id )
     def setup_hud(self):
         def update_hp_display():
             undamaged = 255,255,255
@@ -525,7 +536,7 @@ class MainWorld (World):
         self.player.reshape_hooks.add_anonymous_hook( recreate_hp_display )
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "bigger", hp = 5 )
+        self.player = create_ship_thing( self, self.main_layer, (400,400), shape = "bigger", hp = 5 )
         self.player.invulnerable = False
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 0 )
         self.enemy.invulnerable = False
@@ -535,8 +546,6 @@ class MainWorld (World):
         self.enemy2.body.angular_velocity_limit = degrees_to_radians(144*2)
         self.enemy.angle_degrees = random.random() * 360.0
         self.enemy2.angle_degrees = random.random() * 360.0
-        self.atlas = Atlas( "atlas.generated" )
-        self.object_psys = bsgl.System( texture_id = self.atlas.sheet.get_texture().id )
         self.batch = cocos.batch.BatchNode()
         self.main_layer.cocos_layer.add( self.batch )
         self.physics_objects = []
@@ -626,12 +635,23 @@ class MainWorld (World):
     def update_psys_managed_objects(self):
         for thing, index in self.psys_managed_things:
             self.object_psys.update_position_and_angle( index, self.silly_software_transform( thing.position ), thing.angle_radians )
-
-    def silly_software_transform(self, p):
+    def silly_software_transform_borked(self, p):
+        p = Vec2d(p)
         p = p + self.main_layer.cocos_layer.position
         p = Vec2d(p) / Vec2d( self.window.width, self.window.height )
         p = (p * 2) - Vec2d(1,1)
         p = p * Vec2d( self.window.width / float(self.window.height), 1 ) 
+        return p
+    def silly_software_transform(self, p):
+        p = Vec2d(p)
+        p = p + self.main_layer.cocos_layer.position
+        p = Vec2d(p) / Vec2d( self.window.width, self.window.height )
+        p = (p * 2) - Vec2d(1,1)
+        p = p * Vec2d( self.window.width / float(self.window.height), 1 ) 
+        return p
+    def silly_software_transform_relative(self, p):
+        p = Vec2d(p) / Vec2d( self.window.width, self.window.height )
+        p = p * 2 * Vec2d( self.window.width / float(self.window.height), 1 ) 
         return p
 
     def collide_general_with_bullet(self, space, arbiter ):
