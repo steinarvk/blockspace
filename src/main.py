@@ -399,7 +399,7 @@ def create_bullet_thing(world, shooter, gun):
     return rv
 
 class MainWorld (World):
-    def __init__(self, resolution = (1000,800), use_pygame = False, **kwargs):
+    def __init__(self, resolution = (1000,800), use_pygame = True, **kwargs):
         super( MainWorld, self ).__init__( **kwargs)
         self.setup_graphics( resolution )
         self.setup_game()
@@ -551,7 +551,7 @@ class MainWorld (World):
             sq.velocity = (30,10)
             kw = {}
             name = "polygon_normals.4.generated"
-            kw[ "size" ] = (32.0/128.0,32.0/128.0)
+            kw[ "size" ] = Vec2d(106.6666666/float(self.window.height),106.6666666/float(self.window.height)) * 2
             kw[ "texture_coordinates" ] = self.atlas.texcoords( name )
             kw[ "texture_size" ] = self.atlas.texsize( name )
             z = random.random() * 6.28
