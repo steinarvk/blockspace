@@ -300,7 +300,7 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
         fprintf( stderr, "error: %d\n", glGetError() );
 
         fprintf( stderr, "B\n" );
-        self->fragment_shader_id = create_shader_from_file( GL_FRAGMENT_SHADER, "simple-block.f.glsl" );
+        self->fragment_shader_id = create_shader_from_file( GL_FRAGMENT_SHADER, "shaded-block.f.glsl" );
         if( !self->fragment_shader_id ) break;
 
         fprintf( stderr, "error: %d\n", glGetError() );

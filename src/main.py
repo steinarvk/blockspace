@@ -387,7 +387,6 @@ def create_bullet_thing(world, shooter, gun):
     layer = None
     rv = Debris( world, layer, (0,0), shape, None, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet, group = group_bulletgroup )
     speed = 1400
-    speed = 50
     base_velocity = gun.velocity
     base_velocity = shooter.velocity # unrealistic but possibly better
     rv.velocity = base_velocity + gun.direction * speed
