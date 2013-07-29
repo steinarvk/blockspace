@@ -387,7 +387,7 @@ def create_bullet_thing(world, shooter, gun):
     layer = None
     rv = Debris( world, layer, (0,0), shape, None, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet, group = group_bulletgroup )
     speed = 1400
-#    speed = 0
+    speed = 50
     base_velocity = gun.velocity
     base_velocity = shooter.velocity # unrealistic but possibly better
     rv.velocity = base_velocity + gun.direction * speed
@@ -416,11 +416,11 @@ class MainWorld (World):
         self.display.add_anonymous_hook( self.scene.update )
         self.player.body.velocity_limit = 800.0 # experiment with this for actually chasing fleeing ships
         self.pre_physics.add_hook( self.player, self.player.update )
-        self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
-#        self.pre_physics.add_hook( self.enemy, lambda dt : ai_flee_target( dt, self.enemy, self.player ) )
+#        self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
+        self.pre_physics.add_hook( self.enemy, lambda dt : ai_flee_target( dt, self.enemy, self.player ) )
         self.pre_physics.add_hook( self.enemy, self.enemy.update )
-        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
-#        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_flee_target( dt, self.enemy2, self.player ) )
+#        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
+        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_flee_target( dt, self.enemy2, self.player ) )
         self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
         for gun in self.player.block_structure.get_components( lambda x : "gun" in x.categories ):
             gun.cooldown /= 2.0
@@ -606,17 +606,21 @@ class MainWorld (World):
             kw[ "colour" ] = (0.0,1.0,0.0,1.0)
             sq.index = self.object_psys.add( **kw )
             self.psys_managed_things[ sq ] = sq.index
+            print "bullet, created", sq.index
             def update_bullet( bullet, dt ):
                 if not bullet.alive:
                     return
                 bullet.ttl -= dt
                 bullet.grace -= dt
+                print "bullet", bullet.index, "ttl", bullet.ttl
                 if bullet.ttl <= 0.0:
+                    print "bullet has expired", bullet.index
                     bullet.kill()
             def kill_bullet( sq ):
                 del self.psys_managed_things[ sq ]
+                print "bullet, removing", sq.index
                 self.object_psys.remove( sq.index )
-            sq.ttl = 1.5
+            sq.ttl = 5.0
             sq.kill_hooks.append( kill_bullet )
             self.pre_physics.add_hook( sq, partial(update_bullet,sq) )
             index += 1
