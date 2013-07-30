@@ -41,11 +41,11 @@ class Ship (physics.Thing):
         self.layer = layer
         self.world.pre_display.add_hook( self, self.update_graphics )
         print self, "creating mss"
-        self.sprite = self.main_sprite_structure = self.block_structure.create_sys_structure( world.object_psys, world.atlas, self, absolute_transformation = world.silly_software_transform_borked, relative_transformation = world.silly_software_transform_relative )
+        self.sprite = self.main_sprite_structure = self.block_structure.create_sys_structure( world.object_psys, world.atlas, self )
         print self, "created mss", self.main_sprite_structure
         def recreate_sprite_structure():
             self.main_sprite_structure.kill()
-            self.sprite = self.main_sprite_structure = self.block_structure.create_sys_structure( world.object_psys, world.atlas, self, absolute_transformation = world.silly_software_transform_borked, relative_transformation = world.silly_software_transform_relative )
+            self.sprite = self.main_sprite_structure = self.block_structure.create_sys_structure( world.object_psys, world.atlas, self )
         def kill_sprite_structure():
             self.main_sprite_structure.kill()
         self.kill_hooks.append( ignore_arguments( kill_sprite_structure ) )
@@ -563,7 +563,7 @@ class MainWorld (World):
             sq.velocity = (30,10)
             kw = {}
             name = "polygon_normals.4.generated"
-            kw[ "size" ] = Vec2d(106.6666666/float(self.window.height),106.6666666/float(self.window.height)) * 2
+            kw[ "size" ] = Vec2d(106.6666666,106.6666666)
             kw[ "texture_coordinates" ] = self.atlas.texcoords( name )
             kw[ "texture_size" ] = self.atlas.texsize( name )
             z = random.random() * 6.28
@@ -585,6 +585,19 @@ class MainWorld (World):
             self.psys_managed_things.append( (sq, index) )
             self.things.append( sq )
         def draw_psys():
+            # CMSDTv
+            # T = translate by self.main_layer.cocos_layer.position
+            # 
+            # M = v -> v - (1,1)
+            # C = v -> v * (w/h, 1)
+            w = float(self.window.width)
+            h = float(self.window.height)
+            x, y = self.main_layer.cocos_layer.position
+            mat = (2.0/w,       0.0,        0.0,        (2*x/w-1),
+                   0.0,         2.0/h,      0.0,        (2*y/h-1),
+                   0.0,         0.0,        1.0,        0.0,
+                   0.0,         0.0,        0.0,        1.0)
+            self.object_psys.set_transformation_matrix( mat )
             glEnable( GL_SCISSOR_TEST )
             glScissor( 0, 0, self.window.width + 1 - self.hud_width, self.window.height )
             self.object_psys.draw()
@@ -609,10 +622,11 @@ class MainWorld (World):
             gun.activated( index )
             sq = create_bullet_thing( self, shooter, gun )
             kw = {}
-            kw[ "size" ] = Vec2d(9.0/self.window.height, 33.0/self.window.height) * 2
+#            kw[ "size" ] = Vec2d(9.0/self.window.height, 33.0/self.window.height) * 2
+            kw[ "size" ] = 9.0,33.0
             kw[ "texture_size" ] = self.atlas.texsize( "laserGreen" )
             kw[ "texture_coordinates" ] = self.atlas.texcoords( "laserGreen" )
-            kw[ "position" ] = self.silly_software_transform( sq.position )
+            kw[ "position" ] = sq.position
             kw[ "angle" ] = sq.angle_radians
             kw[ "colour" ] = (0.0,1.0,0.0,1.0)
             sq.index = self.object_psys.add( **kw )
@@ -637,26 +651,7 @@ class MainWorld (World):
         pygame.display.flip()
     def update_psys_managed_objects(self):
         for thing, index in self.psys_managed_things:
-            self.object_psys.update_position_and_angle( index, self.silly_software_transform( thing.position ), thing.angle_radians )
-    def silly_software_transform_borked(self, p):
-        p = Vec2d(p)
-        p = p + self.main_layer.cocos_layer.position
-        p = Vec2d(p) / Vec2d( self.window.width, self.window.height )
-        p = (p * 2) - Vec2d(1,1)
-        p = p * Vec2d( self.window.width / float(self.window.height), 1 ) 
-        return p
-    def silly_software_transform(self, p):
-        p = Vec2d(p)
-        p = p + self.main_layer.cocos_layer.position
-        p = Vec2d(p) / Vec2d( self.window.width, self.window.height )
-        p = (p * 2) - Vec2d(1,1)
-        p = p * Vec2d( self.window.width / float(self.window.height), 1 ) 
-        return p
-    def silly_software_transform_relative(self, p):
-        p = Vec2d(p) / Vec2d( self.window.width, self.window.height )
-        p = p * 2 * Vec2d( self.window.width / float(self.window.height), 1 ) 
-        return p
-
+            self.object_psys.update_position_and_angle( index, thing.position, thing.angle_radians )
     def collide_general_with_bullet(self, space, arbiter ):
         anything, bullet = arbiter.shapes
         try:

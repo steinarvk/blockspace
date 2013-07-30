@@ -24,12 +24,14 @@ typedef struct {
 
     int stride;
 
+    GLfloat transformation_matrix[16];
+
     GLuint vertex_buffer_id, element_buffer_id;
 
     GLuint vertex_shader_id, fragment_shader_id, program_id;
     struct {
-        GLint fade_factor;
-        GLuint sheet_texture;
+        GLint sheet_texture;
+        GLint transformation;
     } uniforms;
 
     struct {

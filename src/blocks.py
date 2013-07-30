@@ -146,7 +146,7 @@ class PolygonBlock (Block):
     def create_sheet_info(self, atlas):
         name = "polygon_normals.{}.generated".format( len( self.vertices ) )
         rv = {}
-        rv[ "size" ] = Vec2d(106.6666666/768.0, 106.6666666/768.0)*2
+        rv[ "size" ] = Vec2d(106.6666666, 106.6666666)
         rv[ "texture_coordinates" ] = atlas.texcoords( name )
         rv[ "texture_size" ] = atlas.texsize( name )
         r,g,b = self.colour

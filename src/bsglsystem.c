@@ -193,7 +193,16 @@ int bsgl_system_draw( System *sys ) {
 
     glUseProgram( sys->program_id );
 
-    glUniform1f( sys->uniforms.fade_factor, (GLfloat) 0.0 );
+/*
+    float transformation_matrix[16] = {
+        3.0/4.0, 0.0, 0.0, 0.0,
+        0.0, 1.0, 0.0, 0.0,
+        0.0, 0.0, 1.0, 0.0,
+        0.0, 0.0, 0.0, 1.0,
+    };
+*/
+    glUniformMatrix4fv( sys->uniforms.transformation, 1, GL_TRUE, sys->transformation_matrix );
+
     glColor3f(1.f, 1.f, 1.f);
     glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
     glEnable( GL_BLEND );
@@ -294,6 +303,13 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
             0
         );
 
+        for(int i=0;i<16;i++) {
+            self->transformation_matrix[i] = 0.0;
+        }
+        for(int i=0;i<4;i++) {
+            self->transformation_matrix[i+i*4] = 1.0;
+        }
+
         fprintf( stderr, "A\n" );
         self->vertex_shader_id = create_shader_from_file( GL_VERTEX_SHADER, "shaded-block.v.glsl" );
         if( !self->vertex_shader_id ) break;
@@ -315,8 +331,7 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
 
         fprintf( stderr, "error: %d\n", glGetError() );
 
-        self->uniforms.fade_factor = glGetUniformLocation( self->program_id, "fade_factor" );
-
+        self->uniforms.transformation = glGetUniformLocation( self->program_id, "transformation" );
         fprintf( stderr, "error: %d\n", glGetError() );
 
         self->attributes.position_offset = glGetAttribLocation( self->program_id, "position_offset" );
@@ -435,6 +450,38 @@ PyObject *System_update_position_and_angle(System *self, PyObject *args) {
     return Py_None;
 }
 
+PyObject *System_set_transformation(System *self, PyObject *args) {
+    PyObject *tuple;
+    float data[16];
+
+    if( !PyArg_ParseTuple( args, "O", &tuple ) ) {
+        return NULL;
+    }
+
+    if( PySequence_Length( tuple ) != 16 ) {
+        return NULL;
+    }
+
+    for(int i=0;i<16;i++) {
+        PyObject *rrv = PySequence_GetItem( tuple, i );
+        if( !rrv ) {
+            return NULL;
+        }
+        data[ i ] = (float) PyFloat_AsDouble( rrv );
+        if( PyErr_Occurred() ) {
+            return NULL;
+        }
+        Py_DECREF( rrv );
+    }
+
+    for(int i=0;i<16;i++) {
+        self->transformation_matrix[i] = data[i];
+    }
+
+    Py_INCREF( Py_None );
+    return Py_None;
+}
+
 PyObject *System_remove(System *self, PyObject *args) {
     int index = -1;
     if( !PyArg_ParseTuple( args, "i", &index ) ) {
@@ -467,6 +514,7 @@ PyMethodDef System_methods[] = {
     { "reserve", (PyCFunction) System_reserve, METH_VARARGS, "Pre-reserve space for system elements." },
     { "add", (PyCFunction) System_add, METH_VARARGS | METH_KEYWORDS, "Add an element to the system and return its index." },
     { "remove", (PyCFunction) System_remove, METH_VARARGS, "Remove an element by its index." },
+    { "set_transformation_matrix", (PyCFunction) System_set_transformation, METH_VARARGS, "Set the transformation matrix." },
     { "get_capacity", (PyCFunction) System_get_capacity, METH_NOARGS, "Get the number of elements for which space has been allocated." },
     { "get_number_of_elements", (PyCFunction) System_get_number_of_elements, METH_NOARGS, "Get the number of elements." },
     { "update_position_and_angle", (PyCFunction) System_update_position_and_angle, METH_VARARGS, "Update one element by setting its angle and center of mass position." },
