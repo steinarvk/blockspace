@@ -5,6 +5,14 @@ import gameinput
 import physics
 import component
 
+from atlas import Atlas
+from pyglet.gl import *
+
+from bsc import include_build_directory
+include_build_directory()
+
+import bsgl
+
 from blocks import PolygonBlock
 
 from world import World
@@ -74,8 +82,11 @@ class GarageWorld (World):
         self.sim = physics.PhysicsSimulator( timestep = None )
         self.input_layer = gameinput.CocosInputLayer()
         layer = graphics.Layer( self.scene, cocos.layer.ColorLayer(128,0,128,255) )
+        graphics.Layer( self.scene, cocos_layer = graphics.FunctionCocosLayer( self.draw_psys ) )
         layer.cocos_layer.position = 0,0
         graphics.Layer( self.scene, self.input_layer )
+        self.atlas = Atlas( "atlas.generated" )
+        self.object_psys = bsgl.System( texture_id = self.atlas.sheet.get_texture().id )
         self.input_layer.mouse_motion_hooks.append( self.on_mouse_motion )
         self.main_layer = graphics.Layer( self.scene )
         self.root_node = cocos.cocosnode.CocosNode()
@@ -116,6 +127,16 @@ class GarageWorld (World):
         self.physics.add_anonymous_hook( self.sim.tick )
         self.idle_time = 0.0
         self.currently_idle = False
+    def draw_psys(self):
+        w = float(self.window.width)
+        h = float(self.window.height)
+        x, y = self.main_layer.cocos_layer.position
+        mat = (2.0/w,       0.0,        0.0,        (2*x/w-1),
+               0.0,         2.0/h,      0.0,        (2*y/h-1),
+               0.0,         0.0,        1.0,        0.0,
+               0.0,         0.0,        0.0,        1.0)
+        self.object_psys.set_transformation_matrix( mat )
+        self.object_psys.draw()
     def on_restart_with_current(self, *args):
         self.reset_idle_time()
         self.restart_block_structure()
