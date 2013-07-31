@@ -143,6 +143,16 @@ class PolygonBlock (Block):
     def __repr__(self):
         return "<PolygonBlock {0}>".format( "-".join( [ repr(round_vector((x,y),d=1)) for x,y in self.vertices] ) )
 
+    def create_sheet_info(self, atlas):
+        name = "polygon_normals.{}.generated".format( len( self.vertices ) )
+        rv = {}
+        rv[ "size" ] = Vec2d(106.6666666, 106.6666666)
+        rv[ "texture_coordinates" ] = atlas.texcoords( name )
+        rv[ "texture_size" ] = atlas.texsize( name )
+        r,g,b = self.colour
+        rv[ "colour" ] = (r/255.0, g/255.0, b/255.0, 1.0)
+        return rv
+
     def create_sprite(self):
         rv = graphics.cocos.sprite.Sprite( self.image_name )
         rv.color = self.colour
@@ -343,6 +353,30 @@ class BlockStructure (object):
 
     def centroid(self):
         return self.create_collision_shape().centroid()
+
+    def create_sys_structure(self, psys, atlas, thing, absolute_transformation = None, relative_transformation = None):
+        rv = graphics.BlockSystemStructure( psys, thing, transformation = absolute_transformation )
+        c = self.centroid()
+        for block in self.blocks:
+            block_pos = block.centroid() - c
+            if relative_transformation:
+                block_pos = relative_transformation( block_pos )
+            info = block.create_sheet_info( atlas )
+            info[ "offset" ] = block_pos
+            info[ "angle" ] = degrees_to_radians( block.rotation_degrees )
+            rv.add_element( info )
+            for component in block.components:
+                try:
+                    component.position
+                except AttributeError:
+                    continue
+                if component.required_edges_free():
+                    pos = component.position
+                pos = block.translation + component.relative_position - c
+                if relative_transformation:
+                    pos = relative_transformation( pos )
+                # todo
+        return rv
 
     def create_sprite_structure(self, **kwargs):
         s = graphics.SpriteStructure( **kwargs )

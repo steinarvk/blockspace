@@ -100,7 +100,7 @@ def generate_simple_polygon(n = 3, size = 256, side_length = 0.3):
             ar[x,y] = (200,100,100,255) if inside_convex_polygon( (x,y), vs ) else (100,200,50,255)
     img.save( "polygon_test.{0}.generated.png".format(n) )
 
-def generate_fancy_polygon(n = 3, size = 256, side_length = 0.3, subpixel_resolution = 10):
+def generate_fancy_polygon(n = 3, size = 256, side_length = 0.3, subpixel_resolution = 10, generate_normals = False):
     outer_r = radius_for_side_length(n, side_length)
     inner_r = outer_r - side_length/3.0
     print outer_r, inner_r, side_length
@@ -115,9 +115,21 @@ def generate_fancy_polygon(n = 3, size = 256, side_length = 0.3, subpixel_resolu
         print (a,b,c,d)
         t = ((a+b+c+d).normalized().dot( light_direction ) + 1) * 0.5
         t2 = 0.1 + 0.8 * t
-        polygons.append( ((a,b,c,d),t2) ) 
+        if not generate_normals:
+            polygons.append( ((a,b,c,d),t2) ) 
+        else:
+            v = (a+b+c+d).normalized()
+            h = 64
+            rm = math.sqrt(127**2 - h**2)
+            ix = int(0.5 + rm * v.x) + 127
+            iy = int(0.5 + rm * v.y) + 127
+            polygons.append( ((a,b,c,d),(ix, iy, h, 255) ) )
+
     print inner_vs
-    polygons.append( (inner_vs, 0.7512345) )
+    if not generate_normals:
+        polygons.append( (inner_vs, 0.7512345) )
+    else:
+        polygons.append( (inner_vs, (127,127,255,255) ) ) # straight up, opaque
     print map( lambda x: x[1], polygons )
     def average( rgbas ):   
         rs, gs, bs, alphas = [], [], [], []
@@ -135,7 +147,10 @@ def generate_fancy_polygon(n = 3, size = 256, side_length = 0.3, subpixel_resolu
         p = (p - Vec2d(size,size)*0.5) / size
         for polygon, shade in polygons:
             if inside_convex_polygon( p, polygon ):
-                return (shade*255,shade*255,shade*255,255)
+                if not generate_normals:
+                    return (shade*255,shade*255,shade*255,255)
+                else:
+                    return shade
         return (None,None,None,0) # transparent
         return (0,0,0,255) # solid black (not transparent -- that's None, None, None, 0)
     img, ar = create_new_image( size, size )
@@ -149,9 +164,12 @@ def generate_fancy_polygon(n = 3, size = 256, side_length = 0.3, subpixel_resolu
             results.append( rv )
         result = average( results )
         ar[x,y] = result
-    img.save( "polygon_fancy.{0}.generated.png".format(n) )
+    if generate_normals:
+        img.save( "polygon_normals.{0}.generated.png".format(n) )
+    else:
+        img.save( "polygon_fancy.{0}.generated.png".format(n) )
             
 if __name__ == '__main__':
-    for i in (4,6,5,8,3):
-        generate_fancy_polygon(i, size = 256, side_length = 0.3)
+    for i in (3,4,5,6,8):
+        generate_fancy_polygon(i, size = 256, side_length = 0.3, generate_normals = True)
     

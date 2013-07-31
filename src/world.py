@@ -24,6 +24,7 @@ class World (object):
         self.pre_display = Hookable()
         self.hookpoints.append( self.pre_display )
         self.display = Hookable()
+        self.post_display = Hookable()
         self.hookpoints.append( self.display )
         self.stepper = FixedTimestepper( timestep, self.fixed_tick )
         self.t = 0
@@ -44,3 +45,4 @@ class World (object):
     def display_update(self):
         self.pre_display()
         self.display()
+        self.post_display()

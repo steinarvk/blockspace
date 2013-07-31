@@ -24,7 +24,7 @@ class Window (object):
     def __init__(self, size = (1024,768), vsync = False ):
         self.width, self.height = size
         self.director = cocos.director.director
-        self.director.init( width = self.width, height = self.height )
+        self.director.init( width = self.width, height = self.height, vsync = False )
         self.director.show_FPS = True
     def run(self, scene):
         scene.finalize()
@@ -55,6 +55,13 @@ class Scene (object):
     def update(self):
         for layer in self.layers:
             layer.update()
+
+class FunctionCocosLayer (cocos.layer.Layer):
+    def __init__(self, function, *args, **kwargs):
+        super( FunctionCocosLayer, self ).__init__(*args, **kwargs)
+        self.function = function
+    def draw(self):
+        self.function()
 
 class BlankingCocosLayer (cocos.layer.Layer):
     def __init__(self, *args, **kwargs):
@@ -113,6 +120,34 @@ class Sprite (object):
         self.cocos_sprite.rotation = 180.0 - self.thing.angle_degrees
 
         
+class BlockSystemStructure (object):
+    def __init__(self, psys, thing, transformation = None):
+        self.psys = psys
+        self.thing = thing
+        self.transformation = transformation
+        self.elements = []
+    def update_elements(self):
+        position = tuple( self.thing.position )
+        if self.transformation:
+            position = self.transformation( position )
+        angle = self.thing.angle_radians
+        for index in self.elements:
+            self.psys.update_position_and_angle( index, position, angle )
+    def add_element( self, info ):
+        info = dict(info)
+        info["position"] = self.thing.position
+        info["angle"] = self.thing.angle_radians
+        if self.transformation:
+            info[ "position" ] = self.transformation( info["position"] )
+            # note offset must come pretransformed.
+            # transforming here is a hack anyway
+        index = self.psys.add( **info )
+        print info, "new element with index", index
+        self.elements.append( index )
+    def kill(self):
+        while self.elements:
+            index = self.elements.pop(0)
+            self.psys.remove( index )
         
 
 

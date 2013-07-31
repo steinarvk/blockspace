@@ -2,6 +2,8 @@ import graphics
 import physics
 import gameinput
 
+from atlas import Atlas
+
 from physics import ConvexPolygonShape, DiskShape, Vec2d
 from gameinput import key
 
@@ -12,6 +14,11 @@ import random
 from util import *
 
 from pyglet.gl import *
+
+from bsc import include_build_directory
+include_build_directory()
+
+import bsgl
 
 from functools import partial
 from itertools import cycle
@@ -32,10 +39,16 @@ class Ship (physics.Thing):
         super( Ship, self ).__init__( world, block_structure.create_collision_shape(), mass, moment, **kwargs )
         self.block_structure = block_structure
         self.layer = layer
-        self.sprite = self.main_sprite_structure = self.block_structure.create_sprite_structure( layer = self.layer, thing = self )
+        self.world.pre_display.add_hook( self, self.update_graphics )
+        print self, "creating mss"
+        self.sprite = self.main_sprite_structure = self.block_structure.create_sys_structure( world.object_psys, world.atlas, self )
+        print self, "created mss", self.main_sprite_structure
         def recreate_sprite_structure():
             self.main_sprite_structure.kill()
-            self.sprite = self.main_sprite_structure = self.block_structure.create_sprite_structure( layer = self.layer, thing = self )
+            self.sprite = self.main_sprite_structure = self.block_structure.create_sys_structure( world.object_psys, world.atlas, self )
+        def kill_sprite_structure():
+            self.main_sprite_structure.kill()
+        self.kill_hooks.append( ignore_arguments( kill_sprite_structure ) )
         self.reshape_hooks.add_anonymous_hook( recreate_sprite_structure )
         self.body.velocity_limit = min( self.body.velocity_limit, 700.0 )
         self.body.angular_velocity_limit = degrees_to_radians( 360.0 )
@@ -110,6 +123,8 @@ class Ship (physics.Thing):
         return rv
     def may_fire(self):
         return bool( self.ready_guns() )
+    def update_graphics(self):
+        self.main_sprite_structure.update_elements()
     def update(self, dt):
         super( Ship, self ).update()
         if self.minimap_symbol_sprite:
@@ -204,13 +219,14 @@ def ai_seek_target( dt, actor, target, fire):
                 fire()
 
 class Debris (physics.Thing):
-    def __init__(self, world, layer, position, shape, sprite, mass = 1.0, moment = 1.0, **kwargs):
+    def __init__(self, world, layer, position, shape, sprite = None, mass = 1.0, moment = 1.0, **kwargs):
         super( Debris, self ).__init__( world, shape, mass, moment, **kwargs )
-        graphics.Sprite( sprite, self, layer )
+        if sprite:
+            graphics.Sprite( sprite, self, layer )
+            self.sprite.cocos_sprite.draw = lambda : graphics.draw_thing_shapes(self)
         self.position = position
 #        f = self.sprite.cocos_sprite.draw
 #        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
-        self.sprite.cocos_sprite.draw = lambda : graphics.draw_thing_shapes(self)
     def update(self):
         super( Debris, self ).update()
 
@@ -253,7 +269,7 @@ def with_gun( block, edge_index = 1, sprite = None ):
     gun = component.PointComponent( block, pos, angle, required_edges = (edge_index,), category = "gun", sprite = spr )
     gun.cooldown = 0.2
 #    gun.cooldown = 0.1 # a LOT more powerful with lower cooldown
-    gun.power_usage = (750 * gun.cooldown) * 2.0/3.0 # more reasonable power usage
+    gun.power_usage = (250 * gun.cooldown) * 2.0/3.0 # more reasonable power usage
     return block
 
 def with_guns( block, sprite = None ):
@@ -359,7 +375,11 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
         for block in list(s.blocks)[1:]:
             random.choice(gens)( block )
         make_cockpit( s.blocks[0] )
-    rv = Ship( world, s, layer, position, mass = len(s.blocks), moment = 20000.0, collision_type = collision_type_main )
+    total_moment = 0.0
+    density = 1/(32.*32.)
+    for block in s.blocks:
+        total_moment += pymunk.moment_for_poly( block.area() * density, block.vertices )
+    rv = Ship( world, s, layer, position, mass = s.area() * density, moment = total_moment, collision_type = collision_type_main )
     rv._gun_distance = 65
     return rv
 
@@ -371,15 +391,14 @@ def create_square_thing(world, layer, position, image):
     rv = Debris( world, layer, position, shape, image, moment = moment, collision_type = collision_type_main )
     return rv
 
-def create_bullet_thing(world, image, shooter, gun):
+def create_bullet_thing(world, shooter, gun):
     points = [(0,0),(9,0),(9,33),(0,33)]
     shape = ConvexPolygonShape(*points)
     shape.translate( shape.centroid() * -1)
 #    shape = DiskShape(5) # useful for debugging with pygame to see bullet origins
     layer = None
-    rv = Debris( world, layer, (0,0), shape, image, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet, group = group_bulletgroup )
+    rv = Debris( world, layer, (0,0), shape, None, mass = 1.0, moment = physics.infinity, collision_type = collision_type_bullet, group = group_bulletgroup )
     speed = 1400
-#    speed = 0
     base_velocity = gun.velocity
     base_velocity = shooter.velocity # unrealistic but possibly better
     rv.velocity = base_velocity + gun.direction * speed
@@ -403,16 +422,16 @@ class MainWorld (World):
         if use_pygame:
             self.setup_pygame( resolution )
             self.display.add_anonymous_hook( self.update_pygame )
-        self.pre_display.add_anonymous_hook( self.update_display_objects )
+        self.pre_display.add_anonymous_hook( self.update_psys_managed_objects )
         self.pre_physics.add_anonymous_hook( self.update_camera )
         self.display.add_anonymous_hook( self.scene.update )
         self.player.body.velocity_limit = 800.0 # experiment with this for actually chasing fleeing ships
         self.pre_physics.add_hook( self.player, self.player.update )
-        self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
-#        self.pre_physics.add_hook( self.enemy, lambda dt : ai_flee_target( dt, self.enemy, self.player ) )
+#        self.pre_physics.add_hook( self.enemy, lambda dt : ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
+        self.pre_physics.add_hook( self.enemy, lambda dt : ai_flee_target( dt, self.enemy, self.player ) )
         self.pre_physics.add_hook( self.enemy, self.enemy.update )
-        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
-#        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_flee_target( dt, self.enemy2, self.player ) )
+#        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
+        self.pre_physics.add_hook( self.enemy2, lambda dt : ai_flee_target( dt, self.enemy2, self.player ) )
         self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
         for gun in self.player.block_structure.get_components( lambda x : "gun" in x.categories ):
             gun.cooldown /= 2.0
@@ -448,6 +467,8 @@ class MainWorld (World):
         self.hud_layer = graphics.Layer( self.scene, cocos_layer = self.hud_cocos_layer )
         self.hud_layer.cocos_layer.position = 0,0
         self.gem_images = pyglet.image.ImageGrid( pyglet.image.load("gems3.png"), 4, 4 )
+        self.atlas = Atlas( "atlas.generated" )
+        self.object_psys = bsgl.System( texture_id = self.atlas.sheet.get_texture().id )
     def setup_hud(self):
         def update_hp_display():
             undamaged = 255,255,255
@@ -518,33 +539,71 @@ class MainWorld (World):
         self.player.reshape_hooks.add_anonymous_hook( recreate_hp_display )
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (300,300), shape = "bigger", hp = 5 )
+        self.player = create_ship_thing( self, self.main_layer, (400,400), shape = "bigger", hp = 5 )
         self.player.invulnerable = False
-        self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 5 )
+        self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 0 )
         self.enemy.invulnerable = False
         self.enemy.body.angular_velocity_limit = degrees_to_radians(144*2)
-        self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "small", hp = 5 )
+        self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "small", hp = 0 )
         self.enemy2.invulnerable = False
         self.enemy2.body.angular_velocity_limit = degrees_to_radians(144*2)
         self.enemy.angle_degrees = random.random() * 360.0
         self.enemy2.angle_degrees = random.random() * 360.0
-        self.img_square = pyglet.image.load( "myblockgray.png" )
-        self.img_bullet = pyglet.image.load( "laserGreen.png" )
         self.batch = cocos.batch.BatchNode()
         self.main_layer.cocos_layer.add( self.batch )
-        self.display_objects = []
         self.physics_objects = []
         self.things = []
+        self.psys_managed_things = []
         for i in range(200):
             cols = "red", "purple", "grey", "blue", "green", "yellow"
-            sq = create_square_thing( self, None, (100,0), self.img_square )
+            sq = create_square_thing( self, None, (100,0), None )
             sq.position = (random.random()-0.5) * 4000, (random.random()-0.5) * 4000
             sq.angle_radians = random.random() * math.pi * 2
             sq.mylabel = sq.position
-            sq.velocity = (300,10)
-            self.batch.add( sq.sprite.cocos_sprite )
-            self.display_objects.append( sq.sprite )
+            sq.velocity = (30,10)
+            kw = {}
+            name = "polygon_normals.4.generated"
+            kw[ "size" ] = Vec2d(106.6666666,106.6666666)
+            kw[ "texture_coordinates" ] = self.atlas.texcoords( name )
+            kw[ "texture_size" ] = self.atlas.texsize( name )
+            z = random.random() * 6.28
+            r = 0.1 + random.random() * 10.0
+            pos = r*math.cos(z), r*math.sin(z)
+            # need to translate from pixel space
+            # [0,self.
+            # to
+            # [-1.3333,1.3333] x [-1,1]
+            p = sq.position
+            p = p + self.main_layer.cocos_layer.position
+            p = Vec2d(p) / Vec2d( self.window.width, self.window.height )
+            p = (p * 2) - Vec2d(1,1)
+            p = p * Vec2d( self.window.width / float(self.window.height), 1 ) 
+            kw[ "position" ] = p
+            kw[ "angle" ] = sq.angle_radians
+            kw[ "colour" ] = 1.0, 0.5, 0.5, 1.0
+            index = self.object_psys.add( **kw )
+            self.psys_managed_things.append( (sq, index) )
             self.things.append( sq )
+        def draw_psys():
+            # CMSDTv
+            # T = translate by self.main_layer.cocos_layer.position
+            # 
+            # M = v -> v - (1,1)
+            # C = v -> v * (w/h, 1)
+            w = float(self.window.width)
+            h = float(self.window.height)
+            x, y = self.main_layer.cocos_layer.position
+            mat = (2.0/w,       0.0,        0.0,        (2*x/w-1),
+                   0.0,         2.0/h,      0.0,        (2*y/h-1),
+                   0.0,         0.0,        1.0,        0.0,
+                   0.0,         0.0,        0.0,        1.0)
+            self.object_psys.set_transformation_matrix( mat )
+            glEnable( GL_SCISSOR_TEST )
+            glScissor( 0, 0, self.window.width + 1 - self.hud_width, self.window.height )
+            self.object_psys.draw()
+            glDisable( GL_SCISSOR_TEST )
+        graphics.Layer( self.scene, cocos_layer = graphics.FunctionCocosLayer( draw_psys ) )
+        print self.display.hooks
         self.sim.space.add_collision_handler( collision_type_main, collision_type_bullet, self.collide_general_with_bullet )
     def setup_input(self):
         input_layer = graphics.Layer( self.scene, gameinput.CocosInputLayer() )
@@ -561,7 +620,17 @@ class MainWorld (World):
             if not gun.may_activate():
                 continue
             gun.activated( index )
-            sq = create_bullet_thing( self, self.img_bullet, shooter, gun )
+            sq = create_bullet_thing( self, shooter, gun )
+            kw = {}
+#            kw[ "size" ] = Vec2d(9.0/self.window.height, 33.0/self.window.height) * 2
+            kw[ "size" ] = 9.0,33.0
+            kw[ "texture_size" ] = self.atlas.texsize( "laserGreen" )
+            kw[ "texture_coordinates" ] = self.atlas.texcoords( "laserGreen" )
+            kw[ "position" ] = sq.position
+            kw[ "angle" ] = sq.angle_radians
+            kw[ "colour" ] = (0.0,1.0,0.0,1.0)
+            sq.index = self.object_psys.add( **kw )
+            self.psys_managed_things.append( (sq, sq.index) )
             def update_bullet( bullet, dt ):
                 if not bullet.alive:
                     return
@@ -570,12 +639,9 @@ class MainWorld (World):
                 if bullet.ttl <= 0.0:
                     bullet.kill()
             def kill_bullet( sq ):
-                self.display_objects.remove( sq.sprite )
-                if sq.sprite.cocos_sprite in self.batch:
-                    self.batch.remove( sq.sprite.cocos_sprite )
-            sq.ttl = 1.5
-            self.display_objects.append( sq.sprite )
-            self.batch.add( sq.sprite.cocos_sprite )
+                self.psys_managed_things.remove( (sq,sq.index) )
+                self.object_psys.remove( sq.index )
+            sq.ttl = 5.0
             sq.kill_hooks.append( kill_bullet )
             self.pre_physics.add_hook( sq, partial(update_bullet,sq) )
             index += 1
@@ -583,24 +649,9 @@ class MainWorld (World):
         self.screen.fill( pygame.color.THECOLORS[ "black" ] )
         draw_space( self.screen, self.sim.space )
         pygame.display.flip()
-    def update_display_objects(self):
-        x, y = self.camera.focus
-        hw, hh = 0.5 * self.window.width, 0.5 * self.window.height
-        screen_slack = 100.0
-        beyond_slack = screen_slack + 500.0
-        screen_bb = pymunk.BB(x-hw-screen_slack,y-hh-screen_slack,x+hw+screen_slack,y+hh+screen_slack)
-        big_bb = pymunk.BB(x-hw-beyond_slack,y-hh-beyond_slack,x+hw+beyond_slack,y+hh+beyond_slack)
-        onscreen = set(self.sim.space.bb_query( screen_bb ))
-        for shape in onscreen:
-            shape.thing.sprite.update()
-        prech = set(self.batch.get_children())
-        for spr in self.display_objects:
-            if all((shape not in onscreen for shape in spr.thing.shapes)):
-                if spr.cocos_sprite in prech:
-                    self.batch.remove( spr.cocos_sprite )
-            else:
-                if spr.cocos_sprite not in prech:
-                    self.batch.add( spr.cocos_sprite )
+    def update_psys_managed_objects(self):
+        for thing, index in self.psys_managed_things:
+            self.object_psys.update_position_and_angle( index, thing.position, thing.angle_radians )
     def collide_general_with_bullet(self, space, arbiter ):
         anything, bullet = arbiter.shapes
         try:
