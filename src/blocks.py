@@ -511,7 +511,7 @@ class BlockStructure (object):
                 block_pos = relative_transformation( block_pos )
             info = block.create_sheet_info( atlas )
             info[ "offset" ] = block_pos
-            info[ "angle" ] = degrees_to_radians( block.rotation_degrees )
+            info[ "internal_angle" ] = degrees_to_radians( block.rotation_degrees )
             rv.add_element( info )
             for component in block.components:
                 try:
@@ -532,6 +532,7 @@ class BlockStructure (object):
         for block in self.blocks:
             block_pos = block.translation - c 
             s.add_sprite( block.create_sprite(), block_pos, rotation = -block.rotation_degrees, key = block )
+            print "thing with", len(self.blocks), ": ", block_pos, block.rotation_degrees
             for component in block.components:
                 try:
                     component.position

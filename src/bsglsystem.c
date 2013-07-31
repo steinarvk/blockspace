@@ -64,13 +64,15 @@ int bsgl_system_remove( System *sys, int index ) {
     return 0;
 }
 
-int bsgl_system_add( System *sys, int *out_index, double com_position[2], double offset[2], double angle, double sz[2], double tint[4], double texcoords[2], double texsize[2] ) {
+int bsgl_system_add( System *sys, int *out_index, double com_position[2], double offset[2], double angle, double sz[2], double internal_angle, double tint[4], double texcoords[2], double texsize[2] ) {
     const int floats_per_vertex = 11;
     const double xs[] = { 0, 1, 0, 1 };
     const double ys[] = { 0, 0, 1, 1 };
 
     GLfloat data[floats_per_vertex*4];
     int float_count = 0;
+
+    double cosa = cos( internal_angle ), sina = sin( internal_angle );
 
     for(int i=0;i<4;i++) {
         assert( (float_count % floats_per_vertex) == 0 );
@@ -82,8 +84,10 @@ int bsgl_system_add( System *sys, int *out_index, double com_position[2], double
         data[float_count++] = tint[1];
         data[float_count++] = tint[2];
         data[float_count++] = tint[3];
-        data[float_count++] = offset[0] + (xs[i]-0.5) * sz[0];
-        data[float_count++] = offset[1] + (ys[i]-0.5) * sz[1];
+        double dx = (xs[i]-0.5) * sz[0];
+        double dy = (ys[i]-0.5) * sz[1];
+        data[float_count++] = offset[0] + dx * cosa - dy * sina;
+        data[float_count++] = offset[1] + dx * sina + dy * cosa;
         data[float_count++] = texcoords[0] + xs[i] * texsize[0];
         data[float_count++] = texcoords[1] + ys[i] * texsize[1];
     }
@@ -263,7 +267,7 @@ int bsgl_system_setup_test_quads(System *self, int number_of_things) {
                 break;
         }
 
-        if( bsgl_system_add( self, NULL, world_pos, offset, angle, world_size, rgba, texcoords, texsize ) ) {
+        if( bsgl_system_add( self, NULL, world_pos, offset, angle, world_size, 0.0, rgba, texcoords, texsize ) ) {
             return 1;
         }
     }
@@ -391,7 +395,7 @@ PyObject *System_reserve(System *self, PyObject *args) {
 }
 
 PyObject *System_add(System *self, PyObject *args, PyObject *kwargs) {
-    static char *kwlist[] = { "position", "offset", "angle", "size", "texture_coordinates", "texture_size", "colour" };
+    static char *kwlist[] = { "position", "offset", "angle", "size", "internal_angle", "texture_coordinates", "texture_size", "colour" };
 
     double position[] = { 0.0, 0.0 };
     double offset[] = { 0.0, 0.0 };
@@ -400,15 +404,17 @@ PyObject *System_add(System *self, PyObject *args, PyObject *kwargs) {
     double texcoords[] = { 0.0, 0.0 };
     double texsize[] = { 1.0, 1.0 };
     double rgba[] = { 1.0, 1.0, 1.0, 1.0 };
+    double internal_angle = 0.0;
 
     if( !PyArg_ParseTupleAndKeywords( args,
                                       kwargs,
-                                      "|(dd)(dd)d(dd)(dd)(dd)(dddd)",
+                                      "|(dd)(dd)d(dd)d(dd)(dd)(dddd)",
                                       kwlist, 
                                       &position[0], &position[1],
                                       &offset[0], &offset[1],
                                       &angle,
                                       &size[0], &size[1],
+                                      &internal_angle,
                                       &texcoords[0], &texcoords[1],
                                       &texsize[0], &texsize[1],
                                       &rgba[0], &rgba[1], &rgba[2], &rgba[3] ) ) {
@@ -417,7 +423,7 @@ PyObject *System_add(System *self, PyObject *args, PyObject *kwargs) {
 
     int index = -1;
 
-    if( bsgl_system_add( self, &index, position, offset, angle, size, rgba, texcoords, texsize ) ) {
+    if( bsgl_system_add( self, &index, position, offset, angle, size, internal_angle, rgba, texcoords, texsize ) ) {
         return NULL;
     }
 
@@ -468,10 +474,10 @@ PyObject *System_set_transformation(System *self, PyObject *args) {
             return NULL;
         }
         data[ i ] = (float) PyFloat_AsDouble( rrv );
+        Py_DECREF( rrv );
         if( PyErr_Occurred() ) {
             return NULL;
         }
-        Py_DECREF( rrv );
     }
 
     for(int i=0;i<16;i++) {
