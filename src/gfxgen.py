@@ -8,6 +8,7 @@ from itertools import starmap,product
 
 from pymunk import Vec2d
 from util import *
+from geometry import *
 
 def rand(n):
     return random.randint(0, n - 1)
@@ -69,20 +70,6 @@ def put_pixel_intensity( o, col, xy, a ):
     r, g, b = col
     o[ xy ] = blend( o[xy], (r,g,b,a) )
 
-def side_of_line( p, xy0, xy1 ):
-    p = Vec2d(p)
-    xy0 = Vec2d(xy0)
-    xy1 = Vec2d(xy1)
-    d = (xy1-xy0).normalized()
-    n = d.perpendicular_normal()
-    return sign( (p-xy0).dot( n ) )
-
-def inside_convex_polygon( p, vs ):
-    rv = set(starmap( partial( side_of_line, p ), closed_circle_pairs(vs) ))
-    if 0 in rv:
-        rv.remove(0)
-    return len(rv) == 1
-    
 def generate_starfields_main():
     size = 1024
     img, ar = create_new_image( size, size )

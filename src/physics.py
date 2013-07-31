@@ -12,6 +12,14 @@ from util import *
 #   Body()._body
 # and so on
 
+CollisionTypes = {
+    "main": 1,
+    "bullet": 2
+}
+CollisionGroups = {
+    "bullets": 1
+}
+
 infinity = infinite_moment = pymunk.inf
 
 def zero_shape_centroid( shape ):
@@ -65,7 +73,7 @@ class ConvexPolygonShape (CollisionShape):
         rv = 0.0
         for (xi,yi), (xip,yip) in closed_circle_pairs( self.vertices ):
             rv += xi * yip - yi * xip
-        return 0.5 * rv
+        return abs(0.5 * rv)
     def centroid_and_area(self):
         a = 0.0
         rvx, rvy = 0.0, 0.0
@@ -241,27 +249,28 @@ class Thing (object):
     def __init__(self, world, shape, mass, moment, group = False, name = "anonymous", collision_type = None ):
         self.world = world
         self.sprite = None
-        self.sim = self.world.sim
+        if self.world:
+            self.sim = self.world.sim
+        else:
+            self.sim = None
         self.name = name
         self.body = pymunk.Body( mass, moment )
-        self.body.velocity_limit = self.sim.speed_limit
+        if self.sim:
+            self.body.velocity_limit = self.sim.speed_limit
         self.shapes = []
         self.invulnerable = True
         self.group = group
         self.collision_type = collision_type
         self.reshape_hooks = Hookable()
         self.reshape( shape )
-        for shape in self.shapes:
-            bb = shape.cache_bb()
-            assert min( abs(bb.right-bb.left), abs(bb.top-bb.bottom) ) >= self.sim.object_size_lower_limit
-            shape.thing = self
         self.kill_hooks = []
         self.update_hooks = []
         self.alive = True
         self.killed = False
         self.psu = component.PowerSupply( 0.0 )
         self.psu.power = self.psu.max_storage
-        self.sim.space.add( self.body )
+        if self.sim:
+            self.sim.space.add( self.body )
 
     def reshape(self, shape):
         if self.shapes:
@@ -271,7 +280,8 @@ class Thing (object):
         self.shapes = list( shape.generate_shapes( self.body ) )
         for shape in self.shapes:
             bb = shape.cache_bb()
-            assert min( abs(bb.right-bb.left), abs(bb.top-bb.bottom) ) >= self.sim.object_size_lower_limit
+            if self.sim:
+                assert min( abs(bb.right-bb.left), abs(bb.top-bb.bottom) ) >= self.sim.object_size_lower_limit
             shape.thing = self
         if self.collision_type:
             for shape in self.shapes:
@@ -279,7 +289,8 @@ class Thing (object):
         if self.group:
             for shape in self.shapes:
                 shape.group = self.group
-        self.sim.add( *self.shapes )
+        if self.sim:
+            self.sim.add( *self.shapes )
         self.reshape_hooks()
 
     def tick(self, dt):
@@ -293,7 +304,9 @@ class Thing (object):
         import cocos
         self.minimap_symbol_sprite = cocos.sprite.Sprite( symbol )
         self.minimap_symbol_sprite.color = tint
-        self.kill_hooks.append( lambda self : minimap.remove_sprite( self ) )
+        def on_killed( self ):
+            minimap.remove_sprite( self )
+        self.kill_hooks.append( on_killed )
         minimap.add_sprite( self, self.minimap_symbol_sprite )
 
     def kill(self):
@@ -305,6 +318,22 @@ class Thing (object):
         self.world.remove_all_hooks( self )
         for hook in self.kill_hooks:
             hook( self )
+
+    @property
+    def mass(self):
+        return self.body.mass
+
+    @mass.setter
+    def mass(self, value):
+        self.body.mass = value
+
+    @property
+    def moment(self):
+        return self.body.moment
+    
+    @moment.setter
+    def moment(self, value):
+        self.body.moment = value
 
     @property
     def position(self):

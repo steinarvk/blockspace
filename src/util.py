@@ -83,6 +83,8 @@ def closed_circle_pairs( l ):
 
 def generate_regular_polygon_vertices(n, r = 1.0, start_angle = None):
     step = math.pi * 2.0 / float(n)
+    if not start_angle:
+        start_angle = - 0.5 * step
     if start_angle == None:
         start_angle = 0.5 * step
     for i in range(n):
@@ -110,7 +112,17 @@ def lerp( p, a, b ):
 
 def vector_lerp( p, a, b ):
     return starmap( partial(lerp, p), zip(a,b) )
-    
+
+def key_and_value_dictmap( f, d ):
+    return { f(k): f(v) for (k,v) in d.items() }
+
+def recursively_untuple( xs ):
+    if isinstance( xs, tuple ) or isinstance( xs, list ):
+        return list(map(recursively_untuple, xs))
+    elif isinstance( xs, dict ):
+        return key_and_value_dictmap( recursively_untuple, xs )
+    else:
+        return xs
 
 class Hookable (object):
     def __init__(self):

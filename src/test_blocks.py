@@ -191,6 +191,18 @@ def test_attach_four_blocks_in_knightsmove():
             assert connections[ a ][ b ] == (block_index, edge_index)
     assert len( s.extract_connections() ) == 3
 
+def test_integer_map_setitem_regression():
+    x = IntegerMap()
+    assert x.next_index == 0
+    x[ x.next_index ] = 10
+    assert x.next_index == 1
+    assert list(x.indexed()) == [ (0,10) ]
+    y = IntegerMap()
+    assert y.next_index == 0
+    y.append( 10 )
+    assert y.next_index == 1
+    assert list(y.indexed()) == [ (0,10) ]
+
 def test_integer_map():
     x = IntegerMap()
     for i in range(10):

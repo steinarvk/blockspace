@@ -31,3 +31,15 @@ def test_almosts():
         assert not almost_geq( x, x + abs(x) )
         assert not almost_leq( x + abs(x), x )
         assert almost_geq( x + abs(x), x )
+
+def test_radius_for_side_length():
+    import math
+    for i in range(1000):
+        s = random.random() * 1000 + 0.1 
+        a = random.random() * 6.28
+        n = random.randint(3,20)
+        da = (2*math.pi/float(n))
+        r = radius_for_side_length( n, s )
+        x1 = Vec2d(polar_radians( a, r ))
+        x2 = Vec2d(polar_radians( a + da, r ))
+        assert almost_equal( s, (x1-x2).get_length() )

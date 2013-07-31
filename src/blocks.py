@@ -15,6 +15,8 @@ import copy
 
 from collections import OrderedDict
 
+from geometry import convex_polygons_overlap
+
 import sys
 
 class IllegalOverlapException (Exception):
@@ -38,10 +40,21 @@ class Edge (object):
     def midpoint(self):
         return (self.a+self.b)*0.5
 
+    def point(self, x):
+        assert 0 <= x <= 1
+        return (self.a+self.b)*x
+
     def overlaps(self, edge):
         if vectors_almost_equal(self.a,edge.a) and vectors_almost_equal(self.b,edge.b):
             return True
         if vectors_almost_equal(self.a,edge.b) and vectors_almost_equal(self.b,edge.a):
+            return True
+        return False
+
+    def almost_overlaps(self, edge, max_distance = 1.0):
+        if vectors_almost_equal(self.a,edge.a,k=max_distance) and vectors_almost_equal(self.b,edge.b,k=max_distance):
+            return True
+        if vectors_almost_equal(self.a,edge.b,k=max_distance) and vectors_almost_equal(self.b,edge.a,k=max_distance):
             return True
         return False
     
@@ -53,6 +66,13 @@ class Block (object):
     def __init__(self):
         self.collision_shapes = []
         self.components = []
+        self.hp = self.max_hp = 10
+        self.cockpit = False
+
+    @staticmethod
+    def load_data( data ):
+        # will we ever need anything other than PolygonBlocks?
+        return PolygonBlock.load_data( data )
 
     def attach_components(self, thing):
         for component in self.components:
@@ -107,10 +127,28 @@ class PolygonBlock (Block):
     def __init__(self, vertices):
         super( PolygonBlock, self ).__init__()
         self.vertices = map( Vec2d, vertices )
+        self.original_vertices = map( Vec2d, vertices )
+        self.inner_vertices = map( lambda x : Vec2d(x) * 0.99, vertices )
         self.free_edge_indices = range(len(self.edges))
         self.connections = {}
         self.rotation_degrees = 0.0
         self.translation = Vec2d(0,0)
+        self.sprite_scale = 1.0
+        self.sprite_flipy = False
+
+    def transformed_vertices(self):
+        xs = map( Vec2d, self.original_vertices )
+        for v in xs:
+            v.rotate_degrees( self.rotation_degrees )
+        xs = map( lambda x : x + self.translation, xs )
+        return xs
+
+    def transformed_inner_vertices(self):
+        xs = map( Vec2d, self.inner_vertices )
+        for v in xs:
+            v.rotate_degrees( self.rotation_degrees )
+        xs = map( lambda x : x + self.translation, xs )
+        return xs
 
     @property
     def edges(self):
@@ -125,6 +163,9 @@ class PolygonBlock (Block):
             v.rotate( delta_radians )
         return self
 
+    def interiors_overlap(self, other):
+        return convex_polygons_overlap( self.transformed_inner_vertices(), other.transformed_inner_vertices() )
+
     def rotate_degrees(self, delta_degrees):
         self.rotation_degrees += delta_degrees
         for v in self.vertices:
@@ -138,7 +179,7 @@ class PolygonBlock (Block):
         return self
 
     def create_collision_shape(self, extra_info = None, origin = None):
-        return physics.ConvexPolygonShape( *self.vertices, extra_info = extra_info, origin = origin )
+        return physics.ConvexPolygonShape( *self.transformed_vertices(), extra_info = extra_info, origin = origin )
 
     def __repr__(self):
         return "<PolygonBlock {0}>".format( "-".join( [ repr(round_vector((x,y),d=1)) for x,y in self.vertices] ) )
@@ -154,9 +195,54 @@ class PolygonBlock (Block):
         return rv
 
     def create_sprite(self):
-        rv = graphics.cocos.sprite.Sprite( self.image_name )
-        rv.color = self.colour
+        return graphics.create_sprite( self.sprite_info )
+
+    @staticmethod
+    def load_data( data ):
+        rv = PolygonBlock( data["vertices"] )
+        rv.hp = data["hp"]
+        rv.max_hp = data["max-hp"]
+        rv.cockpit = data["cockpit"]
+        rv.inner_vertices = data["inner-vertices"]
+        rv.sprite_info = data["sprite"]
+        rv.colour = data["sprite"]["colour"]
+        for f in (lambda : data["sprite-scale"], lambda : data["side-length"] / data["pixel-side-length"], lambda : 1):
+            try:
+                rv.sprite_scale = f()
+                break
+            except:
+                pass
         return rv
+
+    def dump_data(self):
+        rv = {}
+        rv["hp"] = self.hp
+        rv["max-hp"] = self.max_hp
+        rv["cockpit"] = self.cockpit
+        rv["vertices"] = [ [x,y] for (x,y) in self.original_vertices ]
+        rv["inner-vertices"] = self.inner_vertices
+        rv["sprite-scale"] = self.sprite_scale
+        rv["sprite"] = self.sprite_info
+        return recursively_untuple( rv )
+
+    def dump_string(self):
+        import yaml
+        return yaml.dump( self.dump_data() )
+
+    @staticmethod
+    def load_string( s ):
+        import yaml
+        return PolygonBlock.load_data( yaml.safe_load( s ) )
+
+    @staticmethod
+    def load_file( fn ):
+        with open( fn, "r" ) as f:
+            return PolygonBlock.load_string( f.read() )
+
+    def dump_file( self, fn ):
+        with open( fn, "w" ) as f:
+            f.write( self.dump_string() )
+        
 
 class QuadBlock (PolygonBlock):
     def __init__(self, side_length):
@@ -186,9 +272,15 @@ class IntegerMap (object):
     def __iter__(self):
         for v in self.d.values():
             yield v
+    def keys(self):
+        return self.d.keys()
     def indexed(self):
         for k, v in self.d.items():
             yield (k,v)
+    def __setitem__(self, index, value):
+        self.d[ index ] = value
+        if index >= self.next_index:
+            self.next_index = index + 1
     def __getitem__(self, index):
         return self.d[ index ]
     def __repr__(self):
@@ -199,10 +291,59 @@ class IntegerMap (object):
         return len(self.d)
 
 class BlockStructure (object):
-    def __init__(self, block):
+    def __init__(self, block = None):
         self.blocks = IntegerMap()
         self.free_edge_indices = []
-        self.add_block( block )
+        if block:
+            self.add_block( block )
+
+    def dump_data(self):
+        rv = {}
+        blocks = {}
+        for index, block in self.blocks.indexed():
+            blocks[ index ] = block.dump_data()
+        rv["blocks"] = blocks
+        rv["connections"] = recursively_untuple( self.extract_connections() )
+        return rv
+
+    @staticmethod
+    def load_data( data ):
+        rv = BlockStructure()
+        connections_goal = data["connections"]
+        connections_map = {}
+        def add_to_map(x,y,x_e,y_e):
+            element = y, ((x,x_e), (y,y_e))
+            try:
+                connections_map[x].append( element )
+            except KeyError:
+                connections_map[x] = [ element ]
+        for [[a,b],[c,d]] in connections_goal:
+            add_to_map(a,c,b,d)
+            add_to_map(c,a,d,b)
+        blocks = {}
+        for index, block_data in data["blocks"].items():
+            block = Block.load_data( block_data )
+            blocks[index] = block
+        root_block_index = min( blocks.keys() )
+        rv.add_block( blocks[root_block_index], index = root_block_index )
+        neighbours = {}
+        def add_neighbours_from( x ):
+            for neighbour, connection in connections_map[x]:
+                neighbours[ neighbour ] = connection
+        add_neighbours_from(root_block_index)
+        connected_set = set( [root_block_index] )
+        while neighbours:
+            key = neighbours.keys()[0]
+            connection = neighbours[ key ]
+            del neighbours[key]
+            (x,x_e), (y,y_e) = connection
+            if y in connected_set:
+                continue
+            rv.attach( (x,x_e), blocks[y], y_e, existing_index = y )
+            connected_set.add( y )
+            add_neighbours_from( y )
+        assert recursively_untuple( sorted(connections_goal) ) == recursively_untuple(sorted(rv.extract_connections()))
+        return rv
 
     def area(self):
         return sum( [ block.area() for block in self.blocks ] )
@@ -215,10 +356,11 @@ class BlockStructure (object):
         self.translate( -self.centroid() )
         
 
-    def add_block(self, block):
-        index = self.blocks.next_index
+    def add_block(self, block, index = None):
+        if not index:
+            index = self.blocks.next_index
         self.free_edge_indices.extend(list(map( lambda edge_index : (index,edge_index), range(len(block.edges)))))
-        self.blocks.append( block )
+        self.blocks[index] = block
 
     def any_block(self):
         try:
@@ -252,7 +394,9 @@ class BlockStructure (object):
         return self.blocks[ block_index ].edge( edge_index )
 
     def overlaps(self, block):
-        # TODO nondegenerate overlap check
+        for local_block in self.blocks:
+            if local_block.interiors_overlap( block ):
+                return True
         return False
     
     def connectivity_set_of(self, index):
@@ -282,21 +426,25 @@ class BlockStructure (object):
                     rv.append( (a,connected) )
         return rv
 
-    def attach(self, index, block, block_edge_index ):
+    def attach(self, index, block, block_edge_index, existing_index = None ):
         block_index, edge_index = index
         local_edge = self.edge( index )
         delta_deg = - (180.0 + block.edges[ block_edge_index ].angle_degrees - local_edge.angle_degrees)
 #        block = block.clone()
         block.rotate_degrees( delta_deg )
         local_edge = self.edge( index )
-        block.translate( - ( block.edges[ block_edge_index ].a - local_edge.b ) )
+        tv = - ( block.edges[ block_edge_index ].a - local_edge.b )
+        block.translate( tv )
         local_edge = self.edge( index )
         if self.overlaps( block ):
             raise IllegalOverlapException()
-        foreign_block_index = self.blocks.next_index
         local_edge = self.edges[ edge_index ]
         foreign_edge = block.edges[ block_edge_index ]
-        self.add_block( block )
+        if not existing_index:
+            foreign_block_index = self.blocks.next_index
+        else:
+            foreign_block_index = existing_index
+        self.add_block( block, index = foreign_block_index )
         tbr = []
         for local_block_index, local_edge_index in self.free_edge_indices:
             local_edge = self.edge( (local_block_index,local_edge_index) )
@@ -383,15 +531,36 @@ class BlockStructure (object):
         c = self.centroid()
         for block in self.blocks:
             block_pos = block.translation - c 
-            s.add_sprite( block.create_sprite(), block_pos, rotation = block.rotation_degrees, key = block )
+            s.add_sprite( block.create_sprite(), block_pos, rotation = -block.rotation_degrees, key = block )
             for component in block.components:
                 try:
                     component.position
                 except AttributeError:
                     continue
                 if component.required_edges_free():
-                    s.add_sprite( component.sprite, block_pos + component.relative_position, z = -1 )
+                    s.add_sprite( component.create_sprite(), block_pos + component.relative_position, rotation = -(block.rotation_degrees + component.relative_angle_degrees), z = -1 )
         return s
+
+def generate_polygon_yaml( filename, n, image_name, side_length = 32.0, colour = (255,255,255), pixel_side_length = None):
+    import yaml, sys
+    if not pixel_side_length:
+        pixel_side_length = side_length
+    vertices = generate_regular_polygon_vertices( n, radius_for_side_length( n, side_length ) )
+    inner_vertices = generate_regular_polygon_vertices( n, 0.99 * radius_for_side_length( n, side_length ) )
+    print >> sys.stderr, "--", filename
+    rv = {}
+    rv["n"] = n
+    rv["hp"] = rv["max-hp"] = 10
+    rv["cockpit"] = False
+    rv["side-length"] = side_length
+    rv["pixel-side-length"] = pixel_side_length
+    rv["vertices"] = list([ [x,y] for (x,y) in vertices ])
+    rv["inner-vertices"] = list( [ [x,y] for (x,y) in inner_vertices ])
+    rv["sprite"] = { "image-name": image_name, "colour": list(colour), "scale": float( side_length ) / float( pixel_side_length ) }
+    s = yaml.dump( recursively_untuple(rv) )
+    with open( filename, "w" ) as f:
+        f.write( s )
+    print >> sys.stderr, s
 
 def filter_connections( connections, block_indices ):
     def check_connection( connection ):
@@ -439,3 +608,7 @@ def partition_connections( connections ):
 
 def partition_connections_removing_blocks( connections, block_indices ):
     return partition_connections( filter_connections( connections, block_indices ) )
+
+if __name__ == '__main__':
+    for n in (3,4,5,6,8):
+        generate_polygon_yaml( "blocks/poly{}.yaml".format(n), n, "polygon_fancy.{}.generated.png".format(n), pixel_side_length = 76.8 )
