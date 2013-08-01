@@ -39,6 +39,7 @@ typedef struct {
         GLint position_offset;
         GLint attr_texcoord;
         GLint angle;
+        GLint internal_angle;
         GLint tint;
     } attributes;
 } System;

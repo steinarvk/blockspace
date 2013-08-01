@@ -12,9 +12,10 @@ int bsgl_system_unbind_vertex_attributes( System *sys ) {
         sys->attributes.angle,
         sys->attributes.tint,
         sys->attributes.position_offset,
-        sys->attributes.attr_texcoord
+        sys->attributes.attr_texcoord,
+        sys->attributes.internal_angle
     };
-    const int n = 5;
+    const int n = 6;
 
     for(int i = 0; i < n; i++) {
         glDisableVertexAttribArray( attrs[i] );
@@ -29,16 +30,18 @@ int bsgl_system_bind_vertex_attributes( System *sys ) {
         sys->attributes.angle,
         sys->attributes.tint,
         sys->attributes.position_offset,
-        sys->attributes.attr_texcoord
+        sys->attributes.attr_texcoord,
+        sys->attributes.internal_angle
     };
     const int floats[] = {
         2,
         1,
         4,
         2,
-        2
+        2,
+        1
     };
-    const int n = 5;
+    const int n = 6;
 
     int floatcount = 0;
 
@@ -65,7 +68,7 @@ int bsgl_system_remove( System *sys, int index ) {
 }
 
 int bsgl_system_add( System *sys, int *out_index, double com_position[2], double offset[2], double angle, double sz[2], double internal_angle, double tint[4], double texcoords[2], double texsize[2] ) {
-    const int floats_per_vertex = 11;
+    const int floats_per_vertex = 12;
     const double xs[] = { 0, 1, 0, 1 };
     const double ys[] = { 0, 0, 1, 1 };
 
@@ -90,6 +93,7 @@ int bsgl_system_add( System *sys, int *out_index, double com_position[2], double
         data[float_count++] = offset[1] + dx * sina + dy * cosa;
         data[float_count++] = texcoords[0] + xs[i] * texsize[0];
         data[float_count++] = texcoords[1] + ys[i] * texsize[1];
+        data[float_count++] = internal_angle;
     }
 
     const int datasize = float_count * sizeof data[0];
@@ -276,7 +280,7 @@ int bsgl_system_setup_test_quads(System *self, int number_of_things) {
 }
 
 static int System_init(System *self, PyObject *args, PyObject *kwargs) {
-    const int floats_per_vertex = 11;
+    const int floats_per_vertex = 12;
 
     static char *kwlist[] = { "texture_id" };
     int arg_texture_id;
@@ -351,6 +355,9 @@ static int System_init(System *self, PyObject *args, PyObject *kwargs) {
         fprintf( stderr, "error: %d\n", glGetError() );
 
         self->attributes.attr_texcoord = glGetAttribLocation( self->program_id, "attr_texcoord" );
+        fprintf( stderr, "error: %d\n", glGetError() );
+
+        self->attributes.internal_angle = glGetAttribLocation( self->program_id, "internal_angle" );
         fprintf( stderr, "error: %d\n", glGetError() );
 
         self->stride = sizeof(GLfloat) * floats_per_vertex;
@@ -440,7 +447,7 @@ PyObject *System_update_position_and_angle(System *self, PyObject *args) {
     }
 
     int vertex_index0 = 4 * index;
-    const int floats_per_vertex = 11;
+    const int floats_per_vertex = 12;
     GLfloat* floats = (void*) self->vertex_buffer.data;
 
     for(int i=0;i<4;i++) {
