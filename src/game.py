@@ -29,6 +29,7 @@ import pymunk
 
 import blocks
 import component
+from component import create_component
 
 from operator import attrgetter
 
@@ -48,9 +49,8 @@ def with_engine( block, edge_index = 3 ):
     pos = Vec2d( polar_degrees( angle, 16.0 ) )
     pos = Vec2d(0,0)
     pos = block.edge( edge_index ).midpoint()
-    spr = { "grid-name": "gems3.png", "grid-columns": 4, "grid-rows": 4, "index": 14, "scale": 0.15 }
-    engine = component.EngineComponent( 500, block, pos, angle, required_edges = (edge_index,), category = "engine", sprite_info = spr )
-    engine.power_usage = 50
+    context = { "block": block }
+    engine = create_component( "engine", context, position = pos, angle_degrees = angle, required_edge = edge_index, power = 500, cost = 50 )
     return block
 
 def with_gun( block, edge_index = 1 ):
@@ -65,11 +65,11 @@ def with_gun( block, edge_index = 1 ):
     pos = Vec2d( polar_degrees( angle, 16.0 ) )
     pos = Vec2d(0,0)
     pos = block.edge( edge_index ).midpoint()
-    spr = { "grid-name": "gems3.png", "grid-columns": 4, "grid-rows": 4, "index": 10, "scale": 0.15 }
-    gun = component.PointComponent( block, pos, angle, required_edges = (edge_index,), category = "gun", sprite_info = spr )
-    gun.cooldown = 0.2
-#    gun.cooldown = 0.1 # a LOT more powerful with lower cooldown
-    gun.power_usage = (750 * gun.cooldown) * 2.0/3.0 # more reasonable power usage
+    context = { "block": block }
+    cooldown = 0.2
+#   .cooldown = 0.1 # a LOT more powerful with lower cooldown
+    cost = (750 * cooldown) * 2.0/3.0 # more reasonable power usage
+    gun = create_component( "gun", context, position = pos, angle_degrees = angle, required_edge = edge_index, cooldown = cooldown, cost = cost)
     return block
 
 def with_guns( block, sprite = None ):
@@ -154,19 +154,19 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
                     "dark-gray": (64,64,64),
                     "red": (255,0,0) }
         def make_cockpit( block ):
-            cockpit = component.Component( block, categories = ("generator","battery") )
-            cockpit.power_capacity = int(0.5 + 0.5 * block.area())
-            cockpit.power_production = int(0.5 + 0.5 * block.area())
+            context = { "block": block }
+            create_component( "generator", context, production = int(0.5 + 0.5 * block.area()) )
+            create_component( "battery", context, storage = int(0.5 + 0.5 * block.area()) )
             block.max_hp = block.hp = hp * 3
             block.colour = colours["green"]
             block.cockpit = True
         def make_battery( block ):
-            battery = component.Component( block, categories = ("battery") )
-            battery.power_capacity = int(block.area())
+            context = { "block": block }
+            create_component( "battery", context, storage = block.area() )
             block.colour = colours["yellow"]
         def make_generator( block ):
-            generator = component.Component( block, categories = ("generator") )
-            generator.power_production = int(0.5 + 0.5 * block.area())
+            context = { "block": block }
+            create_component( "generator", context, storage = int(0.5 + 0.5 * block.area()) )
             block.colour = colours["red"]
         def make_armour( block ):
             block.max_hp = block.hp = hp * 5
@@ -234,7 +234,7 @@ class MainWorld (World):
         self.pre_physics.add_hook( self.enemy2, lambda dt : ai.ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
 #        self.pre_physics.add_hook( self.enemy2, lambda dt : ai.ai_flee_target( dt, self.enemy2, self.player ) )
         self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
-        for gun in self.player.block_structure.get_components( lambda x : "gun" in x.categories ):
+        for gun in self.player.weapons:
             gun.cooldown /= 2.0
         for x in (self.player, self.enemy, self.enemy2):
             self.post_physics.add_hook( x, x.tick )
@@ -340,7 +340,7 @@ class MainWorld (World):
         self.player.reshape_hooks.add_anonymous_hook( recreate_hp_display )
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
-        self.player = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 5 )
+#        self.player = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 5 )
         self.player = Ship.load_file( "current_garage_ship.yaml", self, layer = self.main_layer )
         self.player.position = (300,300)
         self.player.invulnerable = False

@@ -66,22 +66,14 @@ class Ship (physics.Thing):
         self.psu.consumption_fails_hook = lambda key : self.lose_power( key )
         self.weapons = []
         self.engines = []
-        for block in self.block_structure.blocks:
-            block.attach_components( self )
-        self.refresh_engines()
-                
-        self.psu.power = self.psu.max_storage
-
-    def refresh_engines(self):
         self.thrust_power = 0
         self.brake_power = 0
         self.turn_power = 0
         self.engine_power_drain = 0
-        for engine in self.block_structure.get_components( lambda c : "engine" in c.categories and c.active ):
-            self.thrust_power += engine.power_thrusting()
-            self.turn_power += engine.power_turning()
-            self.brake_power += engine.power_braking()
-            self.engine_power_drain += engine.power_usage
+        for block in self.block_structure.blocks:
+            block.attach_components( self )
+                
+        self.psu.power = self.psu.max_storage
 
     @staticmethod
     def load_data(data, world, **kwargs):
@@ -134,10 +126,7 @@ class Ship (physics.Thing):
     def on_fire_key(self, symbol, modifiers, state):
         pass
     def sanity_check(self):
-        self.refresh_engines()
-        for block in self.block_structure.blocks:
-            for component in block.components:
-                assert component.block == block
+        pass
     def on_controls_state(self, symbol, modifiers, state):
         self.sanity_check()
         self._spin = (1 if state[key.RIGHT] else 0) - (1 if state[key.LEFT] else 0)
@@ -150,15 +139,15 @@ class Ship (physics.Thing):
         self.psu.set_consumption( "turning", self.engine_power_drain if self._spin != 0 else 0 )
         self.psu.set_consumption( "turbo", self.engine_power_drain if self._turbo and self._thrusting else 0 )
     def all_engines(self):
-        rv = self.block_structure.get_components( lambda x : "engine" in x.categories and x.active )
+        rv = [ engine for engine in self.engines if engine.active ]
         rv.sort( key = lambda x : x.last_usage )
         return rv
     def all_guns(self):
-        rv = self.block_structure.get_components( lambda x : "gun" in x.categories and x.active )
+        rv = [ gun for gun in self.weapons if gun.active ]
         rv.sort( key = lambda x : x.last_usage )
         return rv
     def ready_guns(self):
-        rv = self.block_structure.get_components( lambda x : "gun" in x.categories and x.may_activate() )
+        rv = [ gun for gun in self.weapons if gun.may_activate() ]
         rv.sort( key = lambda x : x.last_usage )
         return rv
     def may_fire(self):

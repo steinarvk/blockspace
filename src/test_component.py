@@ -135,7 +135,8 @@ def test_power_supply_consumption_combine():
         assert psu.power == 1000 - 10 * i
         psu.tick(2)
 
-def test_create_battery():
+def test_create_battery_component():
+    import serialization
     block = create_block(4)
     ctx = { "block" : block }
     battery1 = create_component( "battery", ctx, storage = 300 )
@@ -145,3 +146,9 @@ def test_create_battery():
         assert battery in block.components
     assert battery1.storage == 300
     assert battery2.storage == 500
+    battery1_serialized = serialization.serialize_original( battery1 )
+    battery2_serialized = serialization.serialize_original( battery2 )
+    battery1_ = serialization.unserialize_original( ctx, battery1_serialized )
+    battery2_ = serialization.unserialize_original( ctx, battery2_serialized )
+    assert battery1.storage == battery1_.storage
+    assert battery2.storage == battery2_.storage

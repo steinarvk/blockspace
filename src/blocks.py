@@ -505,12 +505,6 @@ class BlockStructure (object):
     def create_sys_structure(self, psys, atlas, thing, absolute_transformation = None, relative_transformation = None):
         rv = graphics.BlockSystemStructure( psys, thing, transformation = absolute_transformation )
         c = self.centroid()
-        gunny = PolygonBlock.load_file( "blocks/poly8.yaml" ).create_sheet_info( atlas )
-        gunny[ "colour" ] = 1.0, 0.1, 0.1, 1.0
-        gunny[ "size" ] = 8.0, 8.0
-        enginy = PolygonBlock.load_file( "blocks/poly8.yaml" ).create_sheet_info( atlas )
-        enginy[ "colour" ] = 0.5, 0.5, 0.9, 1.0
-        enginy[ "size" ] = 8.0, 8.0
         for block in self.blocks:
             block_pos = block.centroid() - c
             if relative_transformation:
@@ -530,14 +524,10 @@ class BlockStructure (object):
                 pos = block.translation + component.relative_position - c
                 if relative_transformation:
                     pos = relative_transformation( pos )
-                if "gun" in component.categories:
-                    info = dict( gunny )
-                    info[ "offset" ] = pos
-                    rv.add_element( info )
-                elif "engine" in component.categories:
-                    info = dict( enginy )
-                    info[ "offset" ] = pos
-                    rv.add_element( info )
+                info = component.create_sheet_info( atlas )
+                info["offset"] = pos
+                # angle?
+                rv.add_element( info )
         return rv
 
     def create_sprite_structure(self, **kwargs):

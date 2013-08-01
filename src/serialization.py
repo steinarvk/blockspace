@@ -15,3 +15,7 @@ def create_original( constructor_name, context, **kwargs ):
 
 def serialize_original( x ):
     return (x.serialization_constructor_name, x.serialization_args)
+
+def unserialize_original( ctx, serialized ):
+    name, args = serialized
+    return create_original( name, ctx, **args )

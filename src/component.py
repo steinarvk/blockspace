@@ -38,18 +38,10 @@ class Component (object):
     def may_activate(self):
         if not self.active:
             return False
-        if self.cooldown and self.cooldown_finished and (self.cooldown_finished > self.world.t):
-            return False
-        if self.power_usage and not self.thing.psu.may_consume( self.power_usage ):
-            return False
         return True
 
     def activated(self, activation_sequence_no = 0):
-        if self.cooldown:
-            self.cooldown_finished = self.world.t + self.cooldown
-        if self.power_usage:
-            self.thing.psu.consume( self.power_usage )
-        self.last_usage = (self.world.t, activation_sequence_no )
+        pass
 
     def required_edges_free(self):
         xs = self.block.free_edge_indices
@@ -138,6 +130,13 @@ class PointComponent (Component):
         lv = self.block.thing.velocity
         return lv + rv
 
+    def create_sheet_info(self, atlas):
+        import blocks
+        rv = blocks.PolygonBlock.load_file( "blocks/poly8.yaml" ).create_sheet_info( atlas )
+        rv[ "colour" ] = 1.0, 1.0, 1.0, 1.0
+        rv[ "size" ] = 8.0, 8.0
+        return rv
+
 class GeneratorComponent (Component):
     name = "generator"
 
@@ -167,18 +166,35 @@ class BatteryComponent (Component):
 class GunComponent (PointComponent):
     name = "gun"
     
-    def __init__(self, block, position, angle_degrees, cooldown, shot_cost, required_edge):
+    def __init__(self, block, position, angle_degrees, cooldown, cost, required_edge):
         super( GunComponent, self ).__init__( block = block, position = position, angle_degrees = angle_degrees, required_edges = (required_edge,), name = "gun" )
-        self.gun_cooldown = cooldown
-        self.gun_cooldown_current = 0.0
-        self.gun_power_cost = shot_cost
+        self.cooldown = cooldown
+        self.cooldown_finished = None
+        self.gun_power_cost = cost
+        self.last_usage = (0.0,0)
+        self.attached = False
+
+    def may_activate(self):
+        if not self.active:
+            return False
+        if self.cooldown_finished and (self.cooldown_finished > self.world.t):
+            return False
+        if not self.thing.psu.may_consume( self.gun_power_cost ):
+            return False
+        return True
+        
+    def activated(self, activation_sequence_no):
+        self.cooldown_finished = self.world.t + self.cooldown
+        self.thing.psu.consume( self.gun_power_cost )
+        self.last_usage = (self.world.t, activation_sequence_no )
 
     def attach(self, thing):
         if self.required_edges_free():
             self.thing.weapons.append( self )
+            self.attached = True
 
     def detach(self, thing):
-        if self.required_edges_free():
+        if self.attached:
             self.thing.weapons.remove( self )
 
 class EngineComponent (PointComponent):
@@ -186,16 +202,26 @@ class EngineComponent (PointComponent):
 
     def __init__(self, block, position, angle_degrees, power, cost, required_edge ):
         super( EngineComponent, self ).__init__( block = block, position = position, angle_degrees = angle_degrees, required_edges = (required_edge,), name = "engine" )
-        self.engine_power = engine_power
+        self.engine_power = power
         self.engine_power_cost = cost
+        self.attached = False
 
     def attach(self, thing):
         if self.required_edges_free():
+            self.attached = True
             self.thing.engines.append( self )
+            thing.thrust_power += self.power_thrusting()
+            thing.turn_power += self.power_turning()
+            thing.brake_power += self.power_braking()
+            thing.engine_power_drain += self.engine_power_cost
 
     def detach(self, thing):
-        if self.required_edges_free():
+        if self.attached:
             self.thing.engines.remove( self )
+            thing.thrust_power -= self.power_thrusting()
+            thing.turn_power -= self.power_turning()
+            thing.brake_power -= self.power_braking()
+            thing.engine_power_drain -= self.engine_power_cost
 
     def efficiency_at_angle( self, deg ):
         deg_from_ideal = degrees_sub( self.angle_from_thing_degrees, deg + 180 )
@@ -227,4 +253,10 @@ serialization.register( BatteryComponent )
 
 def create_component( name, context, **kwargs ):
     return serialization.create_original( name, context, **kwargs )
+
+def is_gun( component ):
+    return isinstance( component, GunComponent )
+
+def is_engine( component ):
+    return isinstance( component, EngineComponent )
 
