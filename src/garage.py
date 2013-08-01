@@ -50,28 +50,28 @@ def decorate_block_with_guns_within( block, aim = 0.0, span = 120.0, align = Fal
 
 def decorate_block_normal( block ):
     block.role = "plain"
-    block.sprite_info["colour"] = (255,255,255)
+    block.colour = (255,255,255)
     return block
 
 def decorate_block_cockpit( block ):
     block.role = "cockpit"
-    block.sprite_info["colour"] = (0,255,0)
+    block.colour = (0,255,0)
     block.cockpit = True
     return block
 
 def decorate_block_battery( block ):
     block.role = "battery"
-    block.sprite_info["colour"] = (255,255,0)
+    block.colour = (255,255,0)
     return block
 
 def decorate_block_generator( block ):
     block.role = "generator"
-    block.sprite_info["colour"] = (255,0,0)
+    block.colour = (255,0,0)
     return block
 
 def decorate_block_armour( block ):
     block.role = "armour"
-    block.sprite_info["colour"] = (64,64,64)
+    block.colour = (64,64,64)
     return block
 
 class GarageWorld (World):
