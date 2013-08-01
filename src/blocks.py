@@ -627,3 +627,6 @@ def partition_connections_removing_blocks( connections, block_indices ):
 if __name__ == '__main__':
     for n in (3,4,5,6,8):
         generate_polygon_yaml( "blocks/poly{}.yaml".format(n), n, "polygon_fancy.{}.generated.png".format(n), pixel_side_length = 76.8 )
+
+def create_block( n ):
+    return PolygonBlock.load_file( "blocks/poly{}.yaml".format( n ) )

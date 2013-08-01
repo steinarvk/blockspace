@@ -134,3 +134,14 @@ def test_power_supply_consumption_combine():
     for i in range(100):
         assert psu.power == 1000 - 10 * i
         psu.tick(2)
+
+def test_create_battery():
+    block = create_block(4)
+    ctx = { "block" : block }
+    battery1 = create_component( "battery", ctx, storage = 300 )
+    battery2 = create_component( "battery", ctx, storage = 500 )
+    for battery in (battery1, battery2):
+        assert battery.block == block
+        assert battery in block.components
+    assert battery1.storage == 300
+    assert battery2.storage == 500

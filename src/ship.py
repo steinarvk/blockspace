@@ -64,6 +64,8 @@ class Ship (physics.Thing):
 #        f = self.sprite.cocos_sprite.draw
 #        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
         self.psu.consumption_fails_hook = lambda key : self.lose_power( key )
+        self.weapons = []
+        self.engines = []
         for block in self.block_structure.blocks:
             block.attach_components( self )
         self.refresh_engines()

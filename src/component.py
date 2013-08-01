@@ -4,29 +4,24 @@ import graphics
 
 from util import *
 
+import serialization
+
 class Component (object):
-    def __init__(self, block, required_edges = (), categories = (), category = None, name = None):
+    def __init__(self, block, required_edges = (), name = None):
         self.name = name or "unnamed"
         self.block = block
         self.required_edges = required_edges
         self.block.components.append( self )
-        self.cooldown = None
-        self.cooldown_finished = 0.0
-        self.power_usage = None
-        self.last_usage = None
-        self.categories = list(categories)
-        self.power_production = None
-        self.power_capacity = None
-        if category:
-            self.categories.append( category )
 
     def attach(self, thing):
+        pass
         if self.power_production:
             thing.psu.set_production( self, self.power_production )
         if self.power_capacity:
             thing.psu.increase_capacity( self.power_capacity )
 
     def detach(self, thing):
+        pass
         if self.power_production:
             thing.psu.remove_production( self )
         if self.power_capacity:
@@ -110,14 +105,10 @@ class PowerSupply (object):
         return self.power >= value
 
 class PointComponent (Component):
-    def __init__(self, block, position, angle_degrees, sprite_info = None, **kwargs):
+    def __init__(self, block, position, angle_degrees, **kwargs):
         super( PointComponent, self ).__init__( block, **kwargs )
         self.relative_position = Vec2d(position) # to block
         self.relative_angle_degrees = angle_degrees # relative to block
-        self.sprite_info = sprite_info
-
-    def create_sprite(self):
-        return graphics.create_sprite( self.sprite_info )
 
     @property
     def angle_from_thing_degrees(self):
@@ -147,10 +138,64 @@ class PointComponent (Component):
         lv = self.block.thing.velocity
         return lv + rv
 
+class GeneratorComponent (Component):
+    name = "generator"
+
+    def __init__(self, block, production):
+        super( GeneratorComponent, self ).__init__( block = block, name = "generator" )
+        self.production = production
+
+    def attach(self, thing):
+        thing.psu.set_production( self, self.production )
+
+    def detach(self, thing):
+        thing.psu.remove_production( self, self.production )
+
+class BatteryComponent (Component):
+    name = "battery"
+
+    def __init__(self, block, storage):
+        super( BatteryComponent, self ).__init__( block = block, name = "battery" )
+        self.storage = storage
+
+    def attach(self, thing):
+        thing.psu.increase_capacity( self.storage )
+
+    def detach(self, thing):
+        thing.psu.decrease_capacity( self.storage )
+    
+class GunComponent (PointComponent):
+    name = "gun"
+    
+    def __init__(self, block, position, angle_degrees, cooldown, shot_cost, required_edge):
+        super( GunComponent, self ).__init__( block = block, position = position, angle_degrees = angle_degrees, required_edges = (required_edge,), name = "gun" )
+        self.gun_cooldown = cooldown
+        self.gun_cooldown_current = 0.0
+        self.gun_power_cost = shot_cost
+
+    def attach(self, thing):
+        if self.required_edges_free():
+            self.thing.weapons.append( self )
+
+    def detach(self, thing):
+        if self.required_edges_free():
+            self.thing.weapons.remove( self )
+
 class EngineComponent (PointComponent):
-    def __init__(self, engine_power, *args, **kwargs ):
-        super( EngineComponent, self ).__init__( *args, **kwargs )
+    name = "engine"
+
+    def __init__(self, block, position, angle_degrees, power, cost, required_edge ):
+        super( EngineComponent, self ).__init__( block = block, position = position, angle_degrees = angle_degrees, required_edges = (required_edge,), name = "engine" )
         self.engine_power = engine_power
+        self.engine_power_cost = cost
+
+    def attach(self, thing):
+        if self.required_edges_free():
+            self.thing.engines.append( self )
+
+    def detach(self, thing):
+        if self.required_edges_free():
+            self.thing.engines.remove( self )
 
     def efficiency_at_angle( self, deg ):
         deg_from_ideal = degrees_sub( self.angle_from_thing_degrees, deg + 180 )
@@ -174,3 +219,12 @@ class EngineComponent (PointComponent):
 
     def power_braking(self):
         return self.efficiency_backwards() * self.engine_power
+
+serialization.register( EngineComponent )
+serialization.register( GunComponent )
+serialization.register( GeneratorComponent )
+serialization.register( BatteryComponent )
+
+def create_component( name, context, **kwargs ):
+    return serialization.create_original( name, context, **kwargs )
+
