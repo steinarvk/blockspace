@@ -1,4 +1,6 @@
 cockpit: false
+colour: [255, 255, 255]
+components: []
 hp: 10
 inner-vertices:
 - [15.840000000000002, -15.84]

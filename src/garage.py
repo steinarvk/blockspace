@@ -4,6 +4,7 @@ import cocos
 import gameinput
 import physics
 import component
+from component import create_component
 
 from atlas import Atlas
 from pyglet.gl import *
@@ -33,11 +34,11 @@ def decorate_block_with_engines_within( block, aim = 180.0, span = 120.0, align 
         if abs(angle_error) < 1.001:
             if align:
                 angle = aim - block.rotation_degrees
-            engine = component.EngineComponent( 500, block, point, angle, required_edges = (index,), category = "engine", sprite_info = { "grid-name": "gems3.png", "grid-columns": 4, "grid-rows": 4, "index": 14, "scale": 0.15 } )
-            engine.power_usage = 100
+            context = { "block": block }
+            engine = create_component( "engine", context, position = tuple(point), angle_degrees = angle, required_edge = index, power = 500, cost = 50 )
     return block
 
-def decorate_block_with_guns_within( block, aim = 0.0, span = 120.0, align = False ):
+def decorate_block_with_guns_within( block, aim = 0.0, span = 120.0, align = True ):
     for index, edge in indexed_zip( block.edges ):
         angle = edge.angle_degrees - block.rotation_degrees
         angle_error = (((edge.angle_degrees - aim + 180.0) % 360.0) - 180.0) / (span * 0.5)
@@ -45,7 +46,10 @@ def decorate_block_with_guns_within( block, aim = 0.0, span = 120.0, align = Fal
         if abs(angle_error) < 1.001:
             if align:
                 angle = aim - block.rotation_degrees
-            component.PointComponent( block, point, angle, required_edges = (index,), category = "gun", sprite_info = { "grid-name": "gems3.png", "grid-columns": 4, "grid-rows": 4, "index": 10, "scale": 0.15 } )
+            cooldown = 0.2
+            cost = (750 * cooldown) * 2.0/3.0 # more reasonable power usage
+            context = { "block": block }
+            gun = create_component( "gun", context, position = tuple(point), angle_degrees = angle, required_edge = index, cooldown = cooldown, cost = cost)
     return block
 
 def decorate_block_normal( block ):
@@ -57,21 +61,29 @@ def decorate_block_cockpit( block ):
     block.role = "cockpit"
     block.colour = (0,255,0)
     block.cockpit = True
+    context = { "block": block }
+    create_component( "generator", context, production = int(0.5 + 0.5 * block.area()) )
+    create_component( "battery", context, storage = int(0.5 + 0.5 * block.area()) )
     return block
 
 def decorate_block_battery( block ):
     block.role = "battery"
     block.colour = (255,255,0)
+    context = { "block": block }
+    create_component( "battery", context, storage = block.area() )
     return block
 
 def decorate_block_generator( block ):
     block.role = "generator"
     block.colour = (255,0,0)
+    context = { "block": block }
+    create_component( "generator", context, production = int(0.5 + 0.5 * block.area()) )
     return block
 
 def decorate_block_armour( block ):
     block.role = "armour"
     block.colour = (64,64,64)
+    block.hp *= 5
     return block
 
 class GarageWorld (World):

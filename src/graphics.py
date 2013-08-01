@@ -176,7 +176,6 @@ class BlockSystemStructure (object):
             # note offset must come pretransformed.
             # transforming here is a hack anyway
         index = self.psys.add( **info )
-        print info, "new element with index", index
         self.elements.append( index )
     def kill(self):
         while self.elements:

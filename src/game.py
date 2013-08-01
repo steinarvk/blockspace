@@ -166,7 +166,7 @@ def create_ship_thing(world, layer, position, shape = "small", hp = 1, recolour 
             block.colour = colours["yellow"]
         def make_generator( block ):
             context = { "block": block }
-            create_component( "generator", context, storage = int(0.5 + 0.5 * block.area()) )
+            create_component( "generator", context, production = int(0.5 + 0.5 * block.area()) )
             block.colour = colours["red"]
         def make_armour( block ):
             block.max_hp = block.hp = hp * 5
@@ -341,8 +341,10 @@ class MainWorld (World):
     def setup_game(self):
         self.sim = physics.PhysicsSimulator( timestep = None )
 #        self.player = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 5 )
+        print "LOADING PLYAER"
         self.player = Ship.load_file( "current_garage_ship.yaml", self, layer = self.main_layer )
         self.player.position = (300,300)
+        print "DONE PLAYER"
         self.player.invulnerable = False
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 0 )
         self.enemy.invulnerable = False
@@ -417,8 +419,17 @@ class MainWorld (World):
         input_layer.cocos_layer.set_key_press_hook( key.SPACE, lambda *args, **kwargs: (self.player.on_controls_state(*args,**kwargs), self.shoot_bullet(self.player)) )
         input_layer.cocos_layer.set_key_release_hook( key.SPACE, lambda *args, **kwargs: self.player.on_controls_state(*args,**kwargs) )
     def shoot_bullet(self, shooter):
+        if shooter == self.player:
+            for gun in self.player.weapons:
+                print "is ", gun, "active?", gun.active
+                print "needs", gun.required_edges
+                print "has?", gun.required_edges_free()
+                print "block free edges", gun.block.free_edge_indices
+            print "power?", self.player.psu.power
         guns = shooter.ready_guns()
         index = 0
+        if shooter == self.player:
+            print "Player shooting", len(guns), "guns"
         for gun in guns:
             if not gun.may_activate():
                 continue

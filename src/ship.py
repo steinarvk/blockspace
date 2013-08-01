@@ -41,9 +41,7 @@ class Ship (physics.Thing):
         self.block_structure = block_structure
         self.layer = layer
         self.world.pre_display.add_hook( self, self.update_graphics )
-        print self, "creating mss"
         self.sprite = self.main_sprite_structure = self.block_structure.create_sys_structure( world.object_psys, world.atlas, self )
-        print self, "created mss", self.main_sprite_structure
         def recreate_sprite_structure():
             self.main_sprite_structure.kill()
             self.sprite = self.main_sprite_structure = self.block_structure.create_sys_structure( world.object_psys, world.atlas, self )
@@ -71,6 +69,7 @@ class Ship (physics.Thing):
         self.turn_power = 0
         self.engine_power_drain = 0
         for block in self.block_structure.blocks:
+            print "attaching components", block.components
             block.attach_components( self )
                 
         self.psu.power = self.psu.max_storage
@@ -82,6 +81,7 @@ class Ship (physics.Thing):
         mass = data["mass"]
         moment = data["moment"]
         rv = Ship( world, s, (0,0), mass = mass, moment = moment, **kwargs )
+        print "loaded ship with", rv.ready_guns()
         return rv
 
     def summarize(self):
@@ -140,7 +140,6 @@ class Ship (physics.Thing):
         self.psu.set_consumption( "turbo", self.engine_power_drain if self._turbo and self._thrusting else 0 )
     def all_engines(self):
         rv = [ engine for engine in self.engines if engine.active ]
-        rv.sort( key = lambda x : x.last_usage )
         return rv
     def all_guns(self):
         rv = [ gun for gun in self.weapons if gun.active ]

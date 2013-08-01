@@ -205,13 +205,17 @@ class PolygonBlock (Block):
         rv.cockpit = data["cockpit"]
         rv.inner_vertices = data["inner-vertices"]
         rv.sprite_info = data["sprite"]
-        rv.colour = data["sprite"]["colour"]
+        rv.colour = data["colour"]
         for f in (lambda : data["sprite-scale"], lambda : data["side-length"] / data["pixel-side-length"], lambda : 1):
             try:
                 rv.sprite_scale = f()
                 break
             except:
                 pass
+        for component in data[ "components" ]:
+            import serialization
+            ctx = { "block": rv }
+            serialization.unserialize_original( ctx, component )
         return rv
 
     def dump_data(self):
@@ -223,6 +227,12 @@ class PolygonBlock (Block):
         rv["inner-vertices"] = self.inner_vertices
         rv["sprite-scale"] = self.sprite_scale
         rv["sprite"] = self.sprite_info
+        rv["colour"] = self.colour
+        components = []
+        for component in self.components:
+            import serialization
+            components.append( serialization.serialize_original( component ) )
+        rv[ "components" ] = recursively_untuple( components )
         return recursively_untuple( rv )
 
     def dump_string(self):
@@ -532,18 +542,7 @@ class BlockStructure (object):
 
     def create_sprite_structure(self, **kwargs):
         s = graphics.SpriteStructure( **kwargs )
-        c = self.centroid()
-        for block in self.blocks:
-            block_pos = block.translation - c 
-            s.add_sprite( block.create_sprite(), block_pos, rotation = -block.rotation_degrees, key = block )
-            print "thing with", len(self.blocks), ": ", block_pos, block.rotation_degrees
-            for component in block.components:
-                try:
-                    component.position
-                except AttributeError:
-                    continue
-                if component.required_edges_free():
-                    s.add_sprite( component.create_sprite(), block_pos + component.relative_position, rotation = -(block.rotation_degrees + component.relative_angle_degrees), z = -1 )
+        # TODO eliminate
         return s
 
 def generate_polygon_yaml( filename, n, image_name, side_length = 32.0, colour = (255,255,255), pixel_side_length = None):
@@ -562,6 +561,8 @@ def generate_polygon_yaml( filename, n, image_name, side_length = 32.0, colour =
     rv["vertices"] = list([ [x,y] for (x,y) in vertices ])
     rv["inner-vertices"] = list( [ [x,y] for (x,y) in inner_vertices ])
     rv["sprite"] = { "image-name": image_name, "colour": list(colour), "scale": float( side_length ) / float( pixel_side_length ) }
+    rv["colour"] = (255,255,255)
+    rv["components" ] = []
     s = yaml.dump( recursively_untuple(rv) )
     with open( filename, "w" ) as f:
         f.write( s )

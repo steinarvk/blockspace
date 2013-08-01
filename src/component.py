@@ -36,7 +36,7 @@ class Component (object):
         return self.block.thing
 
     def may_activate(self):
-        if not self.active:
+        if not self.active():
             return False
         return True
 
@@ -145,10 +145,11 @@ class GeneratorComponent (Component):
         self.production = production
 
     def attach(self, thing):
+        print "attaching generator ", self.production
         thing.psu.set_production( self, self.production )
 
     def detach(self, thing):
-        thing.psu.remove_production( self, self.production )
+        thing.psu.remove_production( self )
 
 class BatteryComponent (Component):
     name = "battery"
@@ -158,6 +159,7 @@ class BatteryComponent (Component):
         self.storage = storage
 
     def attach(self, thing):
+        print "attaching battery ", self.storage
         thing.psu.increase_capacity( self.storage )
 
     def detach(self, thing):
