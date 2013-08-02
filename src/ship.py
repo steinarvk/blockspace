@@ -162,10 +162,11 @@ class Ship (physics.Thing):
         self.body.reset_forces()
         spin = self._spin
         if spin == 0:
-            k = 1.0
-            if self.body.angular_velocity > k:
+            angular_momentum = self.body.angular_velocity * self.body.moment
+            k = 300.0
+            if angular_momentum > k:
                 spin = 1
-            elif self.body.angular_velocity < -k:
+            elif angular_momentum < -k:
                 spin = -1
             else:
                 self.body.angular_velocity = 0
