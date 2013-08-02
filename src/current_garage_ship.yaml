@@ -5,73 +5,55 @@ block-structure:
       colour: [0, 255, 0]
       components:
       - - generator
-        - {production: 222}
+        - {production: 512}
       - - battery
-        - {storage: 222}
+        - {storage: 512}
       - - gun
         - angle_degrees: 3.508354649267438e-15
           cooldown: 0.2
           cost: 100.0
-          position: [9.237604307034015, 0.0]
+          position: [16.000000000000004, 0.0]
           required_edge: 0
       - - engine
-        - angle_degrees: 119.99999999999999
+        - angle_degrees: 180.0
           cost: 50
-          position: [-4.618802153517006, 8.000000000000002]
-          power: 500
-          required_edge: 1
-      - - engine
-        - angle_degrees: 240.0
-          cost: 50
-          position: [-4.618802153517006, -7.999999999999999]
-          power: 500
+          position: [-16.0, 1.7763568394002505e-15]
+          power: 250
           required_edge: 2
       hp: 10
       inner-vertices:
-      - [9.145228263963675, -15.840000000000002]
-      - [9.145228263963675, 15.840000000000002]
-      - [-18.290456527927347, 2.239934904187004e-15]
+      - [15.840000000000002, -15.84]
+      - [15.840000000000002, 15.84]
+      - [-15.84, 15.840000000000002]
+      - [-15.840000000000003, -15.84]
       max-hp: 10
       sprite:
         colour: [255, 255, 255]
-        image-name: polygon_fancy.3.generated.png
+        image-name: polygon_fancy.4.generated.png
         scale: 0.4166666666666667
       sprite-scale: 0.4166666666666667
       vertices:
-      - [9.237604307034015, -16.0]
-      - [9.237604307034015, 16.0]
-      - [-18.475208614068027, 2.2625605092798017e-15]
+      - [16.000000000000004, -16.0]
+      - [16.000000000000004, 16.0]
+      - [-16.0, 16.000000000000004]
+      - [-16.000000000000004, -16.0]
     1:
       cockpit: false
-      colour: [255, 255, 0]
+      colour: [64, 64, 64]
       components:
-      - - battery
-        - {storage: 1024.0000000000002}
       - - gun
         - angle_degrees: 360.0
           cooldown: 0.2
           cost: 100.0
-          position: [13.856406460551018, 8.000000000000007]
+          position: [16.000000000000007, 3.552713678800501e-15]
           required_edge: 0
-      - - gun
-        - angle_degrees: 630.0
-          cooldown: 0.2
-          cost: 100.0
-          position: [8.000000000000007, -13.856406460551014]
-          required_edge: 3
-      - - engine
-        - angle_degrees: 450.0
-          cost: 50
-          position: [-8.000000000000007, 13.856406460551014]
-          power: 500
-          required_edge: 1
       - - engine
         - angle_degrees: 540.0
           cost: 50
-          position: [-13.856406460551014, -8.000000000000005]
-          power: 500
+          position: [-16.0, -1.7763568394002505e-15]
+          power: 250
           required_edge: 2
-      hp: 10
+      hp: 50
       inner-vertices:
       - [15.840000000000002, -15.84]
       - [15.840000000000002, 15.84]
@@ -90,35 +72,21 @@ block-structure:
       - [-16.000000000000004, -16.0]
     2:
       cockpit: false
-      colour: [255, 0, 0]
+      colour: [64, 64, 64]
       components:
-      - - generator
-        - {production: 512}
       - - gun
         - angle_degrees: 360.0
           cooldown: 0.2
           cost: 100.0
-          position: [13.856406460551023, -8.0]
+          position: [16.0, 0.0]
           required_edge: 0
-      - - gun
-        - angle_degrees: 90.0
-          cooldown: 0.2
-          cost: 100.0
-          position: [8.0, 13.856406460551021]
-          required_edge: 1
       - - engine
-        - angle_degrees: 180.0
+        - angle_degrees: 540.0
           cost: 50
-          position: [-13.856406460551021, 8.0]
-          power: 500
+          position: [-16.0, 0.0]
+          power: 250
           required_edge: 2
-      - - engine
-        - angle_degrees: 270.0
-          cost: 50
-          position: [-7.999999999999998, -13.856406460551021]
-          power: 500
-          required_edge: 3
-      hp: 10
+      hp: 50
       inner-vertices:
       - [15.840000000000002, -15.84]
       - [15.840000000000002, 15.84]
@@ -137,23 +105,21 @@ block-structure:
       - [-16.000000000000004, -16.0]
     3:
       cockpit: false
-      colour: [255, 0, 0]
+      colour: [64, 64, 64]
       components:
-      - - generator
-        - {production: 512}
       - - gun
-        - angle_degrees: 360.0
+        - angle_degrees: 3.508354649267438e-15
           cooldown: 0.2
           cost: 100.0
-          position: [16.0, 3.552713678800501e-15]
+          position: [16.000000000000004, 0.0]
           required_edge: 0
       - - engine
-        - angle_degrees: 540.0
+        - angle_degrees: 180.0
           cost: 50
-          position: [-16.0, -1.7763568394002505e-15]
-          power: 500
+          position: [-16.000000000000007, 0.0]
+          power: 250
           required_edge: 2
-      hp: 10
+      hp: 50
       inner-vertices:
       - [15.840000000000002, -15.84]
       - [15.840000000000002, 15.84]
@@ -172,185 +138,119 @@ block-structure:
       - [-16.000000000000004, -16.0]
     4:
       cockpit: false
-      colour: [255, 0, 0]
+      colour: [64, 64, 64]
       components:
-      - - generator
-        - {production: 1330}
       - - gun
-        - angle_degrees: 600.0
+        - angle_degrees: 3.508354649267438e-15
           cooldown: 0.2
           cost: 100.0
-          position: [24.000000000000018, -13.856406460551016]
-          required_edge: 4
-      - - gun
-        - angle_degrees: 300.0
-          cooldown: 0.2
-          cost: 100.0
-          position: [23.99999999999999, 13.856406460551032]
-          required_edge: 5
+          position: [16.0, -1.7763568394002505e-15]
+          required_edge: 0
       - - engine
-        - angle_degrees: 420.0
+        - angle_degrees: 180.0
           cost: 50
-          position: [-24.000000000000014, 13.856406460550998]
-          power: 500
-          required_edge: 1
-      - - engine
-        - angle_degrees: 480.0
-          cost: 50
-          position: [-23.999999999999986, -13.856406460551048]
-          power: 500
+          position: [-16.0, 1.7763568394002505e-15]
+          power: 250
           required_edge: 2
-      hp: 10
+      hp: 50
       inner-vertices:
-      - [27.435684791891024, -15.840000000000002]
-      - [27.435684791891024, 15.840000000000002]
-      - [1.939840529849408e-15, 31.680000000000007]
-      - [-27.435684791891024, 15.840000000000002]
-      - [-27.435684791891028, -15.839999999999995]
-      - [-3.3957013925648196e-14, -31.680000000000007]
+      - [15.840000000000002, -15.84]
+      - [15.840000000000002, 15.84]
+      - [-15.84, 15.840000000000002]
+      - [-15.840000000000003, -15.84]
       max-hp: 10
       sprite:
         colour: [255, 255, 255]
-        image-name: polygon_fancy.6.generated.png
+        image-name: polygon_fancy.4.generated.png
         scale: 0.4166666666666667
       sprite-scale: 0.4166666666666667
       vertices:
-      - [27.712812921102046, -16.0]
-      - [27.712812921102046, 16.0]
-      - [1.9594348786357655e-15, 32.00000000000001]
-      - [-27.712812921102046, 16.0]
-      - [-27.71281292110205, -15.999999999999995]
-      - [-3.430001406631131e-14, -32.00000000000001]
+      - [16.000000000000004, -16.0]
+      - [16.000000000000004, 16.0]
+      - [-16.0, 16.000000000000004]
+      - [-16.000000000000004, -16.0]
     5:
       cockpit: false
-      colour: [255, 0, 0]
+      colour: [64, 64, 64]
       components:
-      - - generator
-        - {production: 1330}
       - - gun
-        - angle_degrees: 600.0
+        - angle_degrees: 3.508354649267438e-15
           cooldown: 0.2
           cost: 100.0
-          position: [24.000000000000014, -13.856406460551014]
-          required_edge: 4
-      - - gun
-        - angle_degrees: 300.0
-          cooldown: 0.2
-          cost: 100.0
-          position: [23.999999999999986, 13.856406460551035]
-          required_edge: 5
+          position: [16.000000000000004, 0.0]
+          required_edge: 0
       - - engine
-        - angle_degrees: 420.0
+        - angle_degrees: 180.0
           cost: 50
-          position: [-24.000000000000018, 13.856406460551]
-          power: 500
-          required_edge: 1
-      - - engine
-        - angle_degrees: 480.0
-          cost: 50
-          position: [-23.99999999999999, -13.85640646055105]
-          power: 500
+          position: [-16.0, 0.0]
+          power: 250
           required_edge: 2
-      hp: 10
+      hp: 50
       inner-vertices:
-      - [27.435684791891024, -15.840000000000002]
-      - [27.435684791891024, 15.840000000000002]
-      - [1.939840529849408e-15, 31.680000000000007]
-      - [-27.435684791891024, 15.840000000000002]
-      - [-27.435684791891028, -15.839999999999995]
-      - [-3.3957013925648196e-14, -31.680000000000007]
+      - [15.840000000000002, -15.84]
+      - [15.840000000000002, 15.84]
+      - [-15.84, 15.840000000000002]
+      - [-15.840000000000003, -15.84]
       max-hp: 10
       sprite:
         colour: [255, 255, 255]
-        image-name: polygon_fancy.6.generated.png
+        image-name: polygon_fancy.4.generated.png
         scale: 0.4166666666666667
       sprite-scale: 0.4166666666666667
       vertices:
-      - [27.712812921102046, -16.0]
-      - [27.712812921102046, 16.0]
-      - [1.9594348786357655e-15, 32.00000000000001]
-      - [-27.712812921102046, 16.0]
-      - [-27.71281292110205, -15.999999999999995]
-      - [-3.430001406631131e-14, -32.00000000000001]
+      - [16.000000000000004, -16.0]
+      - [16.000000000000004, 16.0]
+      - [-16.0, 16.000000000000004]
+      - [-16.000000000000004, -16.0]
     6:
       cockpit: false
-      colour: [255, 0, 0]
+      colour: [64, 64, 64]
       components:
-      - - generator
-        - {production: 1330}
       - - gun
-        - angle_degrees: 240.0
+        - angle_degrees: 3.508354649267438e-15
           cooldown: 0.2
           cost: 100.0
-          position: [24.0, -13.856406460551042]
-          required_edge: 4
-      - - gun
-        - angle_degrees: -60.00000000000004
-          cooldown: 0.2
-          cost: 100.0
-          position: [24.0, 13.856406460551007]
-          required_edge: 5
+          position: [16.000000000000004, 0.0]
+          required_edge: 0
       - - engine
-        - angle_degrees: 60.0
+        - angle_degrees: 180.0
           cost: 50
-          position: [-24.000000000000004, 13.856406460551028]
-          power: 500
-          required_edge: 1
-      - - engine
-        - angle_degrees: 120.0
-          cost: 50
-          position: [-24.000000000000004, -13.856406460551014]
-          power: 500
+          position: [-16.0, 0.0]
+          power: 250
           required_edge: 2
-      hp: 10
+      hp: 50
       inner-vertices:
-      - [27.435684791891024, -15.840000000000002]
-      - [27.435684791891024, 15.840000000000002]
-      - [1.939840529849408e-15, 31.680000000000007]
-      - [-27.435684791891024, 15.840000000000002]
-      - [-27.435684791891028, -15.839999999999995]
-      - [-3.3957013925648196e-14, -31.680000000000007]
+      - [15.840000000000002, -15.84]
+      - [15.840000000000002, 15.84]
+      - [-15.84, 15.840000000000002]
+      - [-15.840000000000003, -15.84]
       max-hp: 10
       sprite:
         colour: [255, 255, 255]
-        image-name: polygon_fancy.6.generated.png
+        image-name: polygon_fancy.4.generated.png
         scale: 0.4166666666666667
       sprite-scale: 0.4166666666666667
       vertices:
-      - [27.712812921102046, -16.0]
-      - [27.712812921102046, 16.0]
-      - [1.9594348786357655e-15, 32.00000000000001]
-      - [-27.712812921102046, 16.0]
-      - [-27.71281292110205, -15.999999999999995]
-      - [-3.430001406631131e-14, -32.00000000000001]
+      - [16.000000000000004, -16.0]
+      - [16.000000000000004, 16.0]
+      - [-16.0, 16.000000000000004]
+      - [-16.000000000000004, -16.0]
     7:
       cockpit: false
       colour: [64, 64, 64]
       components:
       - - gun
-        - angle_degrees: 540.0
+        - angle_degrees: 3.508354649267438e-15
           cooldown: 0.2
           cost: 100.0
-          position: [8.000000000000007, -13.856406460551014]
-          required_edge: 2
-      - - gun
-        - angle_degrees: 270.0
-          cooldown: 0.2
-          cost: 100.0
-          position: [13.856406460551021, 8.000000000000014]
-          required_edge: 3
-      - - engine
-        - angle_degrees: 360.0
-          cost: 50
-          position: [-8.000000000000007, 13.856406460551014]
-          power: 500
+          position: [16.000000000000004, 0.0]
           required_edge: 0
       - - engine
-        - angle_degrees: 450.0
+        - angle_degrees: 180.0
           cost: 50
-          position: [-13.856406460551014, -8.0]
-          power: 500
-          required_edge: 1
+          position: [-16.0, 0.0]
+          power: 250
+          required_edge: 2
       hp: 50
       inner-vertices:
       - [15.840000000000002, -15.84]
@@ -373,289 +273,58 @@ block-structure:
       colour: [64, 64, 64]
       components:
       - - gun
-        - angle_degrees: 180.0
-          cooldown: 0.2
-          cost: 100.0
-          position: [13.856406460551014, -8.0]
-          required_edge: 2
-      - - gun
-        - angle_degrees: -90.0
-          cooldown: 0.2
-          cost: 100.0
-          position: [8.0, 13.856406460551021]
-          required_edge: 3
-      - - engine
-        - angle_degrees: 0.0
-          cost: 50
-          position: [-13.856406460551021, 8.0]
-          power: 500
-          required_edge: 0
-      - - engine
-        - angle_degrees: 90.0
-          cost: 50
-          position: [-8.0, -13.856406460551021]
-          power: 500
-          required_edge: 1
-      hp: 50
-      inner-vertices:
-      - [15.840000000000002, -15.84]
-      - [15.840000000000002, 15.84]
-      - [-15.84, 15.840000000000002]
-      - [-15.840000000000003, -15.84]
-      max-hp: 10
-      sprite:
-        colour: [255, 255, 255]
-        image-name: polygon_fancy.4.generated.png
-        scale: 0.4166666666666667
-      sprite-scale: 0.4166666666666667
-      vertices:
-      - [16.000000000000004, -16.0]
-      - [16.000000000000004, 16.0]
-      - [-16.0, 16.000000000000004]
-      - [-16.000000000000004, -16.0]
-    9:
-      cockpit: false
-      colour: [64, 64, 64]
-      components:
-      - - gun
-        - angle_degrees: 450.0
-          cooldown: 0.2
-          cost: 100.0
-          position: [7.999999999999986, -13.856406460551025]
-          required_edge: 1
-      - - gun
-        - angle_degrees: 180.0
-          cooldown: 0.2
-          cost: 100.0
-          position: [13.856406460551028, 7.999999999999993]
-          required_edge: 2
-      - - engine
-        - angle_degrees: 360.0
-          cost: 50
-          position: [-13.856406460551028, -7.9999999999999964]
-          power: 500
-          required_edge: 0
-      - - engine
-        - angle_degrees: 270.0
-          cost: 50
-          position: [-7.999999999999993, 13.856406460551023]
-          power: 500
-          required_edge: 3
-      hp: 50
-      inner-vertices:
-      - [15.840000000000002, -15.84]
-      - [15.840000000000002, 15.84]
-      - [-15.84, 15.840000000000002]
-      - [-15.840000000000003, -15.84]
-      max-hp: 10
-      sprite:
-        colour: [255, 255, 255]
-        image-name: polygon_fancy.4.generated.png
-        scale: 0.4166666666666667
-      sprite-scale: 0.4166666666666667
-      vertices:
-      - [16.000000000000004, -16.0]
-      - [16.000000000000004, 16.0]
-      - [-16.0, 16.000000000000004]
-      - [-16.000000000000004, -16.0]
-    10:
-      cockpit: false
-      colour: [64, 64, 64]
-      components:
-      - - gun
-        - angle_degrees: 450.0
-          cooldown: 0.2
-          cost: 100.0
-          position: [13.856406460551021, -8.0]
-          required_edge: 1
-      - - gun
-        - angle_degrees: 180.00000000000003
-          cooldown: 0.2
-          cost: 100.0
-          position: [8.0, 13.856406460551028]
-          required_edge: 2
-      - - engine
-        - angle_degrees: 360.0
-          cost: 50
-          position: [-8.0, -13.856406460551028]
-          power: 500
-          required_edge: 0
-      - - engine
-        - angle_degrees: 270.0
-          cost: 50
-          position: [-13.856406460551021, 8.0]
-          power: 500
-          required_edge: 3
-      hp: 50
-      inner-vertices:
-      - [15.840000000000002, -15.84]
-      - [15.840000000000002, 15.84]
-      - [-15.84, 15.840000000000002]
-      - [-15.840000000000003, -15.84]
-      max-hp: 10
-      sprite:
-        colour: [255, 255, 255]
-        image-name: polygon_fancy.4.generated.png
-        scale: 0.4166666666666667
-      sprite-scale: 0.4166666666666667
-      vertices:
-      - [16.000000000000004, -16.0]
-      - [16.000000000000004, 16.0]
-      - [-16.0, 16.000000000000004]
-      - [-16.000000000000004, -16.0]
-    11:
-      cockpit: false
-      colour: [255, 0, 0]
-      components:
-      - - generator
-        - {production: 222}
-      - - gun
-        - angle_degrees: 360.0
-          cooldown: 0.2
-          cost: 100.0
-          position: [4.618802153517002, -8.000000000000005]
-          required_edge: 0
-      - - gun
-        - angle_degrees: 119.99999999999999
-          cooldown: 0.2
-          cost: 100.0
-          position: [4.618802153517009, 7.999999999999998]
-          required_edge: 1
-      - - engine
-        - angle_degrees: 240.0
-          cost: 50
-          position: [-9.237604307034012, 6.217248937900877e-15]
-          power: 500
-          required_edge: 2
-      hp: 10
-      inner-vertices:
-      - [9.145228263963675, -15.840000000000002]
-      - [9.145228263963675, 15.840000000000002]
-      - [-18.290456527927347, 2.239934904187004e-15]
-      max-hp: 10
-      sprite:
-        colour: [255, 255, 255]
-        image-name: polygon_fancy.3.generated.png
-        scale: 0.4166666666666667
-      sprite-scale: 0.4166666666666667
-      vertices:
-      - [9.237604307034015, -16.0]
-      - [9.237604307034015, 16.0]
-      - [-18.475208614068027, 2.2625605092798017e-15]
-    12:
-      cockpit: false
-      colour: [64, 64, 64]
-      components:
-      - - gun
-        - angle_degrees: 360.0
-          cooldown: 0.2
-          cost: 100.0
-          position: [9.237604307034019, -7.105427357601002e-15]
-          required_edge: 0
-      - - engine
-        - angle_degrees: 120.0
-          cost: 50
-          position: [-4.618802153516995, 8.000000000000007]
-          power: 500
-          required_edge: 1
-      - - engine
-        - angle_degrees: 240.0
-          cost: 50
-          position: [-4.618802153517009, -7.999999999999993]
-          power: 500
-          required_edge: 2
-      hp: 50
-      inner-vertices:
-      - [9.145228263963675, -15.840000000000002]
-      - [9.145228263963675, 15.840000000000002]
-      - [-18.290456527927347, 2.239934904187004e-15]
-      max-hp: 10
-      sprite:
-        colour: [255, 255, 255]
-        image-name: polygon_fancy.3.generated.png
-        scale: 0.4166666666666667
-      sprite-scale: 0.4166666666666667
-      vertices:
-      - [9.237604307034015, -16.0]
-      - [9.237604307034015, 16.0]
-      - [-18.475208614068027, 2.2625605092798017e-15]
-    13:
-      cockpit: false
-      colour: [64, 64, 64]
-      components:
-      - - gun
         - angle_degrees: 3.508354649267438e-15
           cooldown: 0.2
           cost: 100.0
-          position: [9.237604307034019, 0.0]
+          position: [16.0, 0.0]
           required_edge: 0
       - - engine
-        - angle_degrees: 119.99999999999999
+        - angle_degrees: 180.0
           cost: 50
-          position: [-4.618802153517002, 8.0]
-          power: 500
-          required_edge: 1
-      - - engine
-        - angle_degrees: 240.0
-          cost: 50
-          position: [-4.618802153517002, -8.0]
-          power: 500
+          position: [-16.0, 0.0]
+          power: 250
           required_edge: 2
       hp: 50
       inner-vertices:
-      - [9.145228263963675, -15.840000000000002]
-      - [9.145228263963675, 15.840000000000002]
-      - [-18.290456527927347, 2.239934904187004e-15]
+      - [15.840000000000002, -15.84]
+      - [15.840000000000002, 15.84]
+      - [-15.84, 15.840000000000002]
+      - [-15.840000000000003, -15.84]
       max-hp: 10
       sprite:
         colour: [255, 255, 255]
-        image-name: polygon_fancy.3.generated.png
+        image-name: polygon_fancy.4.generated.png
         scale: 0.4166666666666667
       sprite-scale: 0.4166666666666667
       vertices:
-      - [9.237604307034015, -16.0]
-      - [9.237604307034015, 16.0]
-      - [-18.475208614068027, 2.2625605092798017e-15]
+      - [16.000000000000004, -16.0]
+      - [16.000000000000004, 16.0]
+      - [-16.0, 16.000000000000004]
+      - [-16.000000000000004, -16.0]
   connections:
   - - [0, 0]
-    - [3, 2]
+    - [1, 2]
   - - [0, 1]
-    - [1, 3]
+    - [3, 3]
   - - [0, 2]
-    - [2, 1]
-  - - [1, 0]
-    - [5, 2]
-  - - [1, 2]
-    - [4, 5]
-  - - [2, 0]
-    - [6, 1]
-  - - [2, 2]
-    - [4, 4]
-  - - [3, 0]
-    - [11, 2]
-  - - [3, 1]
-    - [5, 3]
-  - - [3, 3]
-    - [6, 0]
-  - - [5, 4]
-    - [8, 0]
-  - - [5, 5]
+    - [5, 0]
+  - - [0, 3]
     - [7, 1]
-  - - [6, 4]
-    - [10, 3]
-  - - [6, 5]
-    - [9, 0]
-  - - [7, 2]
-    - [13, 1]
-  - - [8, 1]
-    - [11, 1]
-  - - [8, 3]
-    - [13, 2]
-  - - [9, 1]
-    - [12, 1]
-  - - [9, 3]
-    - [11, 0]
-  - - [10, 2]
-    - [12, 2]
-mass: 16.52627944162883
-moment: 52649.68806125436
+  - - [1, 1]
+    - [2, 3]
+  - - [1, 3]
+    - [8, 1]
+  - - [2, 2]
+    - [3, 0]
+  - - [3, 2]
+    - [4, 0]
+  - - [4, 3]
+    - [5, 1]
+  - - [5, 3]
+    - [6, 1]
+  - - [6, 0]
+    - [7, 2]
+  - - [7, 0]
+    - [8, 2]
+mass: 9.000000000000002
+moment: 13824.000000000004

@@ -161,17 +161,19 @@ class Ship (physics.Thing):
             self.world.shoot_bullet( self )
         self.body.reset_forces()
         spin = self._spin
+        rotation_distance = 100
+        rotation_force_size = self.turn_power
         if spin == 0:
+            delta_angular_momentum = rotation_force_size * rotation_distance * dt
             angular_momentum = self.body.angular_velocity * self.body.moment
-            k = 300.0
-            if angular_momentum > k:
+            if angular_momentum > 0 and abs(angular_momentum) > delta_angular_momentum:
                 spin = 1
-            elif angular_momentum < -k:
+            elif angular_momentum < 0 and abs(angular_momentum) > delta_angular_momentum:
                 spin = -1
             else:
                 self.body.angular_velocity = 0
         rotation_force = Vec2d(self.turn_power,0) * spin
-        rotation_offset = Vec2d(0,100)
+        rotation_offset = Vec2d(0,rotation_distance)
         self.body.apply_force( rotation_force, rotation_offset )
         self.body.apply_force( -rotation_force, -rotation_offset )
         forces = []
