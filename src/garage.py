@@ -169,17 +169,19 @@ class GarageWorld (World):
         if self.garage_ship:
             self.garage_ship.kill()
         self.garage_ship = Ship( self, self.block_structure, (0,0), cocos_parent = self.root_node )
-        self.pre_physics.add_hook( self.garage_ship, self.garage_ship.update )
+#        self.pre_physics.add_hook( self.garage_ship, self.garage_ship.update )
         self.scene.schedule( self.update_everything )
     def start_idle_animation(self):
         self.currently_idle = True
-        self.garage_ship.body.angular_velocity = 1.1
         # how come angular velocity below 1 radian fails?
     def stop_idle_animation(self):
         self.garage_ship.body.angular_velocity = 0
         self.garage_ship.body.angle = 0
         self.currently_idle = False
     def update_everything(self, dt):
+        self.garage_ship.sprite.update_elements()
+        if self.currently_idle:
+            self.garage_ship.body.angular_velocity = degrees_to_radians( 360.0 / 10.0 )
         self.tick( dt )
         self.display_update()
         if not self.currently_idle:
