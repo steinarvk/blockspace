@@ -236,8 +236,6 @@ class MainWorld (World):
         self.pre_physics.add_hook( self.enemy2, lambda dt : ai.ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
 #        self.pre_physics.add_hook( self.enemy2, lambda dt : ai.ai_flee_target( dt, self.enemy2, self.player ) )
         self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
-        for gun in self.player.weapons:
-            gun.cooldown /= 2.0
         for x in (self.player, self.enemy, self.enemy2):
             self.post_physics.add_hook( x, x.tick )
             x.add_to_minimap( self.minimap, "solid_white_5x5.png", (0,255,0) if x == self.player else (255,0,0) )
@@ -348,10 +346,10 @@ class MainWorld (World):
             self.player = Ship.load_data( player_ship_data, self )
         self.player.position = (300,300)
         self.player.invulnerable = False
-        self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 0 )
+        self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 10 )
         self.enemy.invulnerable = False
         self.enemy.body.angular_velocity_limit = degrees_to_radians(144*2)
-        self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "small", hp = 0 )
+        self.enemy2 = create_ship_thing( self, self.main_layer, (0,500), shape = "small", hp = 10 )
         self.enemy2.invulnerable = False
         self.enemy2.body.angular_velocity_limit = degrees_to_radians(144*2)
         self.enemy.angle_degrees = random.random() * 360.0
