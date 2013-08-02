@@ -212,10 +212,12 @@ def create_bullet_thing(world, shooter, gun):
     return rv
 
 class MainWorld (World):
-    def __init__(self, resolution = (1000,800), use_pygame = False, **kwargs):
+    def __init__(self, window, player_ship_data = None, use_pygame = False, **kwargs):
         super( MainWorld, self ).__init__( **kwargs)
+        self.window = window
+        resolution = (self.window.width, self.window.height )
         self.setup_graphics( resolution )
-        self.setup_game()
+        self.setup_game( player_ship_data = player_ship_data )
         self.setup_input()
         self.setup_hud()
         self.camera.following = self.player
@@ -252,7 +254,6 @@ class MainWorld (World):
         pygame.init()
         self.screen = pygame.display.set_mode( resolution )
     def setup_graphics(self, resolution):
-        self.window = graphics.Window( resolution )
         self.camera = graphics.Camera( self.window )
         self.scene = graphics.Scene( self.window )
         graphics.Layer( self.scene, cocos.layer.ColorLayer( 0, 0, 0, 1 ) )
@@ -338,13 +339,14 @@ class MainWorld (World):
         create_hp_display()
         self.post_physics.add_anonymous_hook( ignore_arguments( update_hud ) )
         self.player.reshape_hooks.add_anonymous_hook( recreate_hp_display )
-    def setup_game(self):
+    def setup_game(self, player_ship_data = None):
         self.sim = physics.PhysicsSimulator( timestep = None )
 #        self.player = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 5 )
-        print "LOADING PLYAER"
-        self.player = Ship.load_file( "current_garage_ship.yaml", self, layer = self.main_layer )
+        if not player_ship_data:
+            self.player = Ship.load_file( "current_garage_ship.yaml", self )
+        else:
+            self.player = Ship.load_data( player_ship_data, self )
         self.player.position = (300,300)
-        print "DONE PLAYER"
         self.player.invulnerable = False
         self.enemy = create_ship_thing( self, self.main_layer, (500,500), shape = "small", hp = 0 )
         self.enemy.invulnerable = False
@@ -408,7 +410,6 @@ class MainWorld (World):
             self.object_psys.draw()
             glDisable( GL_SCISSOR_TEST )
         graphics.Layer( self.scene, cocos_layer = graphics.FunctionCocosLayer( draw_psys ) )
-        print self.display.hooks
         self.sim.space.add_collision_handler( physics.CollisionTypes["main"], physics.CollisionTypes["bullet"], self.collide_general_with_bullet )
     def setup_input(self):
         input_layer = graphics.Layer( self.scene, gameinput.CocosInputLayer() )
@@ -419,17 +420,8 @@ class MainWorld (World):
         input_layer.cocos_layer.set_key_press_hook( key.SPACE, lambda *args, **kwargs: (self.player.on_controls_state(*args,**kwargs), self.shoot_bullet(self.player)) )
         input_layer.cocos_layer.set_key_release_hook( key.SPACE, lambda *args, **kwargs: self.player.on_controls_state(*args,**kwargs) )
     def shoot_bullet(self, shooter):
-        if shooter == self.player:
-            for gun in self.player.weapons:
-                print "is ", gun, "active?", gun.active
-                print "needs", gun.required_edges
-                print "has?", gun.required_edges_free()
-                print "block free edges", gun.block.free_edge_indices
-            print "power?", self.player.psu.power
         guns = shooter.ready_guns()
         index = 0
-        if shooter == self.player:
-            print "Player shooting", len(guns), "guns"
         for gun in guns:
             if not gun.may_activate():
                 continue

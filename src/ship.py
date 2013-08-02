@@ -69,7 +69,6 @@ class Ship (physics.Thing):
         self.turn_power = 0
         self.engine_power_drain = 0
         for block in self.block_structure.blocks:
-            print "attaching components", block.components
             block.attach_components( self )
                 
         self.psu.power = self.psu.max_storage
@@ -81,7 +80,6 @@ class Ship (physics.Thing):
         mass = data["mass"]
         moment = data["moment"]
         rv = Ship( world, s, (0,0), mass = mass, moment = moment, **kwargs )
-        print "loaded ship with", rv.ready_guns()
         return rv
 
     def summarize(self):

@@ -146,7 +146,6 @@ class GeneratorComponent (Component):
         self.production = production
 
     def attach(self, thing):
-        print "attaching generator ", self.production
         thing.psu.set_production( self, self.production )
 
     def detach(self, thing):
@@ -160,7 +159,6 @@ class BatteryComponent (Component):
         self.storage = storage
 
     def attach(self, thing):
-        print "attaching battery ", self.storage
         thing.psu.increase_capacity( self.storage )
 
     def detach(self, thing):

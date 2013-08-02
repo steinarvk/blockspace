@@ -38,7 +38,7 @@ def decorate_block_with_engines_within( block, aim = 180.0, span = 120.0, align 
             engine = create_component( "engine", context, position = tuple(point), angle_degrees = angle, required_edge = index, power = 500, cost = 50 )
     return block
 
-def decorate_block_with_guns_within( block, aim = 0.0, span = 120.0, align = True ):
+def decorate_block_with_guns_within( block, aim = 0.0, span = 120.0, align = False ):
     for index, edge in indexed_zip( block.edges ):
         angle = edge.angle_degrees - block.rotation_degrees
         angle_error = (((edge.angle_degrees - aim + 180.0) % 360.0) - 180.0) / (span * 0.5)
@@ -87,9 +87,9 @@ def decorate_block_armour( block ):
     return block
 
 class GarageWorld (World):
-    def __init__(self, resolution = (1000,800), **kwargs):
+    def __init__(self, window, continuation_with_ship = None, **kwargs):
         super( GarageWorld, self ).__init__( **kwargs )
-        self.window = graphics.Window( (1000,800) )
+        self.window = window
         self.scene = graphics.Scene( self.window )
         self.sim = physics.PhysicsSimulator( timestep = None )
         self.input_layer = gameinput.CocosInputLayer()
@@ -104,6 +104,7 @@ class GarageWorld (World):
         self.root_node = cocos.cocosnode.CocosNode()
         self.main_layer.cocos_layer.add( self.root_node )
         self.mouse_layer = graphics.Layer( self.scene )
+        self.continuation_with_ship = continuation_with_ship
         root = PolygonBlock.load_file( "blocks/poly5.yaml" )
         self.root_node.scale = 1
 #        for i in range(7):
@@ -123,6 +124,8 @@ class GarageWorld (World):
         self.mouse_sprite = self.current_block_decorator(self.current_block_shape()).create_sprite()
         self.mouse_layer.cocos_layer.add( self.mouse_sprite )
         self.input_layer.mouse_scroll_hooks.add_anonymous_hook( self.on_mouse_scroll )
+        if self.continuation_with_ship:
+            self.input_layer.set_key_press_hook( key.ENTER, self.on_continue_with_ship )
         self.input_layer.set_key_press_hook( key.SPACE, self.on_place_block )
         self.input_layer.set_key_press_hook( key.UP, self.on_next_shape )
         self.input_layer.set_key_press_hook( key.DOWN, self.on_previous_shape )
@@ -139,6 +142,8 @@ class GarageWorld (World):
         self.physics.add_anonymous_hook( self.sim.tick )
         self.idle_time = 0.0
         self.currently_idle = False
+    def on_continue_with_ship(self, *args, **kwargs):
+        self.continuation_with_ship( self.garage_ship )
     def draw_psys(self):
         w = float(self.window.width)
         h = float(self.window.height)
@@ -273,4 +278,8 @@ class GarageWorld (World):
         self.window.run( self.scene )
 
 if __name__ == '__main__':
-    GarageWorld().run()
+    window = graphics.Window()
+    def continue_with_ship( ship ):
+        import game
+        game.MainWorld( window, player_ship_data = ship.dump_data() ).run()
+    GarageWorld( window, continuation_with_ship = continue_with_ship ).run()

@@ -55,10 +55,10 @@ def kill_sprite( thing ):
     thing.sprite.kill()
 
 class Window (object):
-    def __init__(self, size = (1024,768), vsync = False ):
+    def __init__(self, size = (1024,768)):
         self.width, self.height = size
         self.director = cocos.director.director
-        self.director.init( width = self.width, height = self.height, vsync = False )
+        self.director.init( width = self.width, height = self.height )
         self.director.show_FPS = True
     def run(self, scene):
         scene.finalize()
