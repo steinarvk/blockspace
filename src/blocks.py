@@ -338,8 +338,11 @@ class BlockStructure (object):
         rv.add_block( blocks[root_block_index], index = root_block_index )
         neighbours = {}
         def add_neighbours_from( x ):
-            for neighbour, connection in connections_map[x]:
-                neighbours[ neighbour ] = connection
+            try:
+                for neighbour, connection in connections_map[x]:
+                    neighbours[ neighbour ] = connection
+            except KeyError:
+                pass
         add_neighbours_from(root_block_index)
         connected_set = set( [root_block_index] )
         while neighbours:

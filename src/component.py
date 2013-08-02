@@ -108,7 +108,8 @@ class PointComponent (Component):
 
     @property
     def position(self):
-        return self.block.position + self.relative_position.rotated_degrees( self.block.angle_degrees )
+        rv = self.block.position + self.relative_position.rotated_degrees( self.block.thing.angle_degrees )
+        return rv
 
     @property
     def angle_degrees(self):
@@ -199,6 +200,13 @@ class GunComponent (PointComponent):
         if self.attached:
             self.thing.weapons.remove( self )
 
+    def create_sheet_info(self, atlas):
+        import blocks
+        rv = blocks.PolygonBlock.load_file( "blocks/poly8.yaml" ).create_sheet_info( atlas )
+        rv[ "colour" ] = 1.0, 0.0, 0.0, 1.0
+        rv[ "size" ] = 8.0, 8.0
+        return rv
+
 class EngineComponent (PointComponent):
     name = "engine"
 
@@ -247,6 +255,13 @@ class EngineComponent (PointComponent):
 
     def power_braking(self):
         return self.efficiency_backwards() * self.engine_power
+
+    def create_sheet_info(self, atlas):
+        import blocks
+        rv = blocks.PolygonBlock.load_file( "blocks/poly8.yaml" ).create_sheet_info( atlas )
+        rv[ "colour" ] = 0.0, 0.0, 1.0, 1.0
+        rv[ "size" ] = 8.0, 8.0
+        return rv
 
 serialization.register( EngineComponent )
 serialization.register( GunComponent )
