@@ -103,7 +103,6 @@ class GarageWorld (World):
         self.main_layer = graphics.Layer( self.scene )
         self.root_node = cocos.cocosnode.CocosNode()
         self.main_layer.cocos_layer.add( self.root_node )
-        self.mouse_layer = graphics.Layer( self.scene )
         self.continuation_with_ship = continuation_with_ship
         root = PolygonBlock.load_file( "blocks/poly5.yaml" )
         self.root_node.scale = 1
@@ -121,8 +120,10 @@ class GarageWorld (World):
         self.current_block_shape = self.block_shapes[0]
         self.current_block_decorator = self.block_decorators[0]
         self.restart_block_structure()
-        self.mouse_sprite = self.current_block_decorator(self.current_block_shape()).create_sprite()
-        self.mouse_layer.cocos_layer.add( self.mouse_sprite )
+        self.mouse_index = None
+        self.current_rotation = 0.0
+        self.current_position = (0,0)
+        self.set_current_block()
         self.input_layer.mouse_scroll_hooks.add_anonymous_hook( self.on_mouse_scroll )
         if self.continuation_with_ship:
             self.input_layer.set_key_press_hook( key.ENTER, self.on_continue_with_ship )
@@ -136,8 +137,6 @@ class GarageWorld (World):
         self.input_layer.set_key_press_hook( key.L, self.on_load_ship )
         self.input_layer.mouse_press_hooks[ mouse.RIGHT ] = self.on_next_shape
         self.input_layer.mouse_press_hooks[ mouse.LEFT ] = self.on_place_block
-        self.current_rotation = 0.0
-        self.current_position = (0,0)
         self.refresh_garage_ship()
         self.physics.add_anonymous_hook( self.sim.tick )
         self.idle_time = 0.0
@@ -205,7 +204,7 @@ class GarageWorld (World):
         self.block_engine_mounter( block )
     def check_borders(self):
         block = self.create_block()
-        block.rotate_degrees( -self.current_rotation )
+        block.rotate_degrees( self.current_rotation )
         block.translate( self.current_position )
         for index in self.block_structure.free_edge_indices:
             edge = self.block_structure.edge( index )
@@ -229,13 +228,14 @@ class GarageWorld (World):
             self.current_block_shape = shape
         if decorator:
             self.current_block_decorator = decorator
-        p = self.mouse_sprite.position
-        if self.mouse_sprite:
-            self.mouse_sprite.kill()
-        self.mouse_sprite = self.current_block_decorator(self.current_block_shape()).create_sprite()
-        self.mouse_sprite.rotation = self.current_rotation
-        self.mouse_sprite.position = p
-        self.mouse_layer.cocos_layer.add( self.mouse_sprite )
+        if self.mouse_index != None:
+            self.object_psys.remove( self.mouse_index )
+        block = self.create_block()
+        info = block.create_sheet_info( self.atlas )
+        info[ "position" ] = (0,0)
+        info[ "angle" ] = 0.0
+        self.mouse_index = self.object_psys.add( **info )
+        self.refresh_mouse_sprite()
     def change_block_shape(self, delta = 1):
         self.set_current_block(shape = self.block_shapes[ (self.block_shapes.index( self.current_block_shape ) + delta) % len( self.block_shapes )])
     def change_block_decorator(self, delta = 1):
@@ -252,16 +252,20 @@ class GarageWorld (World):
     def on_previous_shape(self, *args):
         self.reset_idle_time()
         self.change_block_shape( -1 )
+    def refresh_mouse_sprite(self):
+        if self.mouse_index != None:
+            self.object_psys.update_position_and_angle( self.mouse_index, self.current_position, degrees_to_radians( self.current_rotation ) )
     def rotate_sprite(self, taps = 1):
-        self.current_rotation = (self.current_rotation + taps * 10) % 360.0
-        self.mouse_sprite.rotation = self.current_rotation
+        tap_size = 10
+        self.current_rotation = (self.current_rotation + taps * tap_size) % 360.0
+        self.refresh_mouse_sprite()
     def on_mouse_scroll(self, x, y, sx, sy):
         self.reset_idle_time()
-        self.rotate_sprite( sy )
+        self.rotate_sprite( -sy )
     def on_mouse_motion(self, x, y, dx, dy):
         self.reset_idle_time()
         self.current_position = self.root_node.point_to_local( (x,y) )
-        self.mouse_sprite.position = self.current_position
+        self.refresh_mouse_sprite()
     def on_load_ship(self, *args):
         self.reset_idle_time()
         self.garage_ship.kill()

@@ -478,7 +478,6 @@ class MainWorld (World):
             block.hp = hp - 1
             if block.hp <= 0:
                 detached_block = thing.block_structure.remove_block( index )
-                detached_block.detach_components( thing )
                 detachable_blocks = []
                 detached_parts = []
                 if index == 0:
@@ -514,7 +513,6 @@ class MainWorld (World):
                     # this must be amended to reconstruct the connections
                     for index in detached_part:
                         db = thing.block_structure.remove_block( index )
-                        db.detach_components( thing )
                         on_detached_single_block( db )
                 if survivor != None:
                     remaining_block = thing.block_structure.blocks[survivor]
@@ -537,6 +535,7 @@ class MainWorld (World):
                 density = 1/1024.
                 area = thing.block_structure.area()
                 mass = density * area
+                thing.reattach_components()
                 if mass > 0:
                     thing.mass = mass
         if len(thing.block_structure.blocks) == 0:

@@ -62,6 +62,10 @@ class Ship (physics.Thing):
 #        f = self.sprite.cocos_sprite.draw
 #        self.sprite.cocos_sprite.draw = lambda : (f(), graphics.draw_thing_shapes(self))
         self.psu.consumption_fails_hook = lambda key : self.lose_power( key )
+        self.reattach_components()
+        self.psu.power = self.psu.max_storage
+
+    def reattach_components(self):
         self.weapons = []
         self.engines = []
         self.thrust_power = 0
@@ -70,8 +74,6 @@ class Ship (physics.Thing):
         self.engine_power_drain = 0
         for block in self.block_structure.blocks:
             block.attach_components( self )
-                
-        self.psu.power = self.psu.max_storage
 
     @staticmethod
     def load_data(data, world, **kwargs):
