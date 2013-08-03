@@ -5,6 +5,13 @@ import physics
 
 from util import *
 
+def basic_impact( thing, block, block_index, hp = 1 ):
+    if thing.invulnerable:
+        return
+    block.hp -= hp
+    if block.hp <= 0:
+        thing.destroy_block( block_index = block_index )
+
 def create_pellet(world, shooter, gun):
     points = [(0,0),(9,0),(9,33),(0,33)]
     shape = ConvexPolygonShape(*points)
@@ -44,6 +51,7 @@ def create_pellet(world, shooter, gun):
         world.object_psys.remove( rv.index )
     rv.ttl = 1.5
     rv.kill_hooks.append( kill_bullet )
+    rv.impact = basic_impact
     world.pre_physics.add_hook( rv, partial(update_bullet,rv) )
 
 def create_dumb_missile(world, shooter, gun):
@@ -84,6 +92,9 @@ def create_dumb_missile(world, shooter, gun):
     def kill_bullet( rv ):
         world.psys_managed_things.remove( (rv,rv.index) )
         world.object_psys.remove( rv.index )
+    def my_impact( thing, block, block_index ):
+        basic_impact( hp = 5, thing = thing, block = block, block_index = block_index )
     rv.ttl = 1.5
     rv.kill_hooks.append( kill_bullet )
+    rv.impact = my_impact
     world.pre_physics.add_hook( rv, partial(update_bullet,rv) )

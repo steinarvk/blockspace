@@ -49,7 +49,7 @@ def decorate_block_with_guns_within( block, aim = 0.0, span = 120.0, align = Fal
             cooldown = 0.2
             cost = (750 * cooldown) * 2.0/3.0 # more reasonable power usage
             context = { "block": block }
-            gun = create_component( "gun", context, position = tuple(point), angle_degrees = angle, required_edge = index, cooldown = cooldown, cost = cost)
+            gun = create_component( "missile-launcher", context, position = tuple(point), angle_degrees = angle, required_edge = index, cooldown = cooldown, cost = cost)
     return block
 
 def decorate_block_normal( block ):
@@ -83,7 +83,7 @@ def decorate_block_generator( block ):
 def decorate_block_armour( block ):
     block.role = "armour"
     block.colour = (64,64,64)
-    block.hp *= 5
+    block.hp *= 3
     return block
 
 class GarageWorld (World):

@@ -190,10 +190,7 @@ class GunComponent (PointComponent):
         self.last_usage = (self.world.t, activation_sequence_no )
 
     def attach(self, thing):
-        print "already has ", len( thing.weapons ), "guns"
-        print "attaching? gun on block", self.block, "having edge", self.required_edges, "free edges", self.block.free_edge_indices
         if self.required_edges_free():
-            print "yes"
             thing.weapons.append( self )
             self.attached = True
 
@@ -210,7 +207,52 @@ class GunComponent (PointComponent):
 
     def shoot(self, shooter):
         import projectile
-#        projectile.create_pellet( self.world, shooter, self )
+        projectile.create_pellet( self.world, shooter, self )
+
+class DumbMissileLauncherComponent (PointComponent):
+    # TODO DRY with Gun
+    name = "missile-launcher"
+    
+    def __init__(self, block, position, angle_degrees, cooldown, cost, required_edge):
+        super( DumbMissileLauncherComponent, self ).__init__( block = block, position = position, angle_degrees = angle_degrees, required_edges = (required_edge,), name = "gun" )
+        self.cooldown = cooldown
+        self.cooldown_finished = None
+        self.gun_power_cost = cost
+        self.last_usage = (0.0,0)
+        self.attached = False
+
+    def may_activate(self):
+        if not self.active:
+            return False
+        if self.cooldown_finished and (self.cooldown_finished > self.world.t):
+            return False
+        if not self.thing.psu.may_consume( self.gun_power_cost ):
+            return False
+        return True
+        
+    def activated(self, activation_sequence_no):
+        self.cooldown_finished = self.world.t + self.cooldown
+        self.thing.psu.consume( self.gun_power_cost )
+        self.last_usage = (self.world.t, activation_sequence_no )
+
+    def attach(self, thing):
+        if self.required_edges_free():
+            thing.weapons.append( self )
+            self.attached = True
+
+    def detach(self, thing):
+        if self.attached:
+            self.thing.weapons.remove( self )
+
+    def create_sheet_info(self, atlas):
+        import blocks
+        rv = blocks.PolygonBlock.load_file( "blocks/poly8.yaml" ).create_sheet_info( atlas )
+        rv[ "colour" ] = 1.0, 0.0, 0.0, 1.0
+        rv[ "size" ] = 8.0, 8.0
+        return rv
+
+    def shoot(self, shooter):
+        import projectile
         projectile.create_dumb_missile( self.world, shooter, self )
 
 class EngineComponent (PointComponent):
@@ -271,6 +313,7 @@ class EngineComponent (PointComponent):
 
 serialization.register( EngineComponent )
 serialization.register( GunComponent )
+serialization.register( DumbMissileLauncherComponent )
 serialization.register( GeneratorComponent )
 serialization.register( BatteryComponent )
 
