@@ -1,0 +1,19 @@
+Idea for making the structure more efficient:
+    Keep two index -> index mappings, real_to_virtual[], virtual_to_real[], resized to fit.
+
+    When adding:
+        Add to next real index
+        real_to_virtual[ index ] := index
+        virtual_to_real[ index ] := index
+        Return index
+    When removing virtual_index:
+        last := number_of_elements - 1
+        Swap data[virtual_to_real[index]] with data[last]
+        virtual_to_real[ real_to_virtual[ last ] ] := last
+        Decrement number_of_elements
+    When uploading:
+        upload just the number of elements
+
+    Advantages:
+        No unnecessary uploading (important e.g. with 1025/2048 elements)
+        No extra checking in the shader (avoids branching)
