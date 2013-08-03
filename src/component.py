@@ -190,8 +190,11 @@ class GunComponent (PointComponent):
         self.last_usage = (self.world.t, activation_sequence_no )
 
     def attach(self, thing):
+        print "already has ", len( thing.weapons ), "guns"
+        print "attaching? gun on block", self.block, "having edge", self.required_edges, "free edges", self.block.free_edge_indices
         if self.required_edges_free():
-            self.thing.weapons.append( self )
+            print "yes"
+            thing.weapons.append( self )
             self.attached = True
 
     def detach(self, thing):

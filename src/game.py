@@ -243,6 +243,11 @@ class MainWorld (World):
 #            x.add_to_minimap( self.minimap, "solid_white_5x5.png", (128,128,128) )
         self.physics.add_anonymous_hook( self.sim.tick )
         self.scene.schedule( self.update_everything )
+    def on_save_ship(self, *args):
+        import sys
+        s = self.player.dump_string()
+        print >> sys.stderr, s
+        self.player.dump_file( "dumped_ship.yaml" )
     def update_everything(self, dt):
         self.tick( dt )
         self.display_update()
@@ -417,6 +422,7 @@ class MainWorld (World):
         input_layer.cocos_layer.set_key_hook( key.LSHIFT, self.player.on_controls_state )
         input_layer.cocos_layer.set_key_press_hook( key.SPACE, lambda *args, **kwargs: (self.player.on_controls_state(*args,**kwargs), self.shoot_bullet(self.player)) )
         input_layer.cocos_layer.set_key_release_hook( key.SPACE, lambda *args, **kwargs: self.player.on_controls_state(*args,**kwargs) )
+        input_layer.cocos_layer.set_key_press_hook( key.P, self.on_save_ship )
     def shoot_bullet(self, shooter):
         guns = shooter.ready_guns()
         index = 0
@@ -477,6 +483,11 @@ class MainWorld (World):
         if not thing.invulnerable:
             block.hp = hp - 1
             if block.hp <= 0:
+                if thing == self.player:
+                    print "player summary before destruction"
+                    print "total has free", thing.block_structure.free_edge_indices
+                    for block in thing.block_structure.blocks:
+                        print block, "has free", block.free_edge_indices
                 detached_block = thing.block_structure.remove_block( index )
                 detachable_blocks = []
                 detached_parts = []
@@ -536,6 +547,11 @@ class MainWorld (World):
                 area = thing.block_structure.area()
                 mass = density * area
                 thing.reattach_components()
+                if thing == self.player:
+                    print "player summary after destruction"
+                    print "total has free", thing.block_structure.free_edge_indices
+                    for block in thing.block_structure.blocks:
+                        print block, "has free", block.free_edge_indices
                 if mass > 0:
                     thing.mass = mass
         if len(thing.block_structure.blocks) == 0:
