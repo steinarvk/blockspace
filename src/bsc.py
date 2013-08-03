@@ -59,6 +59,11 @@ def main():
         assert len(things) == 0
         add_things()
     add_things()
+    indices = things.keys()
+    add_things()
+    for index in indices:
+        psys.remove( index )
+        del things[index]
     print psys.get_capacity(), psys.get_number_of_elements()
     @window.event
     def on_draw():

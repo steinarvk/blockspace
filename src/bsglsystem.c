@@ -162,7 +162,7 @@ int bsgl_system_reallocate_elements( System *sys ) {
 
 int bsgl_system_upload_vertex_buffer( System *sys ) {
     glBindBuffer( GL_ARRAY_BUFFER, sys->vertex_buffer_id );
-    glBufferData( GL_ARRAY_BUFFER, sys->vertex_buffer.array_byte_size, sys->vertex_buffer.data, GL_DYNAMIC_DRAW );
+    glBufferData( GL_ARRAY_BUFFER, sys->vertex_buffer.element_size * sys->vertex_buffer.number_of_elements, sys->vertex_buffer.data, GL_DYNAMIC_DRAW );
 
     sys->vertex_buffer_dirty = false;
 
@@ -170,8 +170,10 @@ int bsgl_system_upload_vertex_buffer( System *sys ) {
 }
 
 int bsgl_system_upload_element_buffer( System *sys ) {
+    const int elements_per_quad = 6;
+
     glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, sys->element_buffer_id );
-    glBufferData( GL_ELEMENT_ARRAY_BUFFER, sys->element_buffer_data_size, sys->element_buffer_data, GL_DYNAMIC_DRAW );
+    glBufferData( GL_ELEMENT_ARRAY_BUFFER, elements_per_quad * sizeof (GLushort) * sys->vertex_buffer.number_of_elements, sys->element_buffer_data, GL_DYNAMIC_DRAW );
 
     sys->element_buffer_dirty = false;
 
@@ -227,9 +229,7 @@ int bsgl_system_draw( System *sys ) {
         return 1;
     }
 
-    int number_of_elements = 6 * sys->vertex_buffer.capacity;
-
-    glDrawElements( GL_TRIANGLES, number_of_elements, GL_UNSIGNED_SHORT, (void*) 0 );
+    glDrawElements( GL_TRIANGLES, 6 * sys->vertex_buffer.number_of_elements, GL_UNSIGNED_SHORT, (void*) 0 );
 
     if( bsgl_system_unbind_vertex_attributes( sys ) ) {
         return 1;
@@ -446,15 +446,15 @@ PyObject *System_update_position_and_angle(System *self, PyObject *args) {
         return NULL;
     }
 
-    int vertex_index0 = 4 * index;
     const int floats_per_vertex = 12;
-    GLfloat* floats = (void*) self->vertex_buffer.data;
+    GLfloat* floats = (void*) bsgl_array_get( &self->vertex_buffer, index );
+
+//    fprintf( stderr, "updating real %d virtual %d\n", self->vertex_buffer.virtual_to_real[index], index );
 
     for(int i=0;i<4;i++) {
-        int vindex = vertex_index0 + i;
-        floats[ vindex * floats_per_vertex + 0 ] = position[0];
-        floats[ vindex * floats_per_vertex + 1 ] = position[1];
-        floats[ vindex * floats_per_vertex + 2 ] = angle;
+        floats[ i * floats_per_vertex + 0 ] = position[0];
+        floats[ i * floats_per_vertex + 1 ] = position[1];
+        floats[ i * floats_per_vertex + 2 ] = angle;
     }
 
     self->vertex_buffer_dirty = true;

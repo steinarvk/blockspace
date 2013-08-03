@@ -6,7 +6,8 @@
 struct bsgl_llnode;
 
 struct bsgl_llnode {
-    int index;
+    int real_index;
+    int virtual_index;
     struct bsgl_llnode *next;
 };
 
@@ -22,6 +23,10 @@ struct bsgl_array {
     int array_byte_size;
     int capacity;
     int number_of_elements;
+    int index_counter;
+
+    int *virtual_to_real;
+    int *real_to_virtual;
 
     unsigned char *data;
     
@@ -41,7 +46,7 @@ void bsgl_array_destroy( struct bsgl_array* );
 int bsgl_array_add( struct bsgl_array *arr, int *index );
 int bsgl_array_add_and_fill( struct bsgl_array *arr, int *index, void *data, int len);
 void bsgl_array_remove( struct bsgl_array *arr, int index );
-const unsigned char * bsgl_array_get( struct bsgl_array *arr, int index );
+unsigned char * bsgl_array_get( struct bsgl_array *arr, int index );
 
 
 

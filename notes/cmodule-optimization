@@ -17,3 +17,7 @@ Idea for making the structure more efficient:
     Advantages:
         No unnecessary uploading (important e.g. with 1025/2048 elements)
         No extra checking in the shader (avoids branching)
+
+    Disadvantages:
+        Element buffer gets slightly confusing (just has to be a static sequence of the appropriate length, irrespective of what order things are added and removed in)
+            (Nevermind -- this is already how the element buffer is used)

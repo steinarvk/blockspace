@@ -17,6 +17,8 @@ int bsgl_array_initialize( struct bsgl_array *arr, int element_size ) {
     arr->free_indices = NULL;
     arr->unused_nodes = NULL;
     arr->node_pages = NULL;
+    arr->virtual_to_real = NULL;
+    arr->real_to_virtual = NULL;
 
     return 0;
 }
@@ -67,6 +69,18 @@ int bsgl_array_reserve( struct bsgl_array *arr, int n ) {
     arr->data = new_data;
     arr->array_byte_size = new_byte_size;
 
+    int new_index_map_size = n * sizeof arr->virtual_to_real[0];
+    int *new_vtr = realloc( arr->virtual_to_real, new_index_map_size );
+    if( !new_vtr ) {
+        return 1;
+    }
+    arr->virtual_to_real = new_vtr;
+    int *new_rtv = realloc( arr->real_to_virtual, new_index_map_size );
+    if( !new_rtv ) {
+        return 1;
+    }
+    arr->real_to_virtual = new_rtv;
+
     int number_of_new_nodes = n - arr->capacity;
     struct bsgl_llnode *nodes;
     size_t nodes_sz = number_of_new_nodes * sizeof *nodes;
@@ -76,7 +90,9 @@ int bsgl_array_reserve( struct bsgl_array *arr, int n ) {
     }
 
     for(int index = 0; index < number_of_new_nodes; index++) {
-        nodes[index].index = n - 1 - index;
+        nodes[index].real_index = n - 1 - index;
+        nodes[index].virtual_index = n - 1 - index;
+
         nodes[index].next = arr->free_indices;
         arr->free_indices = &nodes[index];
         arr->capacity++;
@@ -86,17 +102,49 @@ int bsgl_array_reserve( struct bsgl_array *arr, int n ) {
     return 0;
 }
 
+static void *memswap(void *a, void *b, size_t n) {
+    unsigned char *a_bytes = a;
+    unsigned char *b_bytes = b;
+
+    for(int i=0;i<n;i++) {
+        a_bytes[i] ^= b_bytes[i];
+        b_bytes[i] ^= a_bytes[i];
+        a_bytes[i] ^= b_bytes[i];
+    }
+
+    return a;
+}
+
 void bsgl_array_remove( struct bsgl_array *arr, int index ) {
     assert( arr->unused_nodes );
 
     struct bsgl_llnode *node = arr->unused_nodes;
     arr->unused_nodes = node->next;
-
     node->next = arr->free_indices;
-    node->index = index;
-    arr->free_indices = node;
 
-    memset( (void*)bsgl_array_get( arr, index ), 0, arr->element_size ); 
+    if( arr->number_of_elements > 1 ) {
+        int last_real_index = arr->number_of_elements - 1;
+        int tbr_real_index = arr->virtual_to_real[ index ];
+
+//        fprintf( stderr, "swapping real %d virtual %d with real %d virtual %d\n", last_real_index, arr->real_to_virtual[ last_real_index ], arr->virtual_to_real[index], index );
+
+        memswap( &arr->data[ arr->element_size * tbr_real_index ],
+                 &arr->data[ arr->element_size * last_real_index ],
+                 arr->element_size );
+
+        node->real_index = last_real_index;
+
+        arr->real_to_virtual[ tbr_real_index ] = arr->real_to_virtual[ last_real_index ];
+        arr->virtual_to_real[ arr->real_to_virtual[ last_real_index ] ] = tbr_real_index;
+    } else {
+        memset( (void*)bsgl_array_get( arr, index ), 0, arr->element_size ); 
+
+        node->real_index = arr->virtual_to_real[ index ];
+    }
+
+    node->virtual_index = index;
+
+    arr->free_indices = node;
 
     arr->number_of_elements--;
 }
@@ -114,10 +162,19 @@ int bsgl_array_add( struct bsgl_array *arr, int *index ) {
     struct bsgl_llnode *node = arr->free_indices;
     arr->free_indices = node->next;
 
-    *index = node->index;
+    const int real_index = node->real_index;
+    const int virtual_index = node->virtual_index;
+
+//    fprintf( stderr, "adding real %d virtual %d\n", real_index, virtual_index );
+
+    arr->virtual_to_real[ virtual_index ] = real_index;
+    arr->real_to_virtual[ real_index ] = virtual_index;
+
+    *index = virtual_index;
 
     node->next = arr->unused_nodes;
-    node->index = -1;
+    node->real_index = -1;
+    node->virtual_index = -1;
     arr->unused_nodes = node;
 
     arr->number_of_elements++;
@@ -125,14 +182,14 @@ int bsgl_array_add( struct bsgl_array *arr, int *index ) {
     return 0;
 }
 
-const unsigned char * bsgl_array_get( struct bsgl_array *arr, int index ) {
-    return &arr->data[ index * arr->element_size ];
+unsigned char * bsgl_array_get( struct bsgl_array *arr, int index ) {
+    return &arr->data[ arr->virtual_to_real[ index ] * arr->element_size ];
 }
 
 int bsgl_array_add_and_fill( struct bsgl_array *arr, int *index, void *data, int len ) {
     int rv = bsgl_array_add( arr, index );
     if( rv ) return rv;
     len = MIN( len, arr->element_size );
-    memcpy( &arr->data[*index * arr->element_size ], data, len );
+    memcpy( bsgl_array_get( arr, *index ), data, len );
     return 0;
 }
