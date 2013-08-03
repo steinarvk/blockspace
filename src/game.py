@@ -327,7 +327,7 @@ class MainWorld (World):
             turn_power_label.element.text = "R: {0}".format( self.player.turn_power )
             brake_power_label.element.text = "B: {0}".format( self.player.brake_power )
             number_of_engines_label.element.text = "#E: {}".format( len( self.player.all_engines() ) )
-            number_of_guns_label.element.text = "#E: {0}/{1}".format( len( self.player.ready_guns() ), len( self.player.all_guns() ) )
+            number_of_guns_label.element.text = "#G: {0}/{1}".format( len( self.player.ready_guns() ), len( self.player.all_guns() ) )
         def update_power_display():
             bar.fill = self.player.psu.charge_rate()
         self.hud_cocos_layer.add( bar )
@@ -561,6 +561,3 @@ class MainWorld (World):
         return False
     def run(self):
         self.window.run( self.scene )
-
-if __name__ == '__main__':
-    MainWorld().run()

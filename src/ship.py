@@ -66,10 +66,8 @@ class Ship (physics.Thing):
         self.psu.power = self.psu.max_storage
 
     def reattach_components(self):
-        try:
-            print "reattaching components had", len( self.all_guns() ), len ( self.ready_guns() )
-        except:
-            pass
+        power = self.psu.power
+        self.psu = component.PowerSupply(0.0)
         self.weapons = []
         self.engines = []
         self.thrust_power = 0
@@ -78,7 +76,7 @@ class Ship (physics.Thing):
         self.engine_power_drain = 0
         for block in self.block_structure.blocks:
             block.attach_components( self )
-        print "reattached components had", len( self.all_guns() ), len ( self.ready_guns() )
+        self.psu.power = min( self.psu.max_storage, power )
 
     @staticmethod
     def load_data(data, world, **kwargs):
