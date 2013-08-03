@@ -515,8 +515,8 @@ class BlockStructure (object):
     def centroid(self):
         return self.create_collision_shape().centroid()
 
-    def create_sys_structure(self, psys, atlas, thing, absolute_transformation = None, relative_transformation = None):
-        rv = graphics.BlockSystemStructure( psys, thing, transformation = absolute_transformation )
+    def create_sys_structure(self, psys, atlas, thing, absolute_transformation = None, relative_transformation = None, sync_to_thing = True):
+        rv = graphics.BlockSystemStructure( psys, thing, transformation = absolute_transformation, sync_to_thing = sync_to_thing )
         c = self.centroid()
         for block in self.blocks:
             block_pos = block.centroid() - c

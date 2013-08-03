@@ -254,23 +254,21 @@ class MainWorld (World):
         self.gem_images = pyglet.image.ImageGrid( pyglet.image.load("gems3.png"), 4, 4 )
         self.atlas = Atlas( "atlas.generated" )
         self.object_psys = bsgl.System( texture_id = self.atlas.sheet.get_texture().id )
+        self.hud_psys = bsgl.System( texture_id = self.atlas.sheet.get_texture().id )
     def setup_hud(self):
         def update_hp_display():
             undamaged = 255,255,255
             undamaged_cockpit = 0,255,0
             damaged = damaged_cockpit = 255,0,0
-            for block, sprite in self.hud_sprite.subcomponent.items():
-                rel = float(block.hp) / block.max_hp
-                a = damaged_cockpit if block.cockpit else damaged
-                b = undamaged_cockpit if block.cockpit else undamaged
-                sprite.color = vector_lerp( rel, a, b )
-                cockpit = False
+#            for block, sprite in self.hud_sprite.subcomponent.items():
+#                rel = float(block.hp) / block.max_hp
+#                a = damaged_cockpit if block.cockpit else damaged
+#                b = undamaged_cockpit if block.cockpit else undamaged
+#                sprite.color = vector_lerp( rel, a, b )
+#                cockpit = False
         def create_hp_display():
-            self.hud_sprite = self.player.block_structure.create_sprite_structure( layer = self.hud_layer )
+            self.hud_sprite = self.player.block_structure.create_sys_structure( self.hud_psys, self.atlas, self.player, sync_to_thing = False )
             expected_size = self.hud_width
-            self.hud_sprite.node.position = self.window.width - expected_size*0.5, self.window.height - expected_size * 0.5
-            self.hud_sprite.node.rotation = -90.0
-            self.hud_sprite.node.scale = 0.5
             update_hp_display()
         def recreate_hp_display():
             self.hud_sprite.kill()
@@ -392,6 +390,15 @@ class MainWorld (World):
             glScissor( 0, 0, self.window.width + 1 - self.hud_width, self.window.height )
             self.object_psys.draw()
             glDisable( GL_SCISSOR_TEST )
+            s = 0.3
+            sx, sy = 500 + self.sim._t * 100,200
+            sx, sy = self.window.width - self.hud_width * 0.5, self.window.height - self.hud_width * 0.5
+            mat = (0.0,         s*2.0/w,    0.0,        (2*sx/w-1),
+                   s*2.0/h,     0,          0.0,        (2*sy/h-1),
+                   0.0,         0.0,        1.0,        0.0,
+                   0.0,         0.0,        0.0,        1.0)
+            self.hud_psys.set_transformation_matrix( mat )
+            self.hud_psys.draw()
         graphics.Layer( self.scene, cocos_layer = graphics.FunctionCocosLayer( draw_psys ) )
         self.sim.space.add_collision_handler( physics.CollisionTypes["main"], physics.CollisionTypes["bullet"], self.collide_general_with_bullet )
     def setup_input(self):

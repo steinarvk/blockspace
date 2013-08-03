@@ -155,12 +155,15 @@ class Sprite (object):
 
         
 class BlockSystemStructure (object):
-    def __init__(self, psys, thing, transformation = None):
+    def __init__(self, psys, thing, transformation = None, sync_to_thing = True):
         self.psys = psys
         self.thing = thing
         self.transformation = transformation
         self.elements = []
+        self.sync_to_thing = sync_to_thing
     def update_elements(self):
+        if not self.sync_to_thing:
+            return
         position = tuple( self.thing.position )
         if self.transformation:
             position = self.transformation( position )
@@ -169,8 +172,9 @@ class BlockSystemStructure (object):
             self.psys.update_position_and_angle( index, position, angle )
     def add_element( self, info ):
         info = dict(info)
-        info["position"] = self.thing.position
-        info["angle"] = self.thing.angle_radians
+        if self.sync_to_thing:
+            info["position"] = self.thing.position
+            info["angle"] = self.thing.angle_radians
         if self.transformation:
             info[ "position" ] = self.transformation( info["position"] )
             # note offset must come pretransformed.

@@ -228,6 +228,7 @@ class PhysicsSimulator (object):
                 self.perform_removals_and_additions()
                 self._t -= self._timestep
         else:
+            self._t += dt
             self.perform_removals_and_additions()
             self.space.step( dt )
             self.perform_removals_and_additions()
