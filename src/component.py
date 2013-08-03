@@ -208,6 +208,11 @@ class GunComponent (PointComponent):
         rv[ "size" ] = 8.0, 8.0
         return rv
 
+    def shoot(self, shooter):
+        import projectile
+#        projectile.create_pellet( self.world, shooter, self )
+        projectile.create_dumb_missile( self.world, shooter, self )
+
 class EngineComponent (PointComponent):
     name = "engine"
 

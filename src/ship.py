@@ -161,7 +161,7 @@ class Ship (physics.Thing):
         if self.minimap_symbol_sprite:
             self.minimap_symbol_sprite.position = self.position
         if self._shooting:
-            self.world.shoot_bullet( self )
+            self.world.shoot_volley( self )
         self.body.reset_forces()
         spin = self._spin
         rotation_distance = 100

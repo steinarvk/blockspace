@@ -191,26 +191,6 @@ def create_square_thing(world, layer, position, image):
     rv = Debris( world, layer, position, shape, image, moment = moment, collision_type = physics.CollisionTypes["main"] )
     return rv
 
-def create_bullet_thing(world, shooter, gun):
-    points = [(0,0),(9,0),(9,33),(0,33)]
-    shape = ConvexPolygonShape(*points)
-    shape.translate( shape.centroid() * -1)
-#    shape = DiskShape(5) # useful for debugging with pygame to see bullet origins
-    layer = None
-    rv = Debris( world, layer, (0,0), shape, None, mass = 1.0, moment = physics.infinity, collision_type = physics.CollisionTypes["bullet"], group = physics.CollisionGroups["bullets"] )
-    speed = 1400
-#    speed = 0
-    base_velocity = gun.velocity
-    base_velocity = shooter.velocity # unrealistic but possibly better
-    rv.velocity = base_velocity + gun.direction * speed
-    rv.position = gun.position
-    rv.angle_radians = degrees_to_radians( gun.angle_degrees + 90.0 ) # realistic
-#    rv.angle_radians = degrees_to_radians( rv.velocity.get_angle_degrees() + 999.0 ) # might look better
-    rv.inert = False
-    rv.grace = 0.15
-    rv.shooter = shooter
-    return rv
-
 class MainWorld (World):
     def __init__(self, window, player_ship_data = None, use_pygame = False, **kwargs):
         super( MainWorld, self ).__init__( **kwargs)
@@ -230,10 +210,10 @@ class MainWorld (World):
         self.display.add_anonymous_hook( self.scene.update )
         self.player.body.velocity_limit = 800.0 # experiment with this for actually chasing fleeing ships
         self.pre_physics.add_hook( self.player, self.player.update )
-        self.pre_physics.add_hook( self.enemy, lambda dt : ai.ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_bullet, self.enemy ) ) )
+        self.pre_physics.add_hook( self.enemy, lambda dt : ai.ai_seek_target( dt, self.enemy, self.player, partial( self.shoot_volley, self.enemy ) ) )
 #        self.pre_physics.add_hook( self.enemy, lambda dt : ai.ai_flee_target( dt, self.enemy, self.player ) )
         self.pre_physics.add_hook( self.enemy, self.enemy.update )
-        self.pre_physics.add_hook( self.enemy2, lambda dt : ai.ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_bullet, self.enemy2 ) ) )
+        self.pre_physics.add_hook( self.enemy2, lambda dt : ai.ai_seek_target( dt, self.enemy2, self.player, partial( self.shoot_volley, self.enemy2 ) ) )
 #        self.pre_physics.add_hook( self.enemy2, lambda dt : ai.ai_flee_target( dt, self.enemy2, self.player ) )
         self.pre_physics.add_hook( self.enemy2, self.enemy2.update )
         for x in (self.player, self.enemy, self.enemy2):
@@ -420,40 +400,17 @@ class MainWorld (World):
             input_layer.cocos_layer.set_key_hook( k, self.player.on_controls_state )
         input_layer.cocos_layer.set_key_hook( k, self.player.on_controls_state )
         input_layer.cocos_layer.set_key_hook( key.LSHIFT, self.player.on_controls_state )
-        input_layer.cocos_layer.set_key_press_hook( key.SPACE, lambda *args, **kwargs: (self.player.on_controls_state(*args,**kwargs), self.shoot_bullet(self.player)) )
+        input_layer.cocos_layer.set_key_press_hook( key.SPACE, lambda *args, **kwargs: (self.player.on_controls_state(*args,**kwargs), self.shoot_volley(self.player)) )
         input_layer.cocos_layer.set_key_release_hook( key.SPACE, lambda *args, **kwargs: self.player.on_controls_state(*args,**kwargs) )
         input_layer.cocos_layer.set_key_press_hook( key.P, self.on_save_ship )
-    def shoot_bullet(self, shooter):
+    def shoot_volley(self, shooter):
         guns = shooter.ready_guns()
         index = 0
         for gun in guns:
             if not gun.may_activate():
                 continue
+            gun.shoot( shooter )
             gun.activated( index )
-            sq = create_bullet_thing( self, shooter, gun )
-            kw = {}
-            kw[ "size" ] = 9.0,33.0
-            kw[ "texture_size" ] = self.atlas.texsize( "laserGreen" )
-            kw[ "texture_coordinates" ] = self.atlas.texcoords( "laserGreen" )
-            kw[ "position" ] = sq.position
-            kw[ "angle" ] = sq.angle_radians
-            kw[ "colour" ] = (0.0,1.0,0.0,1.0)
-            sq.index = self.object_psys.add( **kw )
-            self.psys_managed_things.append( (sq, sq.index) )
-            def update_bullet( bullet, dt ):
-                if not bullet.alive:
-                    return
-                bullet.ttl -= dt
-                bullet.grace -= dt
-                if bullet.ttl <= 0.0:
-                    bullet.kill()
-            def kill_bullet( sq ):
-                self.psys_managed_things.remove( (sq,sq.index) )
-                self.object_psys.remove( sq.index )
-            sq.ttl = 1.5
-            sq.kill_hooks.append( kill_bullet )
-            self.pre_physics.add_hook( sq, partial(update_bullet,sq) )
-            index += 1
     def update_pygame(self):
         self.screen.fill( pygame.color.THECOLORS[ "black" ] )
         draw_space( self.screen, self.sim.space )
